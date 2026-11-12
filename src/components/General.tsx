@@ -14,6 +14,12 @@ const SIZE = {
   lg: { box: 'h-20 w-20 rounded-2xl', char: 'text-4xl', troop: 'text-base -bottom-1.5 -right-1.5' },
 };
 
+/** 토큰에 새길 글자: 두 단어로 된 적 전용 장수(황건 역사)는 둘째 단어 첫 글자 */
+export function tokenChar(def: GeneralDef) {
+  const parts = def.name.split(' ');
+  return (parts[1] ?? parts[0])[0];
+}
+
 /** 인장(印章) 느낌의 장수 토큰: 세력 색 + 이름 첫 글자 + 병과 이모지 */
 export function GeneralToken({ def, size = 'md', dim, className }: { def: GeneralDef; size?: keyof typeof SIZE; dim?: boolean; className?: string }) {
   const f = FACTION[def.faction];
@@ -24,7 +30,7 @@ export function GeneralToken({ def, size = 'md', dim, className }: { def: Genera
         className={cn('flex items-center justify-center border-2 font-serif font-black text-white', s.box, RARITY[def.rarity].border, dim && 'opacity-30 grayscale')}
         style={{ background: `linear-gradient(145deg, ${f.hex}, #1c1917 120%)` }}
       >
-        <span className={cn(s.char, 'drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)]')}>{def.name[0]}</span>
+        <span className={cn(s.char, 'drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)]')}>{tokenChar(def)}</span>
       </div>
       <span className={cn('absolute leading-none', s.troop)} aria-label={TROOP[def.troop].label}>{TROOP[def.troop].emoji}</span>
     </div>

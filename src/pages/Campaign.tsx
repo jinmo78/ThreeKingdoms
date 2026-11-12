@@ -26,8 +26,8 @@ export default function Campaign() {
   const clearedCount = STAGES.filter((s) => cleared[s.id]).length;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
-      <div className="space-y-5">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="min-w-0 space-y-5">
         <div className="flex items-end justify-between">
           <div>
             <h2 className="font-serif text-2xl font-black">천하 원정</h2>
@@ -75,7 +75,7 @@ export default function Campaign() {
         ))}
       </div>
 
-      <div className="lg:sticky lg:top-20 lg:self-start">
+      <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
         <Panel title={`${stage.id} ${stage.title}`} icon={<Swords size={16} />}>
           <p className="mb-3 text-xs text-stone-400">{stage.desc}</p>
 

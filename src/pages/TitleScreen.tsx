@@ -39,7 +39,7 @@ export default function TitleScreen() {
         </div>
 
         <ul className="mx-auto mt-8 grid max-w-md gap-2 text-left text-sm text-stone-400">
-          <li className="flex items-center gap-2"><Users size={16} className="text-red-400" /> 장수를 등용하고 주장·부장·참모로 부대를 편성</li>
+          <li className="flex items-center gap-2"><Users size={16} className="text-red-400" /> 장수를 등용하고 주장·부장·참모·보좌 6인 부대를 편성</li>
           <li className="flex items-center gap-2"><Link2 size={16} className="text-amber-400" /> 세력·병과·인연을 맞춰 시너지를 완성</li>
           <li className="flex items-center gap-2"><Swords size={16} className="text-sky-400" /> 자동 전투에서 터지는 연쇄 전법으로 승리</li>
         </ul>

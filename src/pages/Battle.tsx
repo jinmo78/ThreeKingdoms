@@ -70,7 +70,7 @@ export default function BattlePage() {
         )}
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* 전장 */}
         <div className="relative overflow-hidden rounded-2xl border border-stone-800 bg-[linear-gradient(180deg,#1c1917_0%,#0c0a09_50%,#1c1917_100%)] p-3">
           <SideRow side={1} units={result.units[1]} ev={ev} label="적군" />
@@ -191,7 +191,8 @@ function ResultOverlay({
   onRetry: () => void; onNext?: () => void; nextTitle?: string; onFormation: () => void; onCampaign: () => void;
 }) {
   return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center p-4">
       <div className="animate-pop-in w-full max-w-sm rounded-2xl border border-stone-700 bg-stone-900 p-5 text-center">
         {win ? <Trophy size={40} className="mx-auto text-amber-300" /> : <RotateCcw size={36} className="mx-auto text-stone-400" />}
         <div className={cn('mt-2 font-serif text-3xl font-black', win ? 'text-amber-200' : 'text-stone-300')}>{win ? '승 리' : '패 배'}</div>
@@ -221,6 +222,7 @@ function ResultOverlay({
             <Btn variant="ghost" size="sm" onClick={onCampaign}>원정 지도</Btn>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
