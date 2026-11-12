@@ -81,7 +81,7 @@ export default function BattlePage() {
               <div key={ev.id} className="animate-banner relative text-center">
                 {ev.kind === 'chain' && (
                   <div className="flex items-center justify-center gap-1 text-sm font-black text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]">
-                    <Zap size={16} fill="currentColor" /> {ev.chainStep === 2 ? '연쇄 2단!!' : '연쇄 발동!'} <Zap size={16} fill="currentColor" />
+                    <Zap size={16} fill="currentColor" /> {ev.chainStep && ev.chainStep > 1 ? `연쇄 ${ev.chainStep}단${'!'.repeat(ev.chainStep)}` : '연쇄 발동!'} <Zap size={16} fill="currentColor" />
                   </div>
                 )}
                 <div className={cn('font-serif font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]',
@@ -157,11 +157,11 @@ function SideRow({ side, units, ev, label }: { side: Side; units: UnitProfile[];
                 <span className="text-sm">{TROOP[u.troop].emoji}</span>
                 <span className="truncate text-xs font-bold">{u.name}</span>
               </div>
-              <div className="mt-1.5 flex -space-x-1.5">
-                {u.members.map((m, mi) => m && (
-                  <GeneralToken key={mi} def={getGeneral(m.def.id)} size="sm"
-                    className={cn(acting && ev.caster === m.def.name && 'z-10 scale-110 transition-transform')} />
-                ))}
+              <div className="mt-1.5 grid grid-cols-3 justify-items-center gap-0.5 sm:grid-cols-6">
+                {u.members.map((m, mi) => m ? (
+                  <GeneralToken key={mi} def={getGeneral(m.def.id)} size="xs"
+                    className={cn(acting && ev.caster === m.def.name && 'z-10 scale-125 transition-transform')} />
+                ) : <div key={mi} className="h-6 w-6 rounded-md border border-dashed border-stone-800" />)}
               </div>
               <Bar value={hp} max={u.hp} className="mt-2" color={side === 0 ? 'bg-sky-500' : 'bg-red-500'} />
               <div className="tabular mt-0.5 text-right text-[10px] text-stone-400">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
@@ -195,7 +195,7 @@ function ResultOverlay({
       <div className="animate-pop-in w-full max-w-sm rounded-2xl border border-stone-700 bg-stone-900 p-5 text-center">
         {win ? <Trophy size={40} className="mx-auto text-amber-300" /> : <RotateCcw size={36} className="mx-auto text-stone-400" />}
         <div className={cn('mt-2 font-serif text-3xl font-black', win ? 'text-amber-200' : 'text-stone-300')}>{win ? '승 리' : '패 배'}</div>
-        <div className="mt-1 text-xs text-stone-500">연쇄 발동 {chains}회 · 최대 {maxChain}단 연쇄</div>
+        <div className="mt-1 text-xs text-stone-500">연쇄 발동 {chains}회 · 최대 {maxChain}단 연쇄{maxChain >= 3 && ' 🔥'}</div>
 
         <div className="mt-4 space-y-1.5 rounded-xl bg-stone-950/70 p-3 text-sm">
           <div className="flex justify-between"><span className="text-stone-400">금화</span><span className="flex items-center gap-1 font-bold text-amber-300"><Coins size={14} />+{reward.gold}{reward.firstClear && <span className="text-[10px] text-amber-200">(첫 클리어 포함)</span>}</span></div>

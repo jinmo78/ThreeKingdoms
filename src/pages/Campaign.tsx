@@ -112,7 +112,7 @@ function UnitPreview({ p }: { p: UnitProfile }) {
   return (
     <div className="rounded-xl border border-stone-800 bg-stone-950/50 p-2.5">
       <div className="mb-2 flex items-center gap-2">
-        <div className="flex -space-x-1.5">
+        <div className="flex -space-x-2">
           {p.members.map((m, i) => m && <GeneralToken key={i} def={m.def} size="sm" />)}
         </div>
         <div className="min-w-0 flex-1">

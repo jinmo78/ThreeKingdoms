@@ -7,6 +7,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { getGeneral, GENERAL_MAP } from '../data/generals';
 import { STAGE_MAP } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
+import { autoFormation } from '../engine/autoFormation';
 import { PULL_COST, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
 import { buildProfile, expToNext, makeMember, MAX_LEVEL, MAX_STARS, type UnitProfile } from '../engine/unit';
@@ -55,24 +56,30 @@ interface GameState extends SaveData {
   recruit: (count: 1 | 10) => RecruitResult[] | null;
   assign: (unit: number, slot: Slot, id: string | null) => void;
   clearUnit: (unit: number) => void;
+  /** 보유 장수로 3부대를 시너지 고려해 자동 편성 */
+  autoForm: () => void;
   startBattle: (stageId: string) => boolean;
   closeBattle: () => void;
 }
 
-const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'huaxiong', 'huanggai'];
+const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
 const DUPLICATE_REFUND = { SSR: 300, SR: 120, R: 40 } as const;
 
-const emptyUnit = (): Unit => ({ commander: null, vice: null, strategist: null });
+export const emptyUnit = (): Unit => ({ commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null });
 
 function freshSave(): SaveData {
   const roster: Record<string, OwnedGeneral> = {};
   for (const id of STARTERS) roster[id] = { level: 1, exp: 0, stars: 0 };
   return {
     started: true,
-    gold: 1000,
+    gold: 1500,
     roster,
-    // 튜토리얼: 유비·장비(도원결의 2인)를 미리 배치해 시너지를 바로 보여 줌
-    formation: [{ commander: 'liubei', vice: 'zhangfei', strategist: 'lusu' }, emptyUnit(), emptyUnit()],
+    // 튜토리얼: 도원결의(유비·장비)와 촉한의 기틀(유비·미축·간옹)이 바로 보이도록 미리 배치
+    formation: [
+      { commander: 'liubei', vice1: 'zhangfei', vice2: 'xuchu', strategist: 'lusu', aide1: 'mizhu', aide2: 'jianyong' },
+      emptyUnit(),
+      emptyUnit(),
+    ],
     cleared: {},
     totalPulls: 0,
   };
@@ -99,7 +106,7 @@ export function enemyProfiles(stageId: string): UnitProfile[] {
   return STAGE_MAP[stageId].enemies.map(
     (e) =>
       buildProfile(
-        [e.commander, e.vice, e.strategist].map((id) => (id ? makeMember(getGeneral(id), e.level, 0) : null)),
+        SLOTS.map((_, i) => e.members[i] ?? null).map((id) => (id ? makeMember(getGeneral(id), e.level, 0) : null)),
       )!,
   );
 }
@@ -159,6 +166,8 @@ export const useGame = create<GameState>()(
         set({ formation });
       },
 
+      autoForm: () => set({ formation: autoFormation(get().roster) }),
+
       startBattle: (stageId) => {
         const { formation, roster, cleared, gold } = get();
         const stage = STAGE_MAP[stageId];
@@ -205,7 +214,18 @@ export const useGame = create<GameState>()(
     }),
     {
       name: 'oath-banner-save',
-      version: 1,
+      version: 2,
+      // v1(주장·부장·참모 3칸) → v2(6칸)
+      migrate: (persisted, version) => {
+        const s = persisted as SaveData;
+        if (version < 2 && s?.formation) {
+          const old = s.formation as unknown as Record<string, string | null>[];
+          s.formation = old.map((u) => ({
+            ...emptyUnit(), commander: u.commander ?? null, vice1: u.vice ?? null, strategist: u.strategist ?? null,
+          }));
+        }
+        return s as SaveData;
+      },
       storage: createJSONStorage(() => localStorage),
       partialize: (s): SaveData => ({
         started: s.started,

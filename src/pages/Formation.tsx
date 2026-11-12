@@ -1,6 +1,6 @@
 // 부대 편성 — 핵심 덱 빌딩 화면
 // 슬롯을 고른 뒤 아래 장수 목록에서 탭하면 배치. 배치하면 새로 켜지는 시너지를 목록에 미리 표시
-import { Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { Plus, Sparkles, Trash2, Wand2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from '../components/General';
 import { Btn, cn, Modal } from '../components/ui';
@@ -23,6 +23,8 @@ export default function Formation() {
   const formation = useGame((s) => s.formation);
   const assign = useGame((s) => s.assign);
   const clearUnit = useGame((s) => s.clearUnit);
+  const autoForm = useGame((s) => s.autoForm);
+  const [autoNote, setAutoNote] = useState(false);
   const [target, setTarget] = useState<Target>({ unit: 0, slot: 'commander' });
   const [filter, setFilter] = useState<Faction | 'all'>('all');
   const [detail, setDetail] = useState<GeneralDef | null>(null);
@@ -75,12 +77,23 @@ export default function Formation() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="font-serif text-2xl font-black">부대 편성</h2>
-        <p className="text-xs text-stone-500">
-          칸을 고른 뒤 아래에서 장수를 탭하세요. 같은 <b className="text-sky-300">세력</b>·<b className="text-orange-300">병과</b>·
-          <b className="text-amber-300">인연</b>을 맞추면 전투력과 <b className="text-red-300">연쇄 전법</b> 확률이 올라갑니다.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-serif text-2xl font-black">부대 편성</h2>
+          <p className="text-xs text-stone-500">
+            칸을 고른 뒤 아래에서 장수를 탭하세요. 같은 <b className="text-sky-300">세력</b>·<b className="text-orange-300">병과</b>·
+            <b className="text-amber-300">인연</b>을 맞추면 전투력과 <b className="text-red-300">연쇄 전법</b> 확률이 올라갑니다.
+          </p>
+          <p className="mt-0.5 text-[11px] text-stone-500">
+            부대 6칸 — 주장(병과·주 전법) · 부장×2(연쇄 1·2단) · 참모(연쇄 3단, 발동률↑) · 보좌×2(능력 일부 + 시너지 인원)
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Btn variant="gold" onClick={() => { autoForm(); setAutoNote(true); setTarget({ unit: 0, slot: 'commander' }); }}>
+            <Wand2 size={15} /> 자동 편성
+          </Btn>
+          {autoNote && <span className="animate-slide-in text-[10px] text-amber-200/80">시너지를 고려해 3부대를 다시 짰습니다</span>}
+        </div>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-3">
@@ -92,7 +105,7 @@ export default function Formation() {
               target.unit === ui ? 'border-red-600/60' : 'border-stone-800')}>
               <header className="mb-2 flex items-center justify-between">
                 <h3 className="font-serif text-base font-black">제{ui + 1}부대 {p && <span className="ml-1 text-xs font-normal text-stone-400">{p.name}</span>}</h3>
-                {(u.commander || u.vice || u.strategist) && (
+                {SLOTS.some((s) => u[s]) && (
                   <button type="button" onClick={() => clearUnit(ui)} className="text-stone-500 hover:text-red-300" title="부대 비우기"><Trash2 size={14} /></button>
                 )}
               </header>

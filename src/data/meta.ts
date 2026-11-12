@@ -59,6 +59,9 @@ export const EFFECT_LABEL: Record<SkillEffect, string> = {
 
 export const SLOT_LABEL = {
   commander: { label: '주장', hint: '병과·전법 결정' },
-  vice: { label: '부장', hint: '연쇄 1단' },
-  strategist: { label: '참모', hint: '연쇄 2단 · 발동률↑' },
+  vice1: { label: '부장', hint: '연쇄 1단' },
+  vice2: { label: '부장', hint: '연쇄 2단' },
+  strategist: { label: '참모', hint: '연쇄 3단 · 발동률↑' },
+  aide1: { label: '보좌', hint: '능력 일부 · 시너지' },
+  aide2: { label: '보좌', hint: '능력 일부 · 시너지' },
 } as const;

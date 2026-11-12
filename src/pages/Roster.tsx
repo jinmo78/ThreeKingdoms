@@ -75,10 +75,11 @@ export default function Roster() {
           <div className="rounded-2xl border border-dashed border-stone-700 p-3 text-xs text-stone-400 md:col-span-2">
             <div className="mb-1 font-bold text-stone-300">기본 시너지</div>
             <ul className="list-inside list-disc space-y-0.5">
-              <li>세력 결속 — 같은 세력 2명: 전투력 +6% · 연쇄 +5% / 3명: 전투력 +15% · 연쇄 +15%</li>
-              <li>병과 통일 — 주장과 같은 병과 2명: 전투력 +5% / 3명: 전투력 +12% · 연쇄 +10%</li>
+              <li>부대 6칸 — 주장 · 부장×2 · 참모 · 보좌×2. 보좌는 전법이 없지만 능력 일부와 시너지 인원수에 포함</li>
+              <li>세력 결속 — 같은 세력 3명: 전투력 +5% · 연쇄 +4% / 4명: +10% · +8% / 6명: +18% · +15%</li>
+              <li>병과 통일 — 주장과 같은 병과 3명: 전투력 +5% / 4명: +9% · 연쇄 +5% / 6명: +15% · +10%</li>
               <li>명참모 — 참모의 기본 지력 90 이상: 연쇄 +10%</li>
-              <li>연쇄 기본 확률 15%, 최대 85%. 부장 연쇄 성공 후 참모 연쇄는 그 확률의 60%</li>
+              <li>연쇄 — 주장 전법 발동 후 부장1 → 부장2 → 참모 순으로 최대 3단. 기본 15%(최대 85%), 단계마다 확률 ×0.6</li>
               <li>병과 상성 — 🐎기병 &gt; 🏹궁병 &gt; 🛡️보병 &gt; 🐎기병 (우위 ×1.25, 열세 ×0.8)</li>
             </ul>
           </div>

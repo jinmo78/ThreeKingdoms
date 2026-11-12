@@ -2,7 +2,7 @@
 // 부대 프로필 — 장수 3명의 능력치를 슬롯 가중치로 합산
 // ============================================================
 import type { GeneralDef, Slot, StatKey, Stats, Troop } from '../types';
-import { SLOTS } from '../types';
+import { SLOTS, STRATEGIST_INDEX } from '../types';
 import { calcSynergy, type SynergyResult } from './synergy';
 
 export const MAX_LEVEL = 40;
@@ -30,7 +30,7 @@ export interface UnitMember {
 }
 
 export interface UnitProfile {
-  /** [주장, 부장, 참모] */
+  /** SLOTS 순서 [주장, 부장, 부장, 참모, 보좌, 보좌] */
   members: (UnitMember | null)[];
   name: string;
   troop: Troop;
@@ -45,10 +45,14 @@ export interface UnitProfile {
 }
 
 // 슬롯별 능력 반영 비율: 주장은 무력·통솔, 참모는 지력 위주
+const AIDE = { war: 0.15, int: 0.15, lead: 0.15, hp: 3 };
 const SLOT_WEIGHT: Record<Slot, Record<StatKey, number> & { hp: number }> = {
   commander: { war: 1.0, int: 0.4, lead: 1.0, hp: 16 },
-  vice: { war: 0.6, int: 0.3, lead: 0.5, hp: 8 },
+  vice1: { war: 0.5, int: 0.25, lead: 0.4, hp: 7 },
+  vice2: { war: 0.5, int: 0.25, lead: 0.4, hp: 7 },
   strategist: { war: 0.2, int: 1.0, lead: 0.3, hp: 6 },
+  aide1: AIDE,
+  aide2: AIDE,
 };
 
 export function makeMember(def: GeneralDef, level: number, stars: number): UnitMember {
@@ -78,7 +82,7 @@ export function buildProfile(members: (UnitMember | null)[]): UnitProfile | null
   const troop = commander.def.troop;
   const speed = 10 + intel * 0.02 + (troop === 'cavalry' ? 2 : 0);
   // 주장 전법 발동률: 기본 + 참모 지력 보정
-  const strategistInt = members[2]?.stats.int ?? 0;
+  const strategistInt = members[STRATEGIST_INDEX]?.stats.int ?? 0;
   const skillRate = Math.min(0.6, commander.def.skill.rate + strategistInt * 0.001);
 
   const power = Math.round((atk + intel * 0.8 + def * 0.8) * synergy.powerMult * 2 + hp * 0.2);

@@ -8,6 +8,7 @@ import type { GeneralDef, OwnedGeneral, StatKey } from '../types';
 import { Bar, cn } from './ui';
 
 const SIZE = {
+  xs: { box: 'h-6 w-6 rounded-md border', char: 'text-[11px]', troop: 'hidden' },
   sm: { box: 'h-9 w-9 rounded-lg', char: 'text-base', troop: 'text-[10px] -bottom-1 -right-1' },
   md: { box: 'h-12 w-12 rounded-xl', char: 'text-xl', troop: 'text-xs -bottom-1 -right-1' },
   lg: { box: 'h-20 w-20 rounded-2xl', char: 'text-4xl', troop: 'text-base -bottom-1.5 -right-1.5' },

@@ -3,13 +3,14 @@
 // ------------------------------------------------------------
 // · 모든 부대의 게이지가 속도만큼 차오르고, 100에 닿은 부대가 행동
 // · 행동: 주장 전법 발동(skillRate) 또는 일반 공격
-// · 전법 발동 시 chainRate 확률로 부장 전법 "연쇄 발동!",
-//   이어서 (chainRate × 0.6) 확률로 참모 전법 "연쇄 2단!"
+// · 전법 발동 시 chainRate 확률로 부장1 전법 "연쇄 발동!",
+//   이후 확률이 ×0.6씩 줄며 부장2 → 참모 전법으로 최대 3단 연쇄
 // · 병과 상성 ×1.25 / ×0.8, 시너지 전투력 배율 적용
 // · 결과는 시작 시점에 전부 계산되고 UI는 이벤트를 순서대로 재생
 // ============================================================
 import { troopMatchup } from '../data/meta';
 import type { GeneralDef } from '../types';
+import { CHAIN_SLOTS, SLOTS } from '../types';
 import { mulberry32 } from './rng';
 import type { UnitProfile } from './unit';
 
@@ -33,7 +34,7 @@ export interface BattleEvent {
   actor?: Ref;
   caster?: string;
   skill?: string;
-  /** 1 = 연쇄 1단, 2 = 연쇄 2단 */
+  /** 1~3 = 연쇄 단계 */
   chainStep?: number;
   hits: Hit[];
   text: string;
@@ -59,7 +60,8 @@ interface Fighter extends Ref {
 const MAX_ACTIONS = 160;
 const DMG_K = 3.2;
 const HEAL_K = 2.2;
-const CHAIN_MULT = [1, 0.8, 1.05];
+const CHAIN_MULT = [1, 0.75, 0.85, 1.0];
+const CHAIN_INDEX = CHAIN_SLOTS.map((s) => SLOTS.indexOf(s));
 const MATCHUP_MULT = { adv: 1.25, dis: 0.8, even: 1 } as const;
 
 export function simulateBattle(player: UnitProfile[], enemy: UnitProfile[], seed: number): BattleResult {
@@ -129,7 +131,7 @@ export function simulateBattle(player: UnitProfile[], enemy: UnitProfile[], seed
       if (s.effect === 'disrupt') t.gauge = Math.max(0, t.gauge - 60);
     }
 
-    const prefix = step === 0 ? '' : step === 1 ? '⚡연쇄 발동! ' : '⚡⚡연쇄 2단! ';
+    const prefix = step === 0 ? '' : step === 1 ? '⚡연쇄 발동! ' : `${'⚡'.repeat(step)}연쇄 ${step}단! `;
     const summary = hits
       .map((h) => `${fighters[h.side][h.idx].p.name} ${h.kind === 'heal' ? '+' : '-'}${h.amount}`)
       .join(', ');
@@ -150,11 +152,13 @@ export function simulateBattle(player: UnitProfile[], enemy: UnitProfile[], seed
     if (rng() < p.skillRate) {
       stats.skills++;
       castSkill(f, p.members[0]!.def, 0);
-      // 연쇄: 부장 → 참모
+      // 연쇄: 부장1 → 부장2 → 참모 (빈 칸은 건너뜀)
       let rate = p.synergy.chainRate;
       let step = 0;
-      for (const m of [p.members[1], p.members[2]]) {
-        if (!m || alive((1 - f.side) as Side).length === 0) break;
+      for (const ci of CHAIN_INDEX) {
+        const m = p.members[ci];
+        if (!m) continue;
+        if (alive((1 - f.side) as Side).length === 0) break;
         if (rng() >= rate) break;
         step++;
         stats.chains++;

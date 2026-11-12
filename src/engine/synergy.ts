@@ -1,8 +1,8 @@
 // ============================================================
-// 시너지 계산 — 부대 = [주장, 부장, 참모]
+// 시너지 계산 — 부대 = SLOTS 순서 [주장, 부장, 부장, 참모, 보좌, 보좌]
 // ------------------------------------------------------------
-// · 세력 결속 : 같은 세력 2명 / 3명
-// · 병과 통일 : 주장과 같은 병과 2명 / 3명 (부대 병과 = 주장 병과)
+// · 세력 결속 : 같은 세력 3 / 4 / 6명
+// · 병과 통일 : 주장과 같은 병과 3 / 4 / 6명 (부대 병과 = 주장 병과)
 // · 인연      : 같은 인연 태그 보유 장수 수에 따른 단계 보너스 (bonds.ts)
 // · 명참모    : 참모 지력 90 이상
 // 결과: 전투력 배율(powerMult) · 연쇄 전법 발동 확률(chainRate)
@@ -10,6 +10,7 @@
 import { BOND_MAP } from '../data/bonds';
 import { FACTION, TROOP } from '../data/meta';
 import type { GeneralDef } from '../types';
+import { STRATEGIST_INDEX } from '../types';
 
 export type SynergyKind = 'faction' | 'troop' | 'bond' | 'sage';
 
@@ -33,15 +34,17 @@ export interface SynergyResult {
 export const BASE_CHAIN = 0.15;
 export const MAX_CHAIN = 0.85;
 
-const FACTION_TIERS = [
-  { count: 2, power: 0.06, chain: 0.05 },
-  { count: 3, power: 0.15, chain: 0.15 },
+export const FACTION_TIERS = [
+  { count: 3, power: 0.05, chain: 0.04 },
+  { count: 4, power: 0.1, chain: 0.08 },
+  { count: 6, power: 0.18, chain: 0.15 },
 ];
-const TROOP_TIERS = [
-  { count: 2, power: 0.05, chain: 0 },
-  { count: 3, power: 0.12, chain: 0.1 },
+export const TROOP_TIERS = [
+  { count: 3, power: 0.05, chain: 0 },
+  { count: 4, power: 0.09, chain: 0.05 },
+  { count: 6, power: 0.15, chain: 0.1 },
 ];
-const SAGE = { minInt: 90, power: 0, chain: 0.1 };
+export const SAGE = { minInt: 90, power: 0, chain: 0.1 };
 
 function pct(n: number) {
   return `${Math.round(n * 100)}%`;
@@ -59,7 +62,7 @@ function bestTier<T extends { count: number }>(tiers: T[], count: number): T | n
   return best;
 }
 
-/** members: [주장, 부장, 참모] (빈 칸은 null) */
+/** members: SLOTS 순서 (빈 칸은 null) */
 export function calcSynergy(members: (GeneralDef | null)[]): SynergyResult {
   const list: ActiveSynergy[] = [];
   const present = members.filter((m): m is GeneralDef => !!m);
@@ -73,7 +76,7 @@ export function calcSynergy(members: (GeneralDef | null)[]): SynergyResult {
     const meta = FACTION[f as GeneralDef['faction']];
     list.push({
       key: `faction-${f}`, kind: 'faction', label: `${meta.full} 결속 ×${n}`,
-      detail: bonusText(tier.power, tier.chain), power: tier.power, chain: tier.chain, maxed: n >= 3,
+      detail: bonusText(tier.power, tier.chain), power: tier.power, chain: tier.chain, maxed: n >= 6,
     });
   }
 
@@ -86,7 +89,7 @@ export function calcSynergy(members: (GeneralDef | null)[]): SynergyResult {
       const t = TROOP[commander.troop];
       list.push({
         key: `troop-${commander.troop}`, kind: 'troop', label: `${t.emoji} ${t.label} 통일 ×${n}`,
-        detail: bonusText(tier.power, tier.chain), power: tier.power, chain: tier.chain, maxed: n >= 3,
+        detail: bonusText(tier.power, tier.chain), power: tier.power, chain: tier.chain, maxed: n >= 6,
       });
     }
   }
@@ -112,7 +115,7 @@ export function calcSynergy(members: (GeneralDef | null)[]): SynergyResult {
   }
 
   // 명참모
-  const strategist = members[2];
+  const strategist = members[STRATEGIST_INDEX];
   if (strategist && strategist.stats.int >= SAGE.minInt) {
     list.push({
       key: 'sage', kind: 'sage', label: `명참모 ${strategist.name}`,

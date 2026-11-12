@@ -54,14 +54,22 @@ export interface OwnedGeneral {
   stars: number;
 }
 
-export type Slot = 'commander' | 'vice' | 'strategist';
-export const SLOTS: Slot[] = ['commander', 'vice', 'strategist'];
+/**
+ * 부대 6칸: 주장 1 · 부장 2 · 참모 1 · 보좌 2
+ * - 주장: 부대 병과와 주 전법 결정
+ * - 부장1 → 부장2 → 참모: 연쇄 전법 1·2·3단
+ * - 보좌: 전법은 없지만 능력치 일부와 시너지(세력·병과·인연) 인원수에 기여
+ */
+export type Slot = 'commander' | 'vice1' | 'vice2' | 'strategist' | 'aide1' | 'aide2';
+export const SLOTS: Slot[] = ['commander', 'vice1', 'vice2', 'strategist', 'aide1', 'aide2'];
+/** 연쇄 전법 순서 */
+export const CHAIN_SLOTS: Slot[] = ['vice1', 'vice2', 'strategist'];
+export const STRATEGIST_INDEX = 3;
 export type Unit = Record<Slot, string | null>;
 
 export interface EnemyUnit {
-  commander: string;
-  vice: string | null;
-  strategist: string | null;
+  /** SLOTS 순서 (주장은 필수) */
+  members: (string | null)[];
   level: number;
 }
 
