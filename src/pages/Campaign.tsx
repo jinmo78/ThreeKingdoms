@@ -1,6 +1,8 @@
 import { Check, ChevronRight, Coins, Lock, Swords, Trophy } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { CounterFormationButton } from '../components/CounterFormation';
 import { GeneralToken, SynergyList } from '../components/General';
+import { TroopAdviceBox } from '../components/Matchup';
 import { Btn, cn, Panel } from '../components/ui';
 import { CHAPTERS, isUnlocked, STAGES } from '../data/stages';
 import { FACTION } from '../data/meta';
@@ -13,10 +15,16 @@ export default function Campaign() {
   const roster = useGame((s) => s.roster);
   const startBattle = useGame((s) => s.startBattle);
   const setView = useGame((s) => s.setView);
+  const focusStage = useGame((s) => s.focusStage);
+  const setFocusStage = useGame((s) => s.setFocusStage);
 
-  // 기본 선택: 아직 클리어 못 한 첫 스테이지
+  // 기본 선택: 마지막으로 본 스테이지, 없으면 아직 클리어 못 한 첫 스테이지
   const firstOpen = STAGES.find((s) => !cleared[s.id] && isUnlocked(s.id, cleared)) ?? STAGES[STAGES.length - 1];
-  const [selected, setSelected] = useState(firstOpen.id);
+  const [selected, setSelectedState] = useState(focusStage && isUnlocked(focusStage, cleared) ? focusStage : firstOpen.id);
+  const setSelected = (id: string) => {
+    setSelectedState(id);
+    setFocusStage(id);
+  };
   const stage = STAGES.find((s) => s.id === selected)!;
 
   const mine = useMemo(() => playerProfiles(formation, roster), [formation, roster]);
@@ -90,6 +98,10 @@ export default function Campaign() {
             {enemies.map((p, i) => <UnitPreview key={i} p={p} />)}
           </div>
 
+          <div className="mt-3">
+            <TroopAdviceBox enemy={enemies} mine={mine} />
+          </div>
+
           <PowerCompare mine={myPower} enemy={enemyPower} />
 
           {mine.length === 0 ? (
@@ -98,10 +110,11 @@ export default function Campaign() {
               <Btn variant="outline" onClick={() => setView('formation')}>편성하러 가기 <ChevronRight size={14} /></Btn>
             </div>
           ) : (
-            <Btn size="lg" className="mt-3 w-full" onClick={() => startBattle(stage.id)}>
+            <Btn size="lg" className="mt-3 w-full" onClick={() => { setFocusStage(stage.id); startBattle(stage.id); }}>
               <Swords size={18} /> 출진! ({mine.length}부대)
             </Btn>
           )}
+          <CounterFormationButton stageId={stage.id} className="mt-2 w-full" />
         </Panel>
       </div>
     </div>

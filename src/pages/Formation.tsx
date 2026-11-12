@@ -3,12 +3,15 @@
 import { Plus, Sparkles, Trash2, Wand2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from '../components/General';
+import { MatchupBadge, TroopAdviceBox } from '../components/Matchup';
 import { Btn, cn, Modal } from '../components/ui';
 import { getGeneral } from '../data/generals';
-import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL } from '../data/meta';
+import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP } from '../data/meta';
+import { isUnlocked, STAGES } from '../data/stages';
+import { matchupGrade, matchupVs } from '../engine/matchup';
 import { calcSynergy } from '../engine/synergy';
 import { effectiveStats } from '../engine/unit';
-import { unitProfile, useGame } from '../store/gameStore';
+import { enemyProfiles, playerProfiles, unitProfile, useGame } from '../store/gameStore';
 import type { Faction, GeneralDef, Slot, Unit } from '../types';
 import { SLOTS } from '../types';
 
@@ -28,6 +31,17 @@ export default function Formation() {
   const [target, setTarget] = useState<Target>({ unit: 0, slot: 'commander' });
   const [filter, setFilter] = useState<Faction | 'all'>('all');
   const [detail, setDetail] = useState<GeneralDef | null>(null);
+  const cleared = useGame((s) => s.cleared);
+  const focusStage = useGame((s) => s.focusStage);
+  const setFocusStage = useGame((s) => s.setFocusStage);
+
+  // 상성 힌트 기준 스테이지: 원정 화면에서 마지막으로 고른 곳, 없으면 아직 못 깬 첫 스테이지
+  const unlockedStages = STAGES.filter((st) => isUnlocked(st.id, cleared));
+  const stageId = focusStage && isUnlocked(focusStage, cleared)
+    ? focusStage
+    : (unlockedStages.find((st) => !cleared[st.id]) ?? unlockedStages[unlockedStages.length - 1]).id;
+  const enemy = useMemo(() => enemyProfiles(stageId), [stageId]);
+  const enemyTroops = enemy.map((e) => e.troop);
 
   // 배치 위치 역참조: 장수 id → "1부대 주장"
   const placed = useMemo(() => {
@@ -96,6 +110,17 @@ export default function Formation() {
         </div>
       </div>
 
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-xs text-stone-400">
+          상대 스테이지
+          <select value={stageId} onChange={(e) => setFocusStage(e.target.value)}
+            className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs text-stone-200 sm:flex-none">
+            {unlockedStages.map((st) => <option key={st.id} value={st.id}>{st.id} {st.title}{cleared[st.id] ? ' ✓' : ''}</option>)}
+          </select>
+        </label>
+        <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster)} compact />
+      </div>
+
       <div className="grid gap-3 lg:grid-cols-3">
         {formation.map((u, ui) => {
           const p = unitProfile(u, roster);
@@ -104,7 +129,8 @@ export default function Formation() {
             <section key={ui} className={cn('rounded-2xl border bg-stone-900/70 p-3 transition-colors',
               target.unit === ui ? 'border-red-600/60' : 'border-stone-800')}>
               <header className="mb-2 flex items-center justify-between">
-                <h3 className="font-serif text-base font-black">제{ui + 1}부대 {p && <span className="ml-1 text-xs font-normal text-stone-400">{p.name}</span>}</h3>
+                <h3 className="min-w-0 truncate font-serif text-base font-black">제{ui + 1}부대 {p && <span className="ml-1 text-xs font-normal text-stone-400">{p.name}</span>}</h3>
+                {p && <MatchupBadge troop={p.troop} enemyTroops={enemyTroops} className="ml-auto mr-2 shrink-0" />}
                 {SLOTS.some((s) => u[s]) && (
                   <button type="button" onClick={() => clearUnit(ui)} className="text-stone-500 hover:text-red-300" title="부대 비우기"><Trash2 size={14} /></button>
                 )}
@@ -115,16 +141,18 @@ export default function Formation() {
                   const id = u[slot];
                   const def = id ? getGeneral(id) : null;
                   const active = target.unit === ui && target.slot === slot;
+                  const badCommander = slot === 'commander' && def && matchupGrade(matchupVs(def.troop, enemyTroops)) === 'bad';
                   return (
                     <div key={slot} className="relative">
                       <button type="button" onClick={() => setTarget({ unit: ui, slot })}
                         className={cn('flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed p-2 transition-colors',
-                          active ? 'border-red-500 bg-red-950/40' : def ? 'border-transparent bg-stone-950/60' : 'border-stone-700 hover:border-stone-500')}>
+                          active ? 'border-red-500 bg-red-950/40' : badCommander ? 'border-solid border-red-500/50 bg-stone-950/60' : def ? 'border-transparent bg-stone-950/60' : 'border-stone-700 hover:border-stone-500')}>
                         <span className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>{SLOT_LABEL[slot].label}</span>
                         {def ? (
                           <>
                             <GeneralToken def={def} size="md" />
                             <span className="text-xs font-bold">{def.name}</span>
+                            {badCommander && <span className="text-[9px] font-bold text-red-300">⚠ 상성 열세</span>}
                           </>
                         ) : (
                           <>
@@ -173,6 +201,7 @@ export default function Formation() {
             const st = effectiveStats(def, o.level, o.stars);
             const where = placed[def.id];
             const gains = preview[def.id];
+            const cmdGrade = target.slot === 'commander' ? matchupGrade(matchupVs(def.troop, enemyTroops)) : null;
             return (
               <div key={def.id} className={cn('flex items-center gap-2.5 rounded-xl border p-2 transition-colors',
                 gains ? 'border-amber-400/40 bg-amber-400/5' : 'border-stone-800 bg-stone-950/40')}>
@@ -190,9 +219,11 @@ export default function Formation() {
                   <div className="mt-0.5 flex flex-wrap gap-1">
                     {def.bonds.map((b) => <BondTag key={b} id={b} />)}
                   </div>
-                  {(where || gains) && (
+                  {(where || gains || (cmdGrade && cmdGrade !== 'even')) && (
                     <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
                       {where && <span className="rounded bg-stone-700 px-1.5 py-px text-stone-200">{where}</span>}
+                      {cmdGrade === 'good' && <span className="rounded bg-emerald-500/15 px-1.5 py-px font-bold text-emerald-300">{TROOP[def.troop].emoji} 주장 상성 유리</span>}
+                      {cmdGrade === 'bad' && <span className="rounded bg-red-500/15 px-1.5 py-px font-bold text-red-300">{TROOP[def.troop].emoji} 주장 상성 불리</span>}
                       {gains && <span className="flex items-center gap-0.5 text-amber-300"><Sparkles size={10} /> {gains.join(' · ')}</span>}
                     </div>
                   )}

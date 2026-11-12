@@ -4,13 +4,15 @@
 // ============================================================
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { getGeneral, GENERAL_MAP } from '../data/generals';
 import { STAGE_MAP } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
 import { PULL_COST, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
-import { buildProfile, expToNext, makeMember, MAX_LEVEL, MAX_STARS, type UnitProfile } from '../engine/unit';
+import { emptyUnit, enemyProfiles, playerProfiles } from '../engine/profiles';
+import { expToNext, MAX_LEVEL, MAX_STARS } from '../engine/unit';
+
+export { emptyUnit, enemyProfiles, playerProfiles, unitProfile } from '../engine/profiles';
 import type { GeneralDef, OwnedGeneral, Slot, Unit } from '../types';
 import { SLOTS } from '../types';
 
@@ -58,14 +60,17 @@ interface GameState extends SaveData {
   clearUnit: (unit: number) => void;
   /** 보유 장수로 3부대를 시너지 고려해 자동 편성 */
   autoForm: () => void;
+  /** 편성 전체 교체 (적군 맞춤 편성 적용) */
+  applyFormation: (units: Unit[]) => void;
+  /** 원정 화면에서 고른 스테이지 — 편성 화면 상성 힌트의 기준 (저장 안 함) */
+  focusStage: string | null;
+  setFocusStage: (id: string) => void;
   startBattle: (stageId: string) => boolean;
   closeBattle: () => void;
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
 const DUPLICATE_REFUND = { SSR: 300, SR: 120, R: 40 } as const;
-
-export const emptyUnit = (): Unit => ({ commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null });
 
 function freshSave(): SaveData {
   const roster: Record<string, OwnedGeneral> = {};
@@ -83,32 +88,6 @@ function freshSave(): SaveData {
     cleared: {},
     totalPulls: 0,
   };
-}
-
-/** 편성된 부대 → 전투 프로필 (주장 없는 부대는 제외) */
-export function playerProfiles(formation: Unit[], roster: Record<string, OwnedGeneral>): UnitProfile[] {
-  return formation
-    .map((u) => unitProfile(u, roster))
-    .filter((p): p is UnitProfile => !!p);
-}
-
-export function unitProfile(u: Unit, roster: Record<string, OwnedGeneral>): UnitProfile | null {
-  return buildProfile(
-    SLOTS.map((slot) => {
-      const id = u[slot];
-      const owned = id ? roster[id] : undefined;
-      return id && owned && GENERAL_MAP[id] ? makeMember(getGeneral(id), owned.level, owned.stars) : null;
-    }),
-  );
-}
-
-export function enemyProfiles(stageId: string): UnitProfile[] {
-  return STAGE_MAP[stageId].enemies.map(
-    (e) =>
-      buildProfile(
-        SLOTS.map((_, i) => e.members[i] ?? null).map((id) => (id ? makeMember(getGeneral(id), e.level, 0) : null)),
-      )!,
-  );
 }
 
 export const useGame = create<GameState>()(
@@ -167,6 +146,9 @@ export const useGame = create<GameState>()(
       },
 
       autoForm: () => set({ formation: autoFormation(get().roster) }),
+      applyFormation: (units) => set({ formation: units.map((u) => ({ ...emptyUnit(), ...u })) }),
+      focusStage: null,
+      setFocusStage: (focusStage) => set({ focusStage }),
 
       startBattle: (stageId) => {
         const { formation, roster, cleared, gold } = get();
@@ -206,6 +188,7 @@ export const useGame = create<GameState>()(
           cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
           battle: { stageId, result, reward: { gold: rewardGold, exp: rewardExp, firstClear, levelUps } },
           view: 'battle',
+          focusStage: stageId,
         });
         return true;
       },
