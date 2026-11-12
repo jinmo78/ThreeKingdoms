@@ -121,13 +121,13 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
                         <span className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>{SLOT_LABEL[slot].label}</span>
                         {def ? (
                           <>
-                            <GeneralToken def={def} size="md" />
+                            <GeneralToken def={def} size="fill" className="w-full max-w-[84px]" />
                             <span className="text-xs font-bold">{def.name}</span>
                             {badCommander && <span className="text-[9px] font-bold text-red-300">⚠ 상성 열세</span>}
                           </>
                         ) : (
                           <>
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-800/60 text-stone-600"><Plus size={18} /></div>
+                            <div className="flex aspect-square w-full max-w-[84px] items-center justify-center rounded-xl bg-stone-800/60 text-stone-600"><Plus size={20} /></div>
                             <span className="text-[10px] text-stone-600">{SLOT_LABEL[slot].hint}</span>
                           </>
                         )}

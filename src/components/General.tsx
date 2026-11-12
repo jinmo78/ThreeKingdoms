@@ -5,32 +5,25 @@ import { EFFECT_LABEL, FACTION, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
 import { effectiveStats, expToNext, MAX_STARS, type UnitProfile } from '../engine/unit';
 import type { GeneralDef, OwnedGeneral, StatKey } from '../types';
+import { Portrait } from './Portrait';
 import { Bar, cn } from './ui';
 
 const SIZE = {
-  xs: { box: 'h-6 w-6 rounded-md border', char: 'text-[11px]', troop: 'hidden' },
-  sm: { box: 'h-9 w-9 rounded-lg', char: 'text-base', troop: 'text-[10px] -bottom-1 -right-1' },
-  md: { box: 'h-12 w-12 rounded-xl', char: 'text-xl', troop: 'text-xs -bottom-1 -right-1' },
-  lg: { box: 'h-20 w-20 rounded-2xl', char: 'text-4xl', troop: 'text-base -bottom-1.5 -right-1.5' },
+  xs: { box: 'h-8 w-8 rounded-md border', troop: 'hidden' },
+  sm: { box: 'h-10 w-10 rounded-lg border', troop: 'text-[10px] -bottom-1 -right-1' },
+  md: { box: 'h-12 w-12 rounded-xl border-2', troop: 'text-xs -bottom-1 -right-1' },
+  lg: { box: 'h-24 w-24 rounded-2xl border-2', troop: 'text-base -bottom-1.5 -right-1.5' },
+  /** 부모 폭에 맞춘 정사각형 (편성 칸) */
+  fill: { box: 'aspect-square w-full rounded-xl border-2', troop: 'text-sm -bottom-1 -right-1' },
 };
 
-/** 토큰에 새길 글자: 두 단어로 된 적 전용 장수(황건 역사)는 둘째 단어 첫 글자 */
-export function tokenChar(def: GeneralDef) {
-  const parts = def.name.split(' ');
-  return (parts[1] ?? parts[0])[0];
-}
-
-/** 인장(印章) 느낌의 장수 토큰: 세력 색 + 이름 첫 글자 + 병과 이모지 */
+/** 장수 토큰: 상반신 초상(SVG) + 등급 테두리 + 병과 이모지 */
 export function GeneralToken({ def, size = 'md', dim, className }: { def: GeneralDef; size?: keyof typeof SIZE; dim?: boolean; className?: string }) {
-  const f = FACTION[def.faction];
   const s = SIZE[size];
   return (
     <div className={cn('relative shrink-0', className)}>
-      <div
-        className={cn('flex items-center justify-center border-2 font-serif font-black text-white', s.box, RARITY[def.rarity].border, dim && 'opacity-30 grayscale')}
-        style={{ background: `linear-gradient(145deg, ${f.hex}, #1c1917 120%)` }}
-      >
-        <span className={cn(s.char, 'drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)]')}>{tokenChar(def)}</span>
+      <div className={cn('overflow-hidden', s.box, RARITY[def.rarity].border, dim && 'opacity-30 grayscale')}>
+        <Portrait def={def} className="block h-full w-full" />
       </div>
       <span className={cn('absolute leading-none', s.troop)} aria-label={TROOP[def.troop].label}>{TROOP[def.troop].emoji}</span>
     </div>

@@ -23,7 +23,8 @@ src/
 │  ├─ generals.json        # 장수 91명(SSR 16 · SR 39 · R 36) + 적 전용 장수 (세력/등급/병과/스탯/전법/인연)
 │  ├─ bonds.ts             # 인연 27종과 단계별 보너스
 │  ├─ stages.ts            # 4장 × 3스테이지 (황건적의 난 → 반동탁 연합 → 관도대전 → 적벽대전)
-│  └─ meta.ts              # 세력 색상, 등급 스타일, 병과 상성
+│  ├─ meta.ts              # 세력 색상, 등급 스타일, 병과 상성
+│  └─ portraits.ts         # 장수 초상 외형 (능력치로 기본값 유도 + 장수별 개별 지정)
 ├─ engine/
 │  ├─ synergy.ts           # 시너지 계산 (세력 결속 · 병과 통일 · 인연 · 명참모)
 │  ├─ unit.ts              # 슬롯 가중치로 부대 능력치 산출, 레벨/돌파 보정
@@ -35,7 +36,7 @@ src/
 │  ├─ conquest.ts          # 천하 토벌전 층 구성·보상
 │  └─ gacha.ts             # 등용 확률 (SSR 5% · SR 25% · R 70%, 10연 SR 확정)
 ├─ store/gameStore.ts      # Zustand + persist — 금화·보유 장수·편성·진행도
-├─ components/             # 장수 토큰/카드, 시너지 배지, 공용 UI
+├─ components/             # 장수 토큰/카드(Portrait.tsx: SVG 상반신 초상), 시너지 배지, 공용 UI
 └─ pages/                  # TitleScreen · Campaign · Formation · Challenge · Recruit · Roster · Battle
 ```
 

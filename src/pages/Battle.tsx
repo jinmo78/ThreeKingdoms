@@ -173,7 +173,7 @@ function SideRow({ side, units, ev, label }: { side: Side; units: UnitProfile[];
                 {u.members.map((m, mi) => m ? (
                   <GeneralToken key={mi} def={getGeneral(m.def.id)} size="xs"
                     className={cn(acting && ev.caster === m.def.name && 'z-10 scale-125 transition-transform')} />
-                ) : <div key={mi} className="h-6 w-6 rounded-md border border-dashed border-stone-800" />)}
+                ) : <div key={mi} className="h-8 w-8 rounded-md border border-dashed border-stone-800" />)}
               </div>
               <Bar value={hp} max={u.hp} className="mt-2" color={side === 0 ? 'bg-sky-500' : 'bg-red-500'} />
               <div className="tabular mt-0.5 text-right text-[10px] text-stone-400">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
