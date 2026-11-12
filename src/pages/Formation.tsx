@@ -88,7 +88,7 @@ export default function Formation() {
             부대 6칸 — 주장(병과·주 전법) · 부장×2(연쇄 1·2단) · 참모(연쇄 3단, 발동률↑) · 보좌×2(능력 일부 + 시너지 인원)
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-start gap-1 sm:items-end">
           <Btn variant="gold" onClick={() => { autoForm(); setAutoNote(true); setTarget({ unit: 0, slot: 'commander' }); }}>
             <Wand2 size={15} /> 자동 편성
           </Btn>
