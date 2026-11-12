@@ -2,18 +2,17 @@
 import { BarChart3, ChevronRight, Coins, Crown, Dices, Eye, Lock, Mountain, Swords, Target } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
+import { FormationEditor } from '../components/FormationEditor';
 import { TroopAdviceBox } from '../components/Matchup';
 import { PowerCompare, UnitPreview } from '../components/UnitPreview';
 import { Btn, cn, Panel } from '../components/ui';
-import { getGeneral } from '../data/generals';
-import { ARMY_THEMES, generateArmy, themeLabel } from '../engine/aiArmy';
+import { ARMY_THEMES, practiceOpponent, themeLabel } from '../engine/aiArmy';
 import { simulateBattle } from '../engine/battle';
 import { conquestFloor } from '../engine/conquest';
-import { enemyUnitsToProfiles } from '../engine/profiles';
+import { deployedAvgLevel, enemyUnitsToProfiles } from '../engine/profiles';
 import { randomSeed } from '../engine/rng';
 import type { UnitProfile } from '../engine/unit';
 import { playerProfiles, useGame, type PracticeDifficulty } from '../store/gameStore';
-import { SLOTS } from '../types';
 
 const DIFFS: { value: PracticeDifficulty; label: string }[] = [
   { value: -3, label: '약함' },
@@ -61,14 +60,14 @@ function Practice() {
 
   const mine = useMemo(() => playerProfiles(formation, roster), [formation, roster]);
   // 상대 레벨 = 출진 장수 평균 레벨 + 강도
-  const avgLevel = useMemo(() => {
-    const ids = formation.filter((u) => u.commander).flatMap((u) => SLOTS.map((s) => u[s])).filter((id): id is string => !!id && !!roster[id]);
-    return ids.length ? Math.round(ids.reduce((s, id) => s + roster[id].level, 0) / ids.length) : 1;
-  }, [formation, roster]);
-  const level = Math.max(1, avgLevel + practice.diff);
-  const enemies = useMemo(() => generateArmy(practice.theme, level, practice.seed), [practice.theme, level, practice.seed]);
+  const avgLevel = useMemo(() => deployedAvgLevel(formation, roster), [formation, roster]);
+  const opp = useMemo(
+    () => practiceOpponent(practice.theme, practice.diff, practice.seed, avgLevel),
+    [practice.theme, practice.diff, practice.seed, avgLevel],
+  );
+  const enemies = opp.enemies;
   const enemyProf = useMemo(() => enemyUnitsToProfiles(enemies), [enemies]);
-  const opponent = `${themeLabel(practice.theme)} Lv.${level} #${(practice.seed % 1000).toString().padStart(3, '0')}`;
+  const opponent = opp.label;
   const commanders = mine.map((p) => p.members[0]!.def.name).join('·');
 
   function measure() {
@@ -123,6 +122,8 @@ function Practice() {
             {enemyProf.map((p, i) => <UnitPreview key={i} p={p} />)}
           </div>
         </Panel>
+
+        <EditorSection enemy={enemyProf} />
       </div>
 
       <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
@@ -143,7 +144,6 @@ function Practice() {
                 </Btn>
               </div>
               <CounterFormationButton enemies={enemies} unlocked className="w-full" />
-              <Btn variant="ghost" size="sm" className="w-full" onClick={() => setView('formation')}>편성 바꾸러 가기</Btn>
             </div>
           )}
         </Panel>
@@ -181,10 +181,10 @@ function Practice() {
 function Conquest() {
   const open = useGame((s) => (s.cleared['4-3'] ?? 0) > 0);
   const best = useGame((s) => s.conquestBest);
+  const failFloor = useGame((s) => s.conquestFailFloor);
   const formation = useGame((s) => s.formation);
   const roster = useGame((s) => s.roster);
   const startConquest = useGame((s) => s.startConquest);
-  const setView = useGame((s) => s.setView);
 
   const floor = useMemo(() => conquestFloor(best + 1), [best]);
   const enemyProf = useMemo(() => enemyUnitsToProfiles(floor.enemies), [floor]);
@@ -206,67 +206,79 @@ function Conquest() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="min-w-0 space-y-4">
-        <div className="flex items-center gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
-          <Crown size={36} className="shrink-0 text-amber-300" />
-          <div>
-            <div className="text-xs text-stone-400">최고 기록</div>
-            <div className="font-serif text-2xl font-black text-amber-200">{best}층</div>
-            <p className="text-[11px] text-stone-500">층마다 위 → 촉 → 오 → 군웅 군단이 번갈아 나오고, 5층마다 정예 혼성군이 지킵니다.</p>
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+        <Crown size={36} className="shrink-0 text-amber-300" />
+        <div className="min-w-0 flex-1">
+          <div className="text-xs text-stone-400">최고 기록</div>
+          <div className="font-serif text-2xl font-black text-amber-200">{best}층</div>
+          <p className="text-[11px] text-stone-500">층마다 위 → 촉 → 오 → 군웅 군단이 번갈아 나오고, 5층마다 정예 혼성군이 지킵니다.</p>
         </div>
-
-        <Panel title={`${floor.floor}층 · ${themeLabel(floor.theme)}${floor.boss ? ' (정예)' : ''}`} icon={<Mountain size={15} />}>
-          <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
-            <span className="text-stone-400">적 Lv.{floor.level}{floor.stars > 0 && ` · ★${floor.stars}`}</span>
-            <span className="flex items-center gap-1 text-amber-300"><Coins size={13} /> {floor.reward.gold}</span>
-            <span className="text-stone-400">EXP {floor.reward.exp}</span>
-            {floor.boss && <span className="rounded bg-red-500/15 px-1.5 py-0.5 font-bold text-red-300">보스층</span>}
-          </div>
-          <div className="space-y-2">
-            {enemyProf.map((p, i) => <UnitPreview key={i} p={p} />)}
-          </div>
-        </Panel>
-
-        <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-3">
-          <div className="mb-2 text-xs font-bold text-stone-400">다가올 층</div>
-          <div className="flex flex-wrap gap-1.5">
-            {upcoming.map((u) => (
-              <span key={u.f} className={cn('rounded-lg px-2 py-1 text-[11px]', u.boss ? 'bg-red-500/15 font-bold text-red-300' : 'bg-stone-800 text-stone-300')}>
-                {u.f}층 {themeLabel(u.theme)}{u.boss && ' 👑'}
-              </span>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-1.5">
+          {upcoming.map((u) => (
+            <span key={u.f} className={cn('rounded-lg px-2 py-1 text-[11px]', u.boss ? 'bg-red-500/15 font-bold text-red-300' : 'bg-stone-800 text-stone-300')}>
+              {u.f}층 {themeLabel(u.theme)}{u.boss && ' 👑'}
+            </span>
+          ))}
         </div>
       </div>
 
-      <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
-        <Panel title="출진 준비" icon={<Swords size={15} />}>
-          {mine.length === 0 ? (
-            <div className="space-y-2 text-center">
-              <p className="text-xs text-red-300">출진할 부대가 없습니다.</p>
-              <Btn variant="outline" onClick={() => setView('formation')}>편성하러 가기 <ChevronRight size={14} /></Btn>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+        {/* 적군 + 출진: 모바일에서는 위, PC에서는 오른쪽에 고정 */}
+        <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:order-last lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
+          <Panel title={`${floor.floor}층 · ${themeLabel(floor.theme)}${floor.boss ? ' (정예)' : ''}`} icon={<Mountain size={15} />}>
+            <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
+              <span className="text-stone-400">적 Lv.{floor.level}{floor.stars > 0 && ` · ★${floor.stars}`}</span>
+              <span className="flex items-center gap-1 text-amber-300"><Coins size={13} /> {floor.reward.gold}</span>
+              <span className="text-stone-400">EXP {floor.reward.exp}</span>
+              {floor.boss && <span className="rounded bg-red-500/15 px-1.5 py-0.5 font-bold text-red-300">보스층</span>}
             </div>
-          ) : (
+            <div className="space-y-2">
+              {enemyProf.map((p, i) => <UnitPreview key={i} p={p} />)}
+            </div>
+          </Panel>
+
+          <Panel title="출진" icon={<Swords size={15} />}>
             <div className="space-y-3">
               <TroopAdviceBox enemy={enemyProf} mine={mine} />
               <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
-              <Btn size="lg" className="w-full" onClick={startConquest}>
+              <Btn size="lg" className="w-full" disabled={mine.length === 0} onClick={startConquest}>
                 <Swords size={18} /> {floor.floor}층 도전!
               </Btn>
+              {mine.length === 0 && <p className="text-center text-xs text-red-300">아래 편성에서 주장을 1명 이상 배치하세요.</p>}
+              <CounterFormationButton
+                enemies={floor.enemies}
+                unlocked={failFloor === floor.floor}
+                lockedNote="이 층에서 1회 패배 후 개방"
+                className="w-full"
+              />
               <p className="text-[11px] text-stone-500">
                 같은 층의 적 구성은 고정입니다. 지면 금화 10%·경험치 30%를 받고, 편성을 바꿔 다시 도전할 수 있습니다.
-                토벌전은 적군 맞춤 편성 없이 직접 공략하는 모드입니다 — 같은 세력 군단을 모의전에서 미리 연습해 보세요.
-              </p>
-              <p className="text-[11px] text-stone-500">
-                출진 주장: {mine.map((p) => getGeneral(p.members[0]!.def.id).name).join(' · ')}
               </p>
             </div>
-          )}
-        </Panel>
+          </Panel>
+        </div>
+
+        <div className="min-w-0">
+          <EditorSection enemy={enemyProf} />
+        </div>
       </div>
     </div>
+  );
+}
+
+/** 적군을 보면서 바로 고치는 편성 편집기 */
+function EditorSection({ enemy }: { enemy: UnitProfile[] }) {
+  return (
+    <section className="space-y-2">
+      <div>
+        <h3 className="flex items-center gap-1.5 font-serif text-lg font-black"><Swords size={16} className="text-red-400" /> 내 부대 편성</h3>
+        <p className="text-[11px] text-stone-500">
+          이 상대를 기준으로 상성 배지와 "주장 상성 유리/불리"가 표시됩니다. 여기서 바꾼 편성은 편성 탭과 같은 편성입니다.
+        </p>
+      </div>
+      <FormationEditor enemy={enemy} unitGridClass="xl:grid-cols-3" />
+    </section>
   );
 }
 

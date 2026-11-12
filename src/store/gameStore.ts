@@ -72,6 +72,8 @@ interface SaveData {
   totalPulls: number;
   /** 천하 토벌전 최고 돌파 층 */
   conquestBest: number;
+  /** 가장 최근에 패배한 토벌전 층 — 그 층의 적군 맞춤 편성 개방 조건 */
+  conquestFailFloor: number;
 }
 
 interface GameState extends SaveData {
@@ -89,7 +91,7 @@ interface GameState extends SaveData {
   autoForm: () => void;
   /** 편성 전체 교체 (적군 맞춤 편성 적용) */
   applyFormation: (units: Unit[]) => void;
-  /** 원정 화면에서 고른 스테이지 — 편성 화면 상성 힌트의 기준 (저장 안 함) */
+  /** 편성 화면 상성 힌트의 상대 — 스테이지 id | 'conquest' | 'practice' (저장 안 함) */
   focusStage: string | null;
   setFocusStage: (id: string) => void;
   startBattle: (stageId: string) => boolean;
@@ -145,6 +147,7 @@ function freshSave(): SaveData {
     cleared: {},
     totalPulls: 0,
     conquestBest: 0,
+    conquestFailFloor: 0,
   };
 }
 
@@ -158,6 +161,7 @@ export const useGame = create<GameState>()(
       cleared: {},
       totalPulls: 0,
       conquestBest: 0,
+      conquestFailFloor: 0,
       view: 'campaign',
       battle: null,
       entered: false,
@@ -245,7 +249,7 @@ export const useGame = create<GameState>()(
         const mine = playerProfiles(formation, roster);
         if (mine.length === 0) return false;
         const result = simulateBattle(mine, enemyUnitsToProfiles(enemies), randomSeed());
-        set({ battle: { mode: 'practice', title, subtitle: '모의전 · 보상 없음', enemies, result, reward: null }, view: 'battle' });
+        set({ battle: { mode: 'practice', title, subtitle: '모의전 · 보상 없음', enemies, result, reward: null }, view: 'battle', focusStage: 'practice' });
         return true;
       },
 
@@ -263,6 +267,8 @@ export const useGame = create<GameState>()(
           gold: gold + rewardGold,
           roster: nextRoster,
           conquestBest: result.win ? f.floor : conquestBest,
+          conquestFailFloor: result.win ? get().conquestFailFloor : f.floor,
+          focusStage: 'conquest',
           battle: {
             mode: 'conquest', title: `천하 토벌전 ${f.floor}층`, subtitle: f.boss ? '정예 혼성군' : '', floor: f.floor,
             enemies: f.enemies, result, reward: { gold: rewardGold, exp: rewardExp, firstClear: result.win, levelUps },
@@ -305,6 +311,7 @@ export const useGame = create<GameState>()(
         cleared: s.cleared,
         totalPulls: s.totalPulls,
         conquestBest: s.conquestBest,
+        conquestFailFloor: s.conquestFailFloor,
       }),
     },
   ),

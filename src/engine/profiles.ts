@@ -22,6 +22,15 @@ export function playerProfiles(formation: Unit[], roster: Record<string, OwnedGe
   return formation.map((u) => unitProfile(u, roster)).filter((p): p is UnitProfile => !!p);
 }
 
+/** 출진 장수(주장이 있는 부대의 장수) 평균 레벨 — 모의전 상대 레벨 기준 */
+export function deployedAvgLevel(formation: Unit[], roster: Record<string, OwnedGeneral>): number {
+  const ids = formation
+    .filter((u) => u.commander)
+    .flatMap((u) => SLOTS.map((s) => u[s]))
+    .filter((id): id is string => !!id && !!roster[id]);
+  return ids.length ? Math.round(ids.reduce((s, id) => s + roster[id].level, 0) / ids.length) : 1;
+}
+
 /** 적 부대 정의 → 전투 프로필 */
 export function enemyUnitsToProfiles(units: EnemyUnit[]): UnitProfile[] {
   return units.map(

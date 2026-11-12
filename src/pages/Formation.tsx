@@ -1,255 +1,72 @@
-// 부대 편성 — 핵심 덱 빌딩 화면
-// 슬롯을 고른 뒤 아래 장수 목록에서 탭하면 배치. 배치하면 새로 켜지는 시너지를 목록에 미리 표시
-import { Plus, Sparkles, Trash2, Wand2, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from '../components/General';
-import { MatchupBadge, TroopAdviceBox } from '../components/Matchup';
-import { Btn, cn, Modal } from '../components/ui';
-import { getGeneral } from '../data/generals';
-import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP } from '../data/meta';
-import { isUnlocked, STAGES } from '../data/stages';
-import { matchupGrade, matchupVs } from '../engine/matchup';
-import { calcSynergy } from '../engine/synergy';
-import { effectiveStats } from '../engine/unit';
-import { enemyProfiles, playerProfiles, unitProfile, useGame } from '../store/gameStore';
-import type { Faction, GeneralDef, Slot, Unit } from '../types';
-import { SLOTS } from '../types';
-
-type Target = { unit: number; slot: Slot };
-
-function unitDefs(u: Unit): (GeneralDef | null)[] {
-  return SLOTS.map((s) => (u[s] ? getGeneral(u[s]!) : null));
-}
+// 부대 편성 — 상대(원정 스테이지 · 천하 토벌전 · 모의전)를 골라 상성 힌트를 보며 편성
+import { useMemo } from 'react';
+import { FormationEditor } from '../components/FormationEditor';
+import { TroopAdviceBox } from '../components/Matchup';
+import { isUnlocked, STAGES, STAGE_MAP } from '../data/stages';
+import { practiceOpponent } from '../engine/aiArmy';
+import { conquestFloor } from '../engine/conquest';
+import { deployedAvgLevel, enemyUnitsToProfiles } from '../engine/profiles';
+import { playerProfiles, useGame } from '../store/gameStore';
 
 export default function Formation() {
   const roster = useGame((s) => s.roster);
   const formation = useGame((s) => s.formation);
-  const assign = useGame((s) => s.assign);
-  const clearUnit = useGame((s) => s.clearUnit);
-  const autoForm = useGame((s) => s.autoForm);
-  const [autoNote, setAutoNote] = useState(false);
-  const [target, setTarget] = useState<Target>({ unit: 0, slot: 'commander' });
-  const [filter, setFilter] = useState<Faction | 'all'>('all');
-  const [detail, setDetail] = useState<GeneralDef | null>(null);
   const cleared = useGame((s) => s.cleared);
   const focusStage = useGame((s) => s.focusStage);
   const setFocusStage = useGame((s) => s.setFocusStage);
+  const conquestBest = useGame((s) => s.conquestBest);
+  const practice = useGame((s) => s.practice);
+  const conquestOpen = (cleared['4-3'] ?? 0) > 0;
 
-  // 상성 힌트 기준 스테이지: 원정 화면에서 마지막으로 고른 곳, 없으면 아직 못 깬 첫 스테이지
+  // 상대: 마지막으로 본 상대(원정 스테이지 · 토벌전 · 모의전), 없으면 아직 못 깬 첫 스테이지
   const unlockedStages = STAGES.filter((st) => isUnlocked(st.id, cleared));
-  const stageId = focusStage && isUnlocked(focusStage, cleared)
-    ? focusStage
-    : (unlockedStages.find((st) => !cleared[st.id]) ?? unlockedStages[unlockedStages.length - 1]).id;
-  const enemy = useMemo(() => enemyProfiles(stageId), [stageId]);
-  const enemyTroops = enemy.map((e) => e.troop);
+  const fallback = (unlockedStages.find((st) => !cleared[st.id]) ?? unlockedStages[unlockedStages.length - 1]).id;
+  const key =
+    focusStage === 'practice' ? 'practice'
+      : focusStage === 'conquest' && conquestOpen ? 'conquest'
+        : focusStage && STAGE_MAP[focusStage] && isUnlocked(focusStage, cleared) ? focusStage
+          : fallback;
 
-  // 배치 위치 역참조: 장수 id → "1부대 주장"
-  const placed = useMemo(() => {
-    const m: Record<string, string> = {};
-    formation.forEach((u, i) => SLOTS.forEach((s) => { if (u[s]) m[u[s]!] = `${i + 1}부대 ${SLOT_LABEL[s].label}`; }));
-    return m;
-  }, [formation]);
-
-  const owned = useMemo(
-    () =>
-      Object.entries(roster)
-        .map(([id, o]) => ({ def: getGeneral(id), owned: o }))
-        .filter((x) => filter === 'all' || x.def.faction === filter)
-        .sort((a, b) => rarityRank(b.def) - rarityRank(a.def) || b.owned.level - a.owned.level),
-    [roster, filter],
+  const avgLevel = useMemo(() => deployedAvgLevel(formation, roster), [formation, roster]);
+  const practiceOpp = useMemo(
+    () => (key === 'practice' ? practiceOpponent(practice.theme, practice.diff, practice.seed, avgLevel) : null),
+    [key, practice, avgLevel],
   );
-
-  // 현재 선택 슬롯에 넣었을 때 새로 생기거나 강화되는 시너지
-  const preview = useMemo(() => {
-    const unit = formation[target.unit];
-    const before = calcSynergy(unitDefs(unit));
-    const beforeKeys = new Map(before.list.map((s) => [s.key, s.power + s.chain]));
-    const out: Record<string, string[]> = {};
-    for (const { def } of owned) {
-      if (unit[target.slot] === def.id) continue;
-      const trial: Unit = { ...unit };
-      for (const s of SLOTS) if (trial[s] === def.id) trial[s] = null;
-      trial[target.slot] = def.id;
-      const after = calcSynergy(unitDefs(trial));
-      const gains = after.list
-        .filter((s) => (beforeKeys.get(s.key) ?? -1) < s.power + s.chain)
-        .map((s) => s.label.replace(/ \([^)]*\)| ×\d/, ''));
-      if (gains.length) out[def.id] = gains;
-    }
-    return out;
-  }, [formation, target, owned]);
-
-  function place(id: string) {
-    assign(target.unit, target.slot, id);
-    // 같은 부대의 다음 빈 칸으로 자동 이동
-    const nextUnit = { ...formation[target.unit] };
-    for (const s of SLOTS) if (nextUnit[s] === id) nextUnit[s] = null;
-    nextUnit[target.slot] = id;
-    const empty = SLOTS.find((s) => !nextUnit[s]);
-    if (empty) setTarget({ unit: target.unit, slot: empty });
-  }
+  const enemyUnits = useMemo(
+    () => (key === 'practice' ? practiceOpp!.enemies : key === 'conquest' ? conquestFloor(conquestBest + 1).enemies : STAGE_MAP[key].enemies),
+    [key, practiceOpp, conquestBest],
+  );
+  const enemy = useMemo(() => enemyUnitsToProfiles(enemyUnits), [enemyUnits]);
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-serif text-2xl font-black">부대 편성</h2>
-          <p className="text-xs text-stone-500">
-            칸을 고른 뒤 아래에서 장수를 탭하세요. 같은 <b className="text-sky-300">세력</b>·<b className="text-orange-300">병과</b>·
-            <b className="text-amber-300">인연</b>을 맞추면 전투력과 <b className="text-red-300">연쇄 전법</b> 확률이 올라갑니다.
-          </p>
-          <p className="mt-0.5 text-[11px] text-stone-500">
-            부대 6칸 — 주장(병과·주 전법) · 부장×2(연쇄 1·2단) · 참모(연쇄 3단, 발동률↑) · 보좌×2(능력 일부 + 시너지 인원)
-          </p>
-        </div>
-        <div className="flex flex-col items-start gap-1 sm:items-end">
-          <Btn variant="gold" onClick={() => { autoForm(); setAutoNote(true); setTarget({ unit: 0, slot: 'commander' }); }}>
-            <Wand2 size={15} /> 자동 편성
-          </Btn>
-          {autoNote && <span className="animate-slide-in text-[10px] text-amber-200/80">시너지를 고려해 3부대를 다시 짰습니다</span>}
-        </div>
+      <div>
+        <h2 className="font-serif text-2xl font-black">부대 편성</h2>
+        <p className="text-xs text-stone-500">
+          칸을 고른 뒤 아래에서 장수를 탭하세요. 같은 <b className="text-sky-300">세력</b>·<b className="text-orange-300">병과</b>·
+          <b className="text-amber-300">인연</b>을 맞추면 전투력과 <b className="text-red-300">연쇄 전법</b> 확률이 올라갑니다.
+        </p>
+        <p className="mt-0.5 text-[11px] text-stone-500">
+          부대 6칸 — 주장(병과·주 전법) · 부장×2(연쇄 1·2단) · 참모(연쇄 3단, 발동률↑) · 보좌×2(능력 일부 + 시너지 인원)
+        </p>
       </div>
 
       <div className="space-y-2">
         <label className="flex items-center gap-2 text-xs text-stone-400">
-          상대 스테이지
-          <select value={stageId} onChange={(e) => setFocusStage(e.target.value)}
+          상대
+          <select value={key} onChange={(e) => setFocusStage(e.target.value)}
             className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs text-stone-200 sm:flex-none">
-            {unlockedStages.map((st) => <option key={st.id} value={st.id}>{st.id} {st.title}{cleared[st.id] ? ' ✓' : ''}</option>)}
+            {conquestOpen && <option value="conquest">🏔 천하 토벌전 {conquestBest + 1}층</option>}
+            <option value="practice">🎯 모의전 상대 ({practiceOpp?.label ?? '도전 탭 설정'})</option>
+            <optgroup label="천하 원정">
+              {unlockedStages.map((st) => <option key={st.id} value={st.id}>{st.id} {st.title}{cleared[st.id] ? ' ✓' : ''}</option>)}
+            </optgroup>
           </select>
         </label>
         <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster)} compact />
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
-        {formation.map((u, ui) => {
-          const p = unitProfile(u, roster);
-          const syn = p?.synergy ?? calcSynergy(unitDefs(u));
-          return (
-            <section key={ui} className={cn('rounded-2xl border bg-stone-900/70 p-3 transition-colors',
-              target.unit === ui ? 'border-red-600/60' : 'border-stone-800')}>
-              <header className="mb-2 flex items-center justify-between">
-                <h3 className="min-w-0 truncate font-serif text-base font-black">제{ui + 1}부대 {p && <span className="ml-1 text-xs font-normal text-stone-400">{p.name}</span>}</h3>
-                {p && <MatchupBadge troop={p.troop} enemyTroops={enemyTroops} className="ml-auto mr-2 shrink-0" />}
-                {SLOTS.some((s) => u[s]) && (
-                  <button type="button" onClick={() => clearUnit(ui)} className="text-stone-500 hover:text-red-300" title="부대 비우기"><Trash2 size={14} /></button>
-                )}
-              </header>
-
-              <div className="grid grid-cols-3 gap-2">
-                {SLOTS.map((slot) => {
-                  const id = u[slot];
-                  const def = id ? getGeneral(id) : null;
-                  const active = target.unit === ui && target.slot === slot;
-                  const badCommander = slot === 'commander' && def && matchupGrade(matchupVs(def.troop, enemyTroops)) === 'bad';
-                  return (
-                    <div key={slot} className="relative">
-                      <button type="button" onClick={() => setTarget({ unit: ui, slot })}
-                        className={cn('flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed p-2 transition-colors',
-                          active ? 'border-red-500 bg-red-950/40' : badCommander ? 'border-solid border-red-500/50 bg-stone-950/60' : def ? 'border-transparent bg-stone-950/60' : 'border-stone-700 hover:border-stone-500')}>
-                        <span className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>{SLOT_LABEL[slot].label}</span>
-                        {def ? (
-                          <>
-                            <GeneralToken def={def} size="md" />
-                            <span className="text-xs font-bold">{def.name}</span>
-                            {badCommander && <span className="text-[9px] font-bold text-red-300">⚠ 상성 열세</span>}
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-800/60 text-stone-600"><Plus size={18} /></div>
-                            <span className="text-[10px] text-stone-600">{SLOT_LABEL[slot].hint}</span>
-                          </>
-                        )}
-                      </button>
-                      {def && (
-                        <button type="button" onClick={() => assign(ui, slot, null)}
-                          className="absolute -right-1 -top-1 rounded-full bg-stone-700 p-0.5 text-stone-300 hover:bg-red-700" title="빼기">
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {p ? <UnitStats p={p} /> : <p className="rounded-lg bg-stone-950/50 py-2 text-center text-xs text-stone-500">주장을 배치해야 출진할 수 있습니다</p>}
-                <SynergyList synergy={syn} empty="활성 시너지 없음 — 세력·병과·인연을 맞춰 보세요" />
-              </div>
-            </section>
-          );
-        })}
-      </div>
-
-      <section className="rounded-2xl border border-stone-800 bg-stone-900/60 p-3">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-bold">
-            <span className="text-red-300">제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}</span>에 배치할 장수
-          </span>
-          <div className="ml-auto flex gap-1">
-            {(['all', ...FACTIONS] as const).map((f) => (
-              <button key={f} type="button" onClick={() => setFilter(f)}
-                className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-400')}>
-                {f === 'all' ? '전체' : FACTION[f].label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {owned.map(({ def, owned: o }) => {
-            const st = effectiveStats(def, o.level, o.stars);
-            const where = placed[def.id];
-            const gains = preview[def.id];
-            const cmdGrade = target.slot === 'commander' ? matchupGrade(matchupVs(def.troop, enemyTroops)) : null;
-            return (
-              <div key={def.id} className={cn('flex items-center gap-2.5 rounded-xl border p-2 transition-colors',
-                gains ? 'border-amber-400/40 bg-amber-400/5' : 'border-stone-800 bg-stone-950/40')}>
-                <button type="button" onClick={() => setDetail(def)} title="상세 보기"><GeneralToken def={def} size="md" /></button>
-                <button type="button" onClick={() => place(def.id)} className="min-w-0 flex-1 text-left">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold">{def.name}</span>
-                    <RarityBadge rarity={def.rarity} />
-                    <span className="text-[11px] text-stone-500">Lv.{o.level}</span>
-                    <Stars n={o.stars} />
-                  </div>
-                  <div className="tabular text-[11px] text-stone-400">
-                    {STAT_LABEL.war} {st.war} · {STAT_LABEL.int} {st.int} · {STAT_LABEL.lead} {st.lead}
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap gap-1">
-                    {def.bonds.map((b) => <BondTag key={b} id={b} />)}
-                  </div>
-                  {(where || gains || (cmdGrade && cmdGrade !== 'even')) && (
-                    <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
-                      {where && <span className="rounded bg-stone-700 px-1.5 py-px text-stone-200">{where}</span>}
-                      {cmdGrade === 'good' && <span className="rounded bg-emerald-500/15 px-1.5 py-px font-bold text-emerald-300">{TROOP[def.troop].emoji} 주장 상성 유리</span>}
-                      {cmdGrade === 'bad' && <span className="rounded bg-red-500/15 px-1.5 py-px font-bold text-red-300">{TROOP[def.troop].emoji} 주장 상성 불리</span>}
-                      {gains && <span className="flex items-center gap-0.5 text-amber-300"><Sparkles size={10} /> {gains.join(' · ')}</span>}
-                    </div>
-                  )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-        {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">해당 세력의 장수가 없습니다.</p>}
-      </section>
-
-      {detail && (
-        <Modal onClose={() => setDetail(null)}>
-          <GeneralDetail def={detail} owned={roster[detail.id]} />
-          <div className="mt-4 flex gap-2">
-            <Btn className="flex-1" onClick={() => { place(detail.id); setDetail(null); }}>
-              제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}로 배치
-            </Btn>
-            <Btn variant="ghost" onClick={() => setDetail(null)}>닫기</Btn>
-          </div>
-        </Modal>
-      )}
+      <FormationEditor enemy={enemy} />
     </div>
   );
-}
-
-function rarityRank(d: GeneralDef) {
-  return d.rarity === 'SSR' ? 3 : d.rarity === 'SR' ? 2 : 1;
 }

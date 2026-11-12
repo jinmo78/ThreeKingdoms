@@ -33,6 +33,16 @@ export interface ArmyOptions {
   stars?: number;
 }
 
+/** 모의전 상대: 테마 · 강도(평균 레벨 대비 ±) · 시드 */
+export function practiceOpponent(theme: ArmyTheme, diff: number, seed: number, avgLevel: number) {
+  const level = Math.max(1, avgLevel + diff);
+  return {
+    level,
+    enemies: generateArmy(theme, level, seed),
+    label: `${themeLabel(theme)} Lv.${level} #${(seed % 1000).toString().padStart(3, '0')}`,
+  };
+}
+
 export function generateArmy(theme: ArmyTheme, level: number, seed: number, opts: ArmyOptions = {}): EnemyUnit[] {
   const rng = mulberry32(seed);
   let pool: GeneralDef[] = RECRUITABLE.filter((g) => theme === 'mixed' || g.faction === theme);
