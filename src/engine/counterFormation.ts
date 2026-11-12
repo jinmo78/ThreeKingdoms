@@ -11,7 +11,7 @@ import type { OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 import { autoFormation } from './autoFormation';
 import { simulateBattle } from './battle';
-import { troopAdvice } from './matchup';
+import { briefOf, troopAdvice } from './matchup';
 import { enemyProfiles, playerProfiles } from './profiles';
 import { mulberry32 } from './rng';
 import type { UnitProfile } from './unit';
@@ -54,7 +54,7 @@ function winRate(ids: Ids, roster: Record<string, OwnedGeneral>, enemy: UnitProf
 export function counterFormation(input: CounterInput, onProgress?: (ratio: number, best: number) => void): CounterResult {
   const { roster, stageId, budgetMs = 3000 } = input;
   const enemy = enemyProfiles(stageId);
-  const advice = troopAdvice(enemy.map((p) => p.troop));
+  const advice = troopAdvice(enemy.map(briefOf));
   const all = Object.keys(roster);
   const goodCommanders = all.filter((id) => advice.best.includes(getGeneral(id).troop));
   const rng = mulberry32(0x5eed + all.length);

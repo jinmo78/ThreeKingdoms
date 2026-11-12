@@ -73,7 +73,7 @@ export default function Formation() {
       const after = calcSynergy(unitDefs(trial));
       const gains = after.list
         .filter((s) => (beforeKeys.get(s.key) ?? -1) < s.power + s.chain)
-        .map((s) => s.label.replace(/ \(\d\/\d\)| ×\d/, ''));
+        .map((s) => s.label.replace(/ \([^)]*\)| ×\d/, ''));
       if (gains.length) out[def.id] = gains;
     }
     return out;

@@ -109,7 +109,7 @@ export function calcSynergy(members: (GeneralDef | null)[]): SynergyResult {
     if (!tier) continue;
     const top = def.tiers[def.tiers.length - 1];
     list.push({
-      key: `bond-${bondId}`, kind: 'bond', label: `${bondId} (${holders.size}/${top.count})`,
+      key: `bond-${bondId}`, kind: 'bond', label: holders.size >= top.count ? `${bondId} (${holders.size}명 · 최고 단계)` : `${bondId} (${holders.size}/${top.count})`,
       detail: bonusText(tier.power, tier.chain), power: tier.power, chain: tier.chain, maxed: tier === top,
     });
   }
