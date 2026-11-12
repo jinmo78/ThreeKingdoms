@@ -7,19 +7,19 @@
 // 3) 탐색에 쓰지 않은 시드로 현재 편성과 다시 비교해, 실제로 나아졌을 때만 제안
 // ============================================================
 import { getGeneral } from '../data/generals';
-import type { OwnedGeneral, Unit } from '../types';
+import type { EnemyUnit, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 import { autoFormation } from './autoFormation';
 import { simulateBattle } from './battle';
 import { briefOf, troopAdvice } from './matchup';
-import { enemyProfiles, playerProfiles } from './profiles';
+import { enemyUnitsToProfiles, playerProfiles } from './profiles';
 import { mulberry32 } from './rng';
 import type { UnitProfile } from './unit';
 
 export interface CounterInput {
   roster: Record<string, OwnedGeneral>;
   formation: Unit[];
-  stageId: string;
+  enemies: EnemyUnit[];
   budgetMs?: number;
 }
 
@@ -52,8 +52,8 @@ function winRate(ids: Ids, roster: Record<string, OwnedGeneral>, enemy: UnitProf
 }
 
 export function counterFormation(input: CounterInput, onProgress?: (ratio: number, best: number) => void): CounterResult {
-  const { roster, stageId, budgetMs = 3000 } = input;
-  const enemy = enemyProfiles(stageId);
+  const { roster, budgetMs = 3000 } = input;
+  const enemy = enemyUnitsToProfiles(input.enemies);
   const advice = troopAdvice(enemy.map(briefOf));
   const all = Object.keys(roster);
   const goodCommanders = all.filter((id) => advice.best.includes(getGeneral(id).troop));

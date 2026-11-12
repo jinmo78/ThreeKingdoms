@@ -29,10 +29,14 @@ src/
 │  ├─ unit.ts              # 슬롯 가중치로 부대 능력치 산출, 레벨/돌파 보정
 │  ├─ battle.ts            # 행동 게이지 자동 전투 + 최대 3단 연쇄 전법 (시드 고정 난수)
 │  ├─ autoFormation.ts     # 시너지 고려 자동 편성 (탐욕 배치 + 교체 개선)
+│  ├─ counterFormation.ts  # 적군 맞춤 편성 (전투 시뮬레이션 승률 탐색, Web Worker)
+│  ├─ matchup.ts           # 병과 상성 분석·추천
+│  ├─ aiArmy.ts            # AI 군단 생성 (세력별 장수 풀 + 자동 편성)
+│  ├─ conquest.ts          # 천하 토벌전 층 구성·보상
 │  └─ gacha.ts             # 등용 확률 (SSR 5% · SR 25% · R 70%, 10연 SR 확정)
 ├─ store/gameStore.ts      # Zustand + persist — 금화·보유 장수·편성·진행도
 ├─ components/             # 장수 토큰/카드, 시너지 배지, 공용 UI
-└─ pages/                  # TitleScreen · Campaign · Formation · Recruit · Roster · Battle
+└─ pages/                  # TitleScreen · Campaign · Formation · Challenge · Recruit · Roster · Battle
 ```
 
 ## 규칙 요약
@@ -44,6 +48,8 @@ src/
 | 병과 상성 | 🐎기병 > 🏹궁병 > 🛡️보병 > 🐎기병 (우위 ×1.25, 열세 ×0.8) |
 | 시너지 | 같은 세력 3/4/6명, 주장과 같은 병과 3/4/6명, 인연 태그 단계별(2~6명), 지력 90 이상 참모 → 전투력 배율과 연쇄 확률 상승 |
 | 연쇄 | 주장 전법 발동 → 부장1 → 부장2 → 참모 순으로 최대 3단 (기본 15%, 최대 85%, 단계마다 ×0.6) |
+| 모의전 | [도전] 탭 — 세력·강도를 골라 AI 군단과 연습 전투(보상 없음). 관전 또는 100전 승률 측정으로 편성 비교 |
+| 천하 토벌전 | 4-3 클리어 후 개방. 층마다 강해지는 AI 군단, 5층마다 정예 혼성군. 최고 층 기록 |
 | 성장 | 출진 장수 전원에게 경험치, 레벨당 능력치 +4%. 중복 등용 시 돌파 ★ (+4%, 최대 ★5) |
 
 ## 다음 단계 후보

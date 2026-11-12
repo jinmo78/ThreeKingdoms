@@ -1,8 +1,9 @@
-import { BookOpen, Coins, Flag, Swords, Users, type LucideIcon } from 'lucide-react';
+import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'lucide-react';
 import { BannerEmblem } from './components/BannerEmblem';
 import { cn } from './components/ui';
 import BattlePage from './pages/Battle';
 import Campaign from './pages/Campaign';
+import Challenge from './pages/Challenge';
 import Formation from './pages/Formation';
 import Recruit from './pages/Recruit';
 import Roster from './pages/Roster';
@@ -13,6 +14,7 @@ import { GAME_SUBTITLE, GAME_TITLE } from './config';
 const TABS: { id: View; label: string; icon: LucideIcon }[] = [
   { id: 'campaign', label: '출진', icon: Swords },
   { id: 'formation', label: '편성', icon: Users },
+  { id: 'challenge', label: '도전', icon: Target },
   { id: 'recruit', label: '등용', icon: Flag },
   { id: 'roster', label: '장수록', icon: BookOpen },
 ];
@@ -57,11 +59,12 @@ export default function App() {
         {view === 'formation' && <Formation />}
         {view === 'recruit' && <Recruit />}
         {view === 'roster' && <Roster />}
+        {view === 'challenge' && <Challenge />}
         {view === 'battle' && <BattlePage />}
       </main>
 
       {!inBattle && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-stone-800 bg-stone-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-800 bg-stone-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = view === t.id;

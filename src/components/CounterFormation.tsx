@@ -5,15 +5,17 @@ import { getGeneral } from '../data/generals';
 import { TROOP } from '../data/meta';
 import type { CounterResult } from '../engine/counterFormation';
 import { useGame } from '../store/gameStore';
-import type { Unit } from '../types';
+import type { EnemyUnit, Unit } from '../types';
 import { SLOTS } from '../types';
 import { GeneralToken } from './General';
 import { Bar, Btn, cn, Modal } from './ui';
 
 type Phase = { kind: 'idle' } | { kind: 'running'; ratio: number; best: number } | { kind: 'done'; result: CounterResult };
 
-export function CounterFormationButton({ stageId, className }: { stageId: string; className?: string }) {
-  const cleared = useGame((s) => (s.cleared[stageId] ?? 0) > 0);
+export function CounterFormationButton({ enemies, unlocked, lockedNote, className }: {
+  enemies: EnemyUnit[]; unlocked: boolean; lockedNote?: string; className?: string;
+}) {
+  const cleared = unlocked;
   const roster = useGame((s) => s.roster);
   const formation = useGame((s) => s.formation);
   const applyFormation = useGame((s) => s.applyFormation);
@@ -35,7 +37,7 @@ export function CounterFormationButton({ stageId, className }: { stageId: string
         workerRef.current = null;
       }
     };
-    w.postMessage({ roster, formation, stageId, budgetMs: 3000 });
+    w.postMessage({ roster, formation, enemies, budgetMs: 3000 });
   }
 
   function close() {
@@ -50,7 +52,7 @@ export function CounterFormationButton({ stageId, className }: { stageId: string
         title={cleared ? '이 스테이지 적군을 상대로 전투를 수천 번 시뮬레이션해 승률이 높은 편성을 찾습니다' : undefined}>
         {cleared ? <Brain size={15} /> : <Lock size={14} />}
         적군 맞춤 편성
-        {!cleared && <span className="text-[10px] font-normal opacity-80">(1회 클리어 후 개방)</span>}
+        {!cleared && lockedNote && <span className="text-[10px] font-normal opacity-80">({lockedNote})</span>}
       </Btn>
 
       {phase.kind !== 'idle' && (

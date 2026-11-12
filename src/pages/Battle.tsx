@@ -5,7 +5,7 @@ import { GeneralToken } from '../components/General';
 import { Bar, Btn, cn } from '../components/ui';
 import { getGeneral } from '../data/generals';
 import { TROOP } from '../data/meta';
-import { nextStage, STAGE_MAP } from '../data/stages';
+import { nextStage } from '../data/stages';
 import type { BattleEvent, Side } from '../engine/battle';
 import type { UnitProfile } from '../engine/unit';
 import { useGame } from '../store/gameStore';
@@ -18,6 +18,8 @@ export default function BattlePage() {
   const battle = useGame((s) => s.battle);
   const closeBattle = useGame((s) => s.closeBattle);
   const startBattle = useGame((s) => s.startBattle);
+  const startPractice = useGame((s) => s.startPractice);
+  const startConquest = useGame((s) => s.startConquest);
   const setView = useGame((s) => s.setView);
   const [idx, setIdx] = useState(0);
   const [speed, setSpeed] = useState(1);
@@ -46,17 +48,26 @@ export default function BattlePage() {
     return <div className="py-20 text-center"><Btn onClick={closeBattle}>캠페인으로</Btn></div>;
   }
 
-  const { result, reward, stageId } = battle;
-  const stage = STAGE_MAP[stageId];
-  const next = nextStage(stageId);
+  const { result, reward, mode } = battle;
+  const next = mode === 'stage' && battle.stageId ? nextStage(battle.stageId) : null;
+  const retry = () => {
+    if (mode === 'stage') startBattle(battle.stageId!);
+    else if (mode === 'practice') startPractice(battle.enemies, battle.title);
+    else startConquest();
+  };
+  // 다음: 원정은 다음 스테이지, 토벌전은 다음 층 (승리했을 때만)
+  const onNext = !result.win ? undefined
+    : mode === 'stage' && next ? () => startBattle(next.id)
+      : mode === 'conquest' ? () => startConquest() : undefined;
+  const nextTitle = mode === 'stage' ? next?.title : mode === 'conquest' ? `${(battle.floor ?? 0) + 1}층` : undefined;
   const showBanner = ev.kind === 'skill' || ev.kind === 'chain';
 
   return (
     <div className="mx-auto max-w-5xl space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-xs text-stone-500">{stage.id}</div>
-          <h2 className="font-serif text-xl font-black">{stage.title}</h2>
+          <div className="text-xs text-stone-500">{battle.subtitle}</div>
+          <h2 className="font-serif text-xl font-black">{battle.title}</h2>
         </div>
         {!done && (
           <div className="flex gap-1.5">
@@ -105,11 +116,12 @@ export default function BattlePage() {
             reward={reward}
             maxChain={result.stats.maxChain}
             chains={result.stats.chains}
-            onRetry={() => startBattle(stageId)}
-            onNext={next && result.win ? () => startBattle(next.id) : undefined}
-            nextTitle={next?.title}
+            onRetry={retry}
+            onNext={onNext}
+            nextTitle={nextTitle}
             onFormation={() => { closeBattle(); setView('formation'); }}
             onCampaign={closeBattle}
+            backLabel={mode === 'stage' ? '원정 지도' : '돌아가기'}
           />}
         </div>
 
@@ -183,12 +195,12 @@ function SideRow({ side, units, ev, label }: { side: Side; units: UnitProfile[];
 }
 
 function ResultOverlay({
-  win, reward, maxChain, chains, onRetry, onNext, nextTitle, onFormation, onCampaign,
+  win, reward, maxChain, chains, onRetry, onNext, nextTitle, onFormation, onCampaign, backLabel,
 }: {
   win: boolean;
-  reward: { gold: number; exp: number; firstClear: boolean; levelUps: { id: string; from: number; to: number }[] };
+  reward: { gold: number; exp: number; firstClear: boolean; levelUps: { id: string; from: number; to: number }[] } | null;
   maxChain: number; chains: number;
-  onRetry: () => void; onNext?: () => void; nextTitle?: string; onFormation: () => void; onCampaign: () => void;
+  onRetry: () => void; onNext?: () => void; nextTitle?: string; onFormation: () => void; onCampaign: () => void; backLabel: string;
 }) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm">
@@ -198,28 +210,32 @@ function ResultOverlay({
         <div className={cn('mt-2 font-serif text-3xl font-black', win ? 'text-amber-200' : 'text-stone-300')}>{win ? '승 리' : '패 배'}</div>
         <div className="mt-1 text-xs text-stone-500">연쇄 발동 {chains}회 · 최대 {maxChain}단 연쇄{maxChain >= 3 && ' 🔥'}</div>
 
-        <div className="mt-4 space-y-1.5 rounded-xl bg-stone-950/70 p-3 text-sm">
-          <div className="flex justify-between"><span className="text-stone-400">금화</span><span className="flex items-center gap-1 font-bold text-amber-300"><Coins size={14} />+{reward.gold}{reward.firstClear && <span className="text-[10px] text-amber-200">(첫 클리어 포함)</span>}</span></div>
-          <div className="flex justify-between"><span className="text-stone-400">출진 장수 경험치</span><span className="font-bold">+{reward.exp}</span></div>
-          {reward.levelUps.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-1.5 border-t border-stone-800 pt-2">
-              {reward.levelUps.map((l) => (
-                <span key={l.id} className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-300">
-                  {getGeneral(l.id).name} Lv.{l.from}→{l.to}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        {reward ? (
+          <div className="mt-4 space-y-1.5 rounded-xl bg-stone-950/70 p-3 text-sm">
+            <div className="flex justify-between"><span className="text-stone-400">금화</span><span className="flex items-center gap-1 font-bold text-amber-300"><Coins size={14} />+{reward.gold}{reward.firstClear && <span className="text-[10px] text-amber-200">(첫 클리어 포함)</span>}</span></div>
+            <div className="flex justify-between"><span className="text-stone-400">출진 장수 경험치</span><span className="font-bold">+{reward.exp}</span></div>
+            {reward.levelUps.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-1.5 border-t border-stone-800 pt-2">
+                {reward.levelUps.map((l) => (
+                  <span key={l.id} className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-300">
+                    {getGeneral(l.id).name} Lv.{l.from}→{l.to}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-xl bg-stone-950/70 p-3 text-xs text-stone-400">모의전이라 보상과 경험치는 없습니다. 편성을 바꿔 가며 다시 시험해 보세요.</p>
+        )}
 
-        {!win && <p className="mt-3 text-xs text-stone-400">시너지를 맞추거나 상성을 고려해 편성을 바꿔 보세요. 다른 스테이지에서 경험치를 쌓는 것도 방법입니다.</p>}
+        {!win && reward && <p className="mt-3 text-xs text-stone-400">시너지를 맞추거나 상성을 고려해 편성을 바꿔 보세요. 다른 스테이지에서 경험치를 쌓는 것도 방법입니다.</p>}
 
         <div className="mt-4 grid gap-2">
           {onNext && <Btn onClick={onNext}>다음: {nextTitle} <ChevronRight size={15} /></Btn>}
           <div className="grid grid-cols-3 gap-2">
             <Btn variant="ghost" size="sm" onClick={onRetry}>다시 도전</Btn>
             <Btn variant="ghost" size="sm" onClick={onFormation}>편성</Btn>
-            <Btn variant="ghost" size="sm" onClick={onCampaign}>원정 지도</Btn>
+            <Btn variant="ghost" size="sm" onClick={onCampaign}>{backLabel}</Btn>
           </div>
         </div>
       </div>

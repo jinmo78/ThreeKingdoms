@@ -1,7 +1,7 @@
 // 편성(장수 id) → 전투 프로필 변환. 저장소(localStorage)와 무관해서 Web Worker에서도 사용
 import { getGeneral, GENERAL_MAP } from '../data/generals';
 import { STAGE_MAP } from '../data/stages';
-import type { OwnedGeneral, Unit } from '../types';
+import type { EnemyUnit, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 import { buildProfile, makeMember, type UnitProfile } from './unit';
 
@@ -22,11 +22,16 @@ export function playerProfiles(formation: Unit[], roster: Record<string, OwnedGe
   return formation.map((u) => unitProfile(u, roster)).filter((p): p is UnitProfile => !!p);
 }
 
-export function enemyProfiles(stageId: string): UnitProfile[] {
-  return STAGE_MAP[stageId].enemies.map(
+/** 적 부대 정의 → 전투 프로필 */
+export function enemyUnitsToProfiles(units: EnemyUnit[]): UnitProfile[] {
+  return units.map(
     (e) =>
       buildProfile(
-        SLOTS.map((_, i) => e.members[i] ?? null).map((id) => (id ? makeMember(getGeneral(id), e.level, 0) : null)),
+        SLOTS.map((_, i) => e.members[i] ?? null).map((id) => (id ? makeMember(getGeneral(id), e.level, e.stars ?? 0) : null)),
       )!,
   );
+}
+
+export function enemyProfiles(stageId: string): UnitProfile[] {
+  return enemyUnitsToProfiles(STAGE_MAP[stageId].enemies);
 }

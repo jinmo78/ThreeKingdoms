@@ -71,6 +71,8 @@ export interface EnemyUnit {
   /** SLOTS 순서 (주장은 필수) */
   members: (string | null)[];
   level: number;
+  /** 돌파 단계 (기본 0) */
+  stars?: number;
 }
 
 export interface Stage {

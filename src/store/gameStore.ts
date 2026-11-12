@@ -9,14 +9,16 @@ import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
 import { PULL_COST, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
-import { emptyUnit, enemyProfiles, playerProfiles } from '../engine/profiles';
+import type { ArmyTheme } from '../engine/aiArmy';
+import { conquestFloor } from '../engine/conquest';
+import { emptyUnit, enemyUnitsToProfiles, playerProfiles } from '../engine/profiles';
 import { expToNext, MAX_LEVEL, MAX_STARS } from '../engine/unit';
 
 export { emptyUnit, enemyProfiles, playerProfiles, unitProfile } from '../engine/profiles';
-import type { GeneralDef, OwnedGeneral, Slot, Unit } from '../types';
+import type { EnemyUnit, GeneralDef, OwnedGeneral, Slot, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export type View = 'campaign' | 'formation' | 'recruit' | 'roster' | 'battle';
+export type View = 'campaign' | 'formation' | 'recruit' | 'roster' | 'challenge' | 'battle';
 
 export interface RecruitResult {
   def: GeneralDef;
@@ -32,10 +34,33 @@ export interface BattleReward {
   levelUps: { id: string; from: number; to: number }[];
 }
 
+/** stage: 원정 · practice: 모의전(보상 없음) · conquest: 천하 토벌전 */
+export type BattleMode = 'stage' | 'practice' | 'conquest';
+
 export interface ActiveBattle {
-  stageId: string;
+  mode: BattleMode;
+  title: string;
+  subtitle: string;
+  stageId?: string;
+  floor?: number;
+  enemies: EnemyUnit[];
   result: BattleResult;
-  reward: BattleReward;
+  /** 모의전은 null */
+  reward: BattleReward | null;
+}
+
+export type PracticeDifficulty = -3 | 0 | 3 | 6;
+export interface PracticeSettings {
+  theme: ArmyTheme;
+  diff: PracticeDifficulty;
+  seed: number;
+}
+export interface PracticeRecord {
+  id: number;
+  opponent: string;
+  commanders: string;
+  winRate: number;
+  avgChains: number;
 }
 
 interface SaveData {
@@ -45,6 +70,8 @@ interface SaveData {
   formation: Unit[];
   cleared: Record<string, number>;
   totalPulls: number;
+  /** 천하 토벌전 최고 돌파 층 */
+  conquestBest: number;
 }
 
 interface GameState extends SaveData {
@@ -66,7 +93,37 @@ interface GameState extends SaveData {
   focusStage: string | null;
   setFocusStage: (id: string) => void;
   startBattle: (stageId: string) => boolean;
+  /** 모의전 관전 (보상 없음) */
+  startPractice: (enemies: EnemyUnit[], title: string) => boolean;
+  /** 천하 토벌전 다음 층 도전 */
+  startConquest: () => boolean;
   closeBattle: () => void;
+  /** 모의전 설정과 100전 측정 기록 (저장 안 함) */
+  practice: PracticeSettings;
+  setPractice: (p: Partial<PracticeSettings>) => void;
+  practiceLog: PracticeRecord[];
+  addPracticeRecord: (r: Omit<PracticeRecord, 'id'>) => void;
+}
+
+/** 출진 장수 전원에게 경험치 지급 */
+function grantExp(roster: Record<string, OwnedGeneral>, formation: Unit[], amount: number) {
+  const next = { ...roster };
+  const levelUps: BattleReward['levelUps'] = [];
+  const deployed = new Set(formation.filter((u) => u.commander).flatMap((u) => SLOTS.map((s) => u[s])));
+  for (const id of deployed) {
+    if (!id || !next[id]) continue;
+    let { level, exp } = next[id];
+    const from = level;
+    exp += amount;
+    while (level < MAX_LEVEL && exp >= expToNext(level)) {
+      exp -= expToNext(level);
+      level++;
+    }
+    if (level >= MAX_LEVEL) exp = 0;
+    next[id] = { ...next[id], level, exp };
+    if (level > from) levelUps.push({ id, from, to: level });
+  }
+  return { roster: next, levelUps };
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
@@ -87,6 +144,7 @@ function freshSave(): SaveData {
     ],
     cleared: {},
     totalPulls: 0,
+    conquestBest: 0,
   };
 }
 
@@ -99,6 +157,7 @@ export const useGame = create<GameState>()(
       formation: [emptyUnit(), emptyUnit(), emptyUnit()],
       cleared: {},
       totalPulls: 0,
+      conquestBest: 0,
       view: 'campaign',
       battle: null,
       entered: false,
@@ -156,7 +215,7 @@ export const useGame = create<GameState>()(
         const mine = playerProfiles(formation, roster);
         if (!stage || mine.length === 0) return false;
 
-        const result = simulateBattle(mine, enemyProfiles(stageId), randomSeed());
+        const result = simulateBattle(mine, enemyUnitsToProfiles(stage.enemies), randomSeed());
 
         // 보상은 전투 계산 즉시 확정 (새로고침으로 결과를 바꿀 수 없게)
         const firstClear = result.win && !cleared[stageId];
@@ -165,35 +224,63 @@ export const useGame = create<GameState>()(
           : Math.round(stage.reward.gold * 0.2);
         const rewardExp = result.win ? stage.reward.exp : Math.round(stage.reward.exp * 0.3);
 
-        const nextRoster = { ...roster };
-        const levelUps: BattleReward['levelUps'] = [];
-        const deployed = new Set(formation.filter((u) => u.commander).flatMap((u) => SLOTS.map((s) => u[s])));
-        for (const id of deployed) {
-          if (!id || !nextRoster[id]) continue;
-          let { level, exp } = nextRoster[id];
-          const from = level;
-          exp += rewardExp;
-          while (level < MAX_LEVEL && exp >= expToNext(level)) {
-            exp -= expToNext(level);
-            level++;
-          }
-          if (level >= MAX_LEVEL) exp = 0;
-          nextRoster[id] = { ...nextRoster[id], level, exp };
-          if (level > from) levelUps.push({ id, from, to: level });
-        }
+        const { roster: nextRoster, levelUps } = grantExp(roster, formation, rewardExp);
 
         set({
           gold: gold + rewardGold,
           roster: nextRoster,
           cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
-          battle: { stageId, result, reward: { gold: rewardGold, exp: rewardExp, firstClear, levelUps } },
+          battle: {
+            mode: 'stage', title: stage.title, subtitle: stage.id, stageId, enemies: stage.enemies,
+            result, reward: { gold: rewardGold, exp: rewardExp, firstClear, levelUps },
+          },
           view: 'battle',
           focusStage: stageId,
         });
         return true;
       },
 
-      closeBattle: () => set({ battle: null, view: 'campaign' }),
+      startPractice: (enemies, title) => {
+        const { formation, roster } = get();
+        const mine = playerProfiles(formation, roster);
+        if (mine.length === 0) return false;
+        const result = simulateBattle(mine, enemyUnitsToProfiles(enemies), randomSeed());
+        set({ battle: { mode: 'practice', title, subtitle: '모의전 · 보상 없음', enemies, result, reward: null }, view: 'battle' });
+        return true;
+      },
+
+      startConquest: () => {
+        const { formation, roster, gold, conquestBest, cleared } = get();
+        if (!cleared['4-3']) return false;
+        const mine = playerProfiles(formation, roster);
+        if (mine.length === 0) return false;
+        const f = conquestFloor(conquestBest + 1);
+        const result = simulateBattle(mine, enemyUnitsToProfiles(f.enemies), randomSeed());
+        const rewardGold = result.win ? f.reward.gold : Math.round(f.reward.gold * 0.1);
+        const rewardExp = result.win ? f.reward.exp : Math.round(f.reward.exp * 0.3);
+        const { roster: nextRoster, levelUps } = grantExp(roster, formation, rewardExp);
+        set({
+          gold: gold + rewardGold,
+          roster: nextRoster,
+          conquestBest: result.win ? f.floor : conquestBest,
+          battle: {
+            mode: 'conquest', title: `천하 토벌전 ${f.floor}층`, subtitle: f.boss ? '정예 혼성군' : '', floor: f.floor,
+            enemies: f.enemies, result, reward: { gold: rewardGold, exp: rewardExp, firstClear: result.win, levelUps },
+          },
+          view: 'battle',
+        });
+        return true;
+      },
+
+      closeBattle: () => {
+        const mode = get().battle?.mode;
+        set({ battle: null, view: mode && mode !== 'stage' ? 'challenge' : 'campaign' });
+      },
+
+      practice: { theme: 'mixed', diff: 0, seed: randomSeed() },
+      setPractice: (p) => set({ practice: { ...get().practice, ...p } }),
+      practiceLog: [],
+      addPracticeRecord: (r) => set({ practiceLog: [{ ...r, id: Date.now() }, ...get().practiceLog].slice(0, 8) }),
     }),
     {
       name: 'oath-banner-save',
@@ -217,6 +304,7 @@ export const useGame = create<GameState>()(
         formation: s.formation,
         cleared: s.cleared,
         totalPulls: s.totalPulls,
+        conquestBest: s.conquestBest,
       }),
     },
   ),
