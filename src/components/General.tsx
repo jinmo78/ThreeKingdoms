@@ -5,6 +5,7 @@ import { EFFECT_LABEL, FACTION, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
 import { effectiveStats, expToNext, MAX_STARS, type UnitProfile } from '../engine/unit';
 import type { GeneralDef, OwnedGeneral, StatKey } from '../types';
+import { portraitImageUrl } from '../data/portraitImages';
 import { Portrait } from './Portrait';
 import { Bar, cn } from './ui';
 
@@ -20,10 +21,12 @@ const SIZE = {
 /** 장수 토큰: 상반신 초상(SVG) + 등급 테두리 + 병과 이모지 */
 export function GeneralToken({ def, size = 'md', dim, className }: { def: GeneralDef; size?: keyof typeof SIZE; dim?: boolean; className?: string }) {
   const s = SIZE[size];
+  const img = portraitImageUrl(def.id);
   return (
     <div className={cn('relative shrink-0', className)}>
       <div className={cn('overflow-hidden', s.box, RARITY[def.rarity].border, dim && 'opacity-30 grayscale')}>
-        <Portrait def={def} className="block h-full w-full" />
+        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className="block h-full w-full object-cover object-top" />
+          : <Portrait def={def} className="block h-full w-full" />}
       </div>
       <span className={cn('absolute leading-none', s.troop)} aria-label={TROOP[def.troop].label}>{TROOP[def.troop].emoji}</span>
     </div>
