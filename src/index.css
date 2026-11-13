@@ -92,3 +92,39 @@ body {
   100% { box-shadow: 0 0 0 10px rgba(251, 191, 36, 0); }
 }
 .animate-pulse-ring { animation: pulse-ring 0.7s ease-out; }
+
+/* 1배속 전투: 공격 부대가 적 쪽으로 기울었다 복귀 */
+@keyframes lunge-up {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-12px); }
+  100% { transform: translateY(0); }
+}
+@keyframes lunge-down {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(12px); }
+  100% { transform: translateY(0); }
+}
+.animate-lunge-up { animation: lunge-up 0.28s ease-out; }
+.animate-lunge-down { animation: lunge-down 0.28s ease-out; }
+
+/* 1배속 전투: 맞은 초상만 붉게 깜빡임 */
+@keyframes portrait-hit {
+  0% { background-color: rgba(220, 38, 38, 0); }
+  35% { background-color: rgba(220, 38, 38, 0.55); }
+  100% { background-color: rgba(220, 38, 38, 0); }
+}
+.animate-portrait-hit { animation: portrait-hit 0.28s ease-out both; }
+
+/* 1배속 전투: 궤멸 시 초상이 가라앉고 글자가 한 번 커짐 */
+@keyframes rout-sink {
+  0% { transform: translateY(0); filter: grayscale(0); opacity: 1; }
+  100% { transform: translateY(10px); filter: grayscale(1); opacity: 0.3; }
+}
+.animate-rout-sink { animation: rout-sink 0.45s ease-in forwards; }
+
+@keyframes rout-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  55% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-rout-pop { animation: rout-pop 0.4s ease-out both; }

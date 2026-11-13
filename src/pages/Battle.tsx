@@ -84,7 +84,7 @@ export default function BattlePage() {
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* 전장 */}
         <div className="relative overflow-hidden rounded-2xl border border-stone-800 bg-[linear-gradient(180deg,#1c1917_0%,#0c0a09_50%,#1c1917_100%)] p-3">
-          <SideRow side={1} units={result.units[1]} ev={ev} label="적군" />
+          <SideRow side={1} units={result.units[1]} ev={ev} events={events} idx={idx} cinematic={speed === 1} label="적군" />
 
           <div className="relative my-3 flex h-16 items-center justify-center">
             <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-red-900 to-transparent" />
@@ -109,7 +109,7 @@ export default function BattlePage() {
             {ev.kind === 'chain' && <div key={`f${ev.id}`} className="pointer-events-none absolute -inset-x-3 -inset-y-40 animate-flash bg-amber-300/10" />}
           </div>
 
-          <SideRow side={0} units={result.units[0]} ev={ev} label="아군" />
+          <SideRow side={0} units={result.units[0]} ev={ev} events={events} idx={idx} cinematic={speed === 1} label="아군" />
 
           {done && <ResultOverlay
             win={result.win}
@@ -146,16 +146,31 @@ function logColor(e: BattleEvent) {
   return e.actor?.side === 0 ? 'text-sky-200/80' : 'text-stone-400';
 }
 
-function SideRow({ side, units, ev, label }: { side: Side; units: UnitProfile[]; ev: BattleEvent; label: string }) {
+function SideRow({
+  side, units, ev, events, idx, cinematic, label,
+}: {
+  side: Side; units: UnitProfile[]; ev: BattleEvent; events: BattleEvent[]; idx: number; cinematic: boolean; label: string;
+}) {
+  // 1배속에서는 '궤멸' 이벤트에 도달한 뒤에만 쓰러진 상태로 둔다
+  const announced = new Set<number>();
+  if (cinematic) {
+    for (let n = 0; n <= idx; n++) {
+      const e = events[n];
+      if (e.kind === 'rout' && e.actor && e.actor.side === side) announced.add(e.actor.idx);
+    }
+  }
   return (
     <div>
       <div className={cn('mb-1.5 text-[11px] font-bold', side === 0 ? 'text-sky-300' : 'text-red-300')}>{label}</div>
       <div className="grid grid-cols-3 gap-2">
         {units.map((u, i) => {
           const hp = ev.hp[side][i];
-          const acting = ev.actor?.side === side && ev.actor.idx === i && ev.kind !== 'rout';
+          const acting = ev.actor?.side === side && ev.actor.idx === i && (ev.kind === 'attack' || ev.kind === 'skill' || ev.kind === 'chain');
           const hit = ev.hits.find((h) => h.side === side && h.idx === i);
           const routed = hp <= 0;
+          const justRouted = cinematic && ev.kind === 'rout' && ev.actor?.side === side && ev.actor.idx === i;
+          // 2·4배속은 카드 전체를 바로 흐리게. 1배속은 초상만 가라앉히고 '궤멸' 글자는 남긴다
+          const legacyFade = !cinematic && routed;
           return (
             // 같은 부대가 연달아 맞아도 흔들림이 다시 재생되도록 피격 시 key를 바꿔 다시 마운트
             <div key={hit?.kind === 'dmg' ? `${i}-${ev.id}` : i}
@@ -163,21 +178,34 @@ function SideRow({ side, units, ev, label }: { side: Side; units: UnitProfile[];
                 side === 0 ? 'border-sky-900/70 bg-sky-950/30' : 'border-red-900/70 bg-red-950/20',
                 acting && 'animate-pulse-ring border-amber-400/80',
                 hit?.kind === 'dmg' && 'animate-shake',
-                routed && 'opacity-30 grayscale')}
+                legacyFade && 'opacity-30 grayscale')}
             >
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm">{TROOP[u.troop].emoji}</span>
-                <span className="truncate text-xs font-bold">{u.name}</span>
-              </div>
-              <div className="mt-1.5 grid grid-cols-3 justify-items-center gap-0.5 sm:grid-cols-6">
-                {u.members.map((m, mi) => m ? (
-                  <GeneralToken key={mi} def={getGeneral(m.def.id)} size="xs"
-                    className={cn(acting && ev.caster === m.def.name && 'z-10 scale-125 transition-transform')} />
-                ) : <div key={mi} className="h-8 w-8 rounded-md border border-dashed border-stone-800" />)}
+              <div key={cinematic && acting ? `go-${ev.id}` : 'still'}
+                className={cn(cinematic && acting && (side === 0 ? 'animate-lunge-up' : 'animate-lunge-down'))}>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">{TROOP[u.troop].emoji}</span>
+                  <span className="truncate text-xs font-bold">{u.name}</span>
+                </div>
+                <div className={cn('mt-1.5 grid grid-cols-3 justify-items-center gap-0.5 sm:grid-cols-6',
+                  justRouted && 'animate-rout-sink',
+                  cinematic && announced.has(i) && !justRouted && 'translate-y-2.5 opacity-30 grayscale')}>
+                  {u.members.map((m, mi) => m ? (
+                    <div key={mi} className="relative">
+                      <GeneralToken def={getGeneral(m.def.id)} size="xs"
+                        className={cn(acting && ev.caster === m.def.name && 'z-10 scale-125 transition-transform')} />
+                      {cinematic && hit?.kind === 'dmg' && (
+                        <span className="animate-portrait-hit pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-md" />
+                      )}
+                    </div>
+                  ) : <div key={mi} className="h-8 w-8 rounded-md border border-dashed border-stone-800" />)}
+                </div>
               </div>
               <Bar value={hp} max={u.hp} className="mt-2" color={side === 0 ? 'bg-sky-500' : 'bg-red-500'} />
               <div className="tabular mt-0.5 text-right text-[10px] text-stone-400">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
-              {routed && <div className="absolute inset-0 flex items-center justify-center font-serif text-lg font-black text-red-400/90">궤멸</div>}
+              {(cinematic ? announced.has(i) || justRouted : routed) && (
+                <div className={cn('absolute inset-0 flex items-center justify-center font-serif text-lg font-black text-red-400/90',
+                  justRouted && 'animate-rout-pop')}>궤멸</div>
+              )}
               {hit && (
                 <span key={ev.id}
                   className={cn('animate-float-up pointer-events-none absolute left-1/2 top-2 font-black drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]',
