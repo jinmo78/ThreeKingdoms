@@ -76,6 +76,7 @@ export default function Campaign() {
         <PageHero
           image="scene-campaign.webp"
           title="천하 원정"
+          vivid
           aside={<div className="flex shrink-0 items-center gap-1 rounded-full bg-stone-950/70 px-2.5 py-1 text-xs text-stone-200"><Trophy size={14} className="text-amber-300" /> {clearedCount}/{STAGES.length}</div>}
         >
           <p className="mt-1 hidden text-xs text-stone-300 sm:block">스테이지를 선택하고 편성한 부대로 출진하세요.</p>
@@ -88,10 +89,10 @@ export default function Campaign() {
               <div className="text-[11px] text-stone-500">{cleared[stage.id] ? '격파' : '미격파'} · 적 {stage.enemies.length}부대</div>
             </div>
             <Btn size="sm" variant="ghost" onClick={() => setDetailOpen(true)}>상세</Btn>
-            {mine.length === 0
-              ? <Btn size="sm" variant="outline" onClick={() => setView('formation')}>편성</Btn>
-              : <Btn size="sm" onClick={() => { setFocusStage(stage.id); startBattle(stage.id); }}>출진</Btn>}
           </div>
+          {mine.length === 0
+            ? <Btn size="lg" variant="outline" className="mt-2 w-full" onClick={() => setView('formation')}>편성하러 가기</Btn>
+            : <Btn size="lg" className="mt-2 w-full" onClick={() => { setFocusStage(stage.id); startBattle(stage.id); }}><Swords size={18} /> 출진</Btn>}
         </div>
 
         {CHAPTERS.map((ch) => (
@@ -141,8 +142,12 @@ export default function Campaign() {
 
       {detailOpen && (
         <Modal onClose={() => setDetailOpen(false)}>
-          <h3 className="mb-3 font-serif text-lg font-black">{stage.id} {stage.title}</h3>
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <h3 className="font-serif text-lg font-black">{stage.id} {stage.title}</h3>
+            <Btn size="sm" variant="ghost" onClick={() => setDetailOpen(false)}>닫기</Btn>
+          </div>
           {stageBody}
+          <Btn variant="ghost" className="mt-3 w-full" onClick={() => setDetailOpen(false)}>닫기</Btn>
         </Modal>
       )}
     </div>

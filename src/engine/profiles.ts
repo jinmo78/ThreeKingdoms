@@ -14,7 +14,7 @@ export function unitProfile(u: Unit, roster: Record<string, OwnedGeneral>): Unit
       const id = u[slot];
       const owned = id ? roster[id] : undefined;
       const def = id ? GENERAL_MAP[id] : undefined;
-      return id && owned && def ? makeMember(def, owned.level, owned.stars) : null;
+      return id && owned && def ? makeMember(def, owned.level, owned.stars, owned.promote ?? 0) : null;
     }),
   );
 }

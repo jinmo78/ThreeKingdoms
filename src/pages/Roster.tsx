@@ -1,13 +1,14 @@
 // 장수록(도감) + 인연 목록
 import { BookOpen, Link2 } from 'lucide-react';
 import { useState } from 'react';
-import { GeneralCard, GeneralDetail, GeneralToken } from '../components/General';
+import { GeneralCard, GeneralDetail, GeneralToken, RarityBadge } from '../components/General';
 import { PageHero } from '../components/PageHero';
 import { Btn, cn, Modal } from '../components/ui';
 import { BONDS, bondMembers, type BondDef } from '../data/bonds';
 import { RECRUITABLE } from '../data/generals';
 import { FACTION, FACTIONS } from '../data/meta';
 import { bonusText } from '../engine/synergy';
+import { shownRarity } from '../engine/unit';
 import { useGame } from '../store/gameStore';
 import type { GeneralDef, OwnedGeneral } from '../types';
 
@@ -24,6 +25,7 @@ export default function Roster() {
       <PageHero
         image="scene-roster.webp"
         title="장수록"
+        vivid
         aside={
           <div className="flex shrink-0 gap-1 rounded-xl bg-stone-950/80 p-1">
             <TabBtn active={tab === 'generals'} onClick={() => setTab('generals')}><BookOpen size={14} /> 장수</TabBtn>
@@ -43,12 +45,16 @@ export default function Roster() {
                 {FACTION[f].full} <span className="text-xs font-normal text-stone-500">{list.filter((g) => roster[g.id]).length}/{list.length}</span>
               </h3>
               <div className="grid grid-cols-4 gap-x-2 gap-y-3 sm:hidden">
-                {list.map((g) => (
-                  <button key={g.id} type="button" onClick={() => setDetail(g)} className="flex min-w-0 flex-col items-center gap-0.5">
-                    <GeneralToken def={g} size="fill" className="w-full" dim={!roster[g.id]} />
-                    <span className={cn('w-full truncate text-[11px] font-bold', roster[g.id] ? 'text-stone-200' : 'text-stone-600')}>{g.name}</span>
-                  </button>
-                ))}
+                {list.map((g) => {
+                  const rank = shownRarity(g.rarity, roster[g.id]?.promote);
+                  return (
+                    <button key={g.id} type="button" onClick={() => setDetail(g)} className="flex min-w-0 flex-col items-center gap-0.5">
+                      <GeneralToken def={g} rarity={rank} size="fill" className="w-full" dim={!roster[g.id]} />
+                      <RarityBadge rarity={rank} />
+                      <span className={cn('w-full truncate text-[11px] font-bold', roster[g.id] ? 'text-stone-200' : 'text-stone-600')}>{g.name}</span>
+                    </button>
+                  );
+                })}
               </div>
               <div className="hidden gap-2 sm:grid sm:grid-cols-5 lg:grid-cols-7">
                 {list.map((g) => <GeneralCard key={g.id} def={g} owned={roster[g.id]} onClick={() => setDetail(g)} />)}
@@ -126,7 +132,7 @@ function BondCard({ bond, roster, onPick }: {
       <div className="mt-2 flex flex-wrap gap-2">
         {members.map((g) => (
           <button key={g.id} type="button" onClick={() => onPick(g)} className="flex flex-col items-center gap-0.5">
-            <GeneralToken def={g} size="sm" dim={!roster[g.id]} />
+            <GeneralToken def={g} rarity={shownRarity(g.rarity, roster[g.id]?.promote)} size="sm" dim={!roster[g.id]} />
             <span className={cn('text-[10px]', roster[g.id] ? 'text-stone-300' : 'text-stone-600')}>{g.name}</span>
           </button>
         ))}

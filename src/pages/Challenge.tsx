@@ -34,6 +34,7 @@ export default function Challenge() {
       <PageHero
         image="scene-challenge.webp"
         title="도전"
+        vivid
         aside={
           <div className="flex shrink-0 gap-1 rounded-xl bg-stone-950/80 p-1">
             <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>

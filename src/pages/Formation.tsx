@@ -43,7 +43,7 @@ export default function Formation() {
 
   return (
     <div className="space-y-5">
-      <PageHero image="scene-formation.webp" title="부대 편성">
+      <PageHero image="scene-formation.webp" title="부대 편성" vivid>
         <p className="mt-1 text-xs text-stone-300">
           같은 세력·병과·인연을 맞추면 전투력과 연쇄가 오릅니다.
           <button type="button" className="ml-2 font-bold text-amber-200 underline-offset-2 hover:underline" onClick={() => setHelp(true)}>칸 설명</button>

@@ -8,7 +8,7 @@ import { GENERAL_MAP } from '../data/generals';
 import { TROOP } from '../data/meta';
 import { nextStage } from '../data/stages';
 import type { BattleEvent, Side } from '../engine/battle';
-import type { UnitProfile } from '../engine/unit';
+import { shownRarity, type UnitProfile } from '../engine/unit';
 import { useGame } from '../store/gameStore';
 
 const DELAY: Record<BattleEvent['kind'], number> = {
@@ -89,8 +89,8 @@ export default function BattlePage() {
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* 전장 */}
         <div className="relative overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-3">
-          <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35" />
-          <div className="pointer-events-none absolute inset-0 bg-stone-950/60" />
+          <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80" />
+          <div className="pointer-events-none absolute inset-0 bg-stone-950/35" />
           <div className="relative">
           <SideRow side={1} units={result.units[1]} ev={ev} events={events} idx={idx} cinematic={speed === 1} label="적군" />
 
@@ -200,7 +200,7 @@ function SideRow({
                   cinematic && announced.has(i) && !justRouted && 'translate-y-2.5 opacity-30 grayscale')}>
                   {u.members.map((m, mi) => m ? (
                     <div key={mi} className="relative">
-                      <GeneralToken def={m.def} size="xs"
+                      <GeneralToken def={m.def} rarity={shownRarity(m.def.rarity, m.promote)} size="xs"
                         className={cn(acting && ev.caster === m.def.name && 'z-10 scale-125 transition-transform')} />
                       {cinematic && hit?.kind === 'dmg' && (
                         <span className="animate-portrait-hit pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-md" />

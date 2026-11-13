@@ -25,7 +25,7 @@ export function autoFormation(roster: Record<string, OwnedGeneral>, unitCount = 
   const pool = new Map<string, UnitMember>();
   for (const [id, o] of Object.entries(roster)) {
     const def = GENERAL_MAP[id];
-    if (def) pool.set(id, makeMember(def, o.level, o.stars));
+    if (def) pool.set(id, makeMember(def, o.level, o.stars, o.promote ?? 0));
   }
 
   const used = new Set<string>();

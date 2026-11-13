@@ -1,6 +1,6 @@
 // 적/아군 부대 미리보기와 전투력 비교 (원정 · 도전 화면 공용)
 import { FACTION } from '../data/meta';
-import type { UnitProfile } from '../engine/unit';
+import { shownRarity, type UnitProfile } from '../engine/unit';
 import { GeneralToken, SynergyList } from './General';
 import { cn } from './ui';
 
@@ -9,7 +9,7 @@ export function UnitPreview({ p }: { p: UnitProfile }) {
     <div className="rounded-xl border border-stone-800 bg-stone-950/50 p-2.5">
       <div className="mb-2 flex items-center gap-2">
         <div className="flex -space-x-2">
-          {p.members.map((m, i) => m && <GeneralToken key={i} def={m.def} size="sm" />)}
+          {p.members.map((m, i) => m && <GeneralToken key={i} def={m.def} rarity={shownRarity(m.def.rarity, m.promote)} size="sm" />)}
         </div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-bold">{p.name}</div>

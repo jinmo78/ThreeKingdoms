@@ -52,6 +52,8 @@ export interface OwnedGeneral {
   exp: number;
   /** 중복 등용 시 오르는 돌파 단계 (0~5) */
   stars: number;
+  /** 품계 승급 횟수. 태생 등급에서 한 단계만 (R→SR, SR→SSR) */
+  promote?: number;
 }
 
 /**

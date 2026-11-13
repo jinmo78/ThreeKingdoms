@@ -12,10 +12,11 @@ import { randomSeed } from '../engine/rng';
 import type { ArmyTheme } from '../engine/aiArmy';
 import { conquestFloor } from '../engine/conquest';
 import { emptyUnit, enemyUnitsToProfiles, playerProfiles } from '../engine/profiles';
-import { expToNext, MAX_LEVEL, MAX_STARS } from '../engine/unit';
+import { expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget } from '../engine/unit';
 
 export { emptyUnit, enemyProfiles, playerProfiles, unitProfile } from '../engine/profiles';
 import type { EnemyUnit, GeneralDef, OwnedGeneral, Slot, Unit } from '../types';
+import { GENERAL_MAP } from '../data/generals';
 import { SLOTS } from '../types';
 
 export type View = 'campaign' | 'formation' | 'recruit' | 'roster' | 'challenge' | 'battle';
@@ -89,6 +90,8 @@ interface GameState extends SaveData {
   clearUnit: (unit: number) => void;
   /** 보유 장수로 3부대를 시너지 고려해 자동 편성 */
   autoForm: () => void;
+  /** 태생 등급에서 품계를 한 단계 올린다. 금화가 부족하면 false */
+  promote: (id: string) => boolean;
   /** 편성 전체 교체 (적군 맞춤 편성 적용) */
   applyFormation: (units: Unit[]) => void;
   /** 편성 화면 상성 힌트의 상대 — 스테이지 id | 'conquest' | 'practice' (저장 안 함) */
@@ -133,7 +136,7 @@ const DUPLICATE_REFUND = { SSR: 300, SR: 120, R: 40 } as const;
 
 function freshSave(): SaveData {
   const roster: Record<string, OwnedGeneral> = {};
-  for (const id of STARTERS) roster[id] = { level: 1, exp: 0, stars: 0 };
+  for (const id of STARTERS) roster[id] = { level: 1, exp: 0, stars: 0, promote: 0 };
   return {
     started: true,
     gold: 1500,
@@ -180,7 +183,7 @@ export const useGame = create<GameState>()(
         const results = rollGenerals(count).map((def): RecruitResult => {
           const cur = next[def.id];
           if (!cur) {
-            next[def.id] = { level: 1, exp: 0, stars: 0 };
+            next[def.id] = { level: 1, exp: 0, stars: 0, promote: 0 };
             return { def, isNew: true, stars: 0, refund: 0 };
           }
           if (cur.stars < MAX_STARS) {
@@ -209,6 +212,18 @@ export const useGame = create<GameState>()(
       },
 
       autoForm: () => set({ formation: autoFormation(get().roster) }),
+      promote: (id) => {
+        const { gold, roster } = get();
+        const owned = roster[id];
+        const def = GENERAL_MAP[id];
+        if (!owned || !def || (owned.promote ?? 0) > 0) return false;
+        const target = promoteTarget(def.rarity);
+        if (!target) return false;
+        const cost = PROMOTE_COST[target];
+        if (gold < cost) return false;
+        set({ gold: gold - cost, roster: { ...roster, [id]: { ...owned, promote: 1 } } });
+        return true;
+      },
       applyFormation: (units) => set({ formation: units.map((u) => ({ ...emptyUnit(), ...u })) }),
       focusStage: null,
       setFocusStage: (focusStage) => set({ focusStage }),
@@ -290,8 +305,8 @@ export const useGame = create<GameState>()(
     }),
     {
       name: 'oath-banner-save',
-      version: 2,
-      // v1(주장·부장·참모 3칸) → v2(6칸)
+      version: 3,
+      // v1(주장·부장·참모 3칸) → v2(6칸) → v3(품계 승급)
       migrate: (persisted, version) => {
         const s = persisted as SaveData;
         if (version < 2 && s?.formation) {
@@ -299,6 +314,9 @@ export const useGame = create<GameState>()(
           s.formation = old.map((u) => ({
             ...emptyUnit(), commander: u.commander ?? null, vice1: u.vice ?? null, strategist: u.strategist ?? null,
           }));
+        }
+        if (version < 3 && s?.roster) {
+          for (const id of Object.keys(s.roster)) s.roster[id] = { ...s.roster[id], promote: s.roster[id].promote ?? 0 };
         }
         return s as SaveData;
       },

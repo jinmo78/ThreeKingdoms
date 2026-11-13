@@ -23,14 +23,14 @@ export default function TitleScreen() {
         alt=""
         className="absolute inset-0 h-full w-full object-cover object-[center_32%]"
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-stone-950/88 via-stone-950/28 to-stone-950/92" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/45" />
 
       <div className="relative flex min-h-dvh flex-col items-center px-6 pb-8 pt-8 text-center sm:pt-12">
         <ThemeToggle className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))]" />
         <BannerEmblem animated className="h-16 w-16 drop-shadow-[0_8px_18px_rgba(0,0,0,0.65)]" />
-        <h1 className="mt-3 font-serif text-5xl font-black tracking-wide text-stone-50 sm:text-6xl">{GAME_TITLE}</h1>
-        <div className="mt-2 font-serif text-lg tracking-[0.5em] text-red-200">{GAME_SUBTITLE}</div>
-        <div className="mt-1 text-xs uppercase tracking-[0.3em] text-stone-300/80">{GAME_TAGLINE}</div>
+        <h1 className="mt-3 font-serif text-5xl font-black tracking-wide text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] sm:text-6xl">{GAME_TITLE}</h1>
+        <div className="mt-2 font-serif text-lg tracking-[0.5em] text-red-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">{GAME_SUBTITLE}</div>
+        <div className="mt-1 text-xs uppercase tracking-[0.3em] text-white/85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">{GAME_TAGLINE}</div>
 
         <div className="flex-1" />
 

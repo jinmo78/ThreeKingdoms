@@ -39,13 +39,19 @@ export default function Recruit() {
           <h2 className="font-serif text-2xl font-black">장수 등용</h2>
           <span className="shrink-0 text-xs text-stone-400">도감 {ownedCount}/{RECRUITABLE.length}</span>
         </div>
-        <p className="text-xs text-stone-500">금화로 재야의 장수를 초빙합니다. 이미 있는 장수가 나오면 돌파(★)로 능력치가 오릅니다.</p>
+        <p className="text-xs text-stone-500">금화로 재야의 장수를 초빙합니다. 이미 있는 장수는 돌파(★)로 오르고, 장수록에서 품계를 한 단계 올릴 수 있습니다.</p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <PullButton label="1회 등용" cost={PULL_COST.single} gold={gold} disabled={phase === 'summoning'} onClick={() => pull(1)} />
+        <PullButton label="10연 등용" cost={PULL_COST.ten} gold={gold} disabled={phase === 'summoning'} onClick={() => pull(10)}
+          note="SR 이상 1명 확정 · 10% 할인" gold10 />
       </div>
 
       {/* 등용 무대 */}
       <div className="relative flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-4">
-        <img src={sceneUrl('scene-recruit.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-55" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-stone-950/35 via-stone-950/55 to-stone-950/80" />
+        <img src={sceneUrl('scene-recruit.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover brightness-[1.85] contrast-[1.05] saturate-[1.08]" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
         <div className="relative w-full">
         {phase === 'idle' && (
           <div className="text-center">
@@ -55,8 +61,8 @@ export default function Recruit() {
                 <Flag size={44} className="text-red-300" />
               </div>
             </div>
-            <p className="mt-4 font-serif text-lg text-stone-300">천하의 인재를 구하라</p>
-            <p className="text-xs text-stone-500">누적 등용 {totalPulls}회</p>
+            <p className="mt-4 font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">천하의 인재를 구하라</p>
+            <p className="text-xs text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">누적 등용 {totalPulls}회</p>
           </div>
         )}
 
@@ -69,7 +75,7 @@ export default function Recruit() {
                 <Flag size={48} className={cn('animate-wave', best === 'SSR' ? 'text-amber-300' : best === 'SR' ? 'text-violet-300' : 'text-red-300')} />
               </div>
             </div>
-            <p className="mt-4 animate-pulse font-serif text-lg">
+            <p className="mt-4 animate-pulse font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
               {best === 'SSR' ? '하늘에 금빛 기운이 서린다…!' : best === 'SR' ? '보랏빛 기운이 감돈다…' : '장수를 찾는 중…'}
             </p>
           </div>
@@ -92,12 +98,6 @@ export default function Recruit() {
           </div>
         )}
         </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <PullButton label="1회 등용" cost={PULL_COST.single} gold={gold} disabled={phase === 'summoning'} onClick={() => pull(1)} />
-        <PullButton label="10연 등용" cost={PULL_COST.ten} gold={gold} disabled={phase === 'summoning'} onClick={() => pull(10)}
-          note="SR 이상 1명 확정 · 10% 할인" gold10 />
       </div>
 
       <div className="hidden sm:block">

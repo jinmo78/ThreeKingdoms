@@ -3,7 +3,8 @@ import { Flame, Link2, Sparkles, Star, Users } from 'lucide-react';
 import { BOND_MAP } from '../data/bonds';
 import { EFFECT_LABEL, FACTION, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
-import { effectiveStats, expToNext, MAX_STARS, type UnitProfile } from '../engine/unit';
+import { effectiveStats, expToNext, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
+import { useGame } from '../store/gameStore';
 import type { GeneralDef, OwnedGeneral, StatKey } from '../types';
 import { portraitImageUrl } from '../data/portraitImages';
 import { Portrait } from './Portrait';
@@ -19,12 +20,15 @@ const SIZE = {
 };
 
 /** 장수 토큰: 상반신 초상(SVG) + 등급 테두리 + 병과 이모지 */
-export function GeneralToken({ def, size = 'md', dim, className }: { def: GeneralDef; size?: keyof typeof SIZE; dim?: boolean; className?: string }) {
+export function GeneralToken({ def, size = 'md', dim, className, rarity }: {
+  def: GeneralDef; size?: keyof typeof SIZE; dim?: boolean; className?: string; rarity?: GeneralDef['rarity'];
+}) {
   const s = SIZE[size];
   const img = portraitImageUrl(def.id);
+  const rank = rarity ?? def.rarity;
   return (
     <div className={cn('relative shrink-0', className)}>
-      <div className={cn('overflow-hidden', s.box, RARITY[def.rarity].border, dim && 'opacity-30 grayscale')}>
+      <div className={cn('overflow-hidden', s.box, RARITY[rank].border, dim && 'opacity-30 grayscale')}>
         {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className="block h-full w-full object-cover object-top" />
           : <Portrait def={def} className="block h-full w-full" />}
       </div>
@@ -67,7 +71,8 @@ export function GeneralCard({
 }: {
   def: GeneralDef; owned?: OwnedGeneral; onClick?: () => void; className?: string; highlight?: boolean;
 }) {
-  const r = RARITY[def.rarity];
+  const rank = shownRarity(def.rarity, owned?.promote);
+  const r = RARITY[rank];
   return (
     <button
       type="button"
@@ -78,10 +83,10 @@ export function GeneralCard({
       )}
     >
       <div className="relative flex w-full items-center justify-between">
-        <RarityBadge rarity={def.rarity} />
+        <RarityBadge rarity={rank} />
         <FactionBadge faction={def.faction} />
       </div>
-      <GeneralToken def={def} size="lg" dim={owned === undefined && !highlight} className="relative mt-1" />
+      <GeneralToken def={def} rarity={rank} size="lg" dim={owned === undefined && !highlight} className="relative mt-1" />
       <div className="relative">
         <div className={cn('font-serif text-lg font-black', owned || highlight ? 'text-stone-100' : 'text-stone-500')}>{def.name}</div>
         <div className="text-[11px] text-stone-500">{def.title}</div>
@@ -145,16 +150,22 @@ function Stat({ label, value, strong, accent }: { label: string; value: string; 
 
 /** 장수 상세 (모달 내용) */
 export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGeneral }) {
+  const gold = useGame((s) => s.gold);
+  const promote = useGame((s) => s.promote);
   const level = owned?.level ?? 1;
-  const stats = effectiveStats(def, level, owned?.stars ?? 0);
+  const promoted = (owned?.promote ?? 0) > 0;
+  const rank = shownRarity(def.rarity, owned?.promote);
+  const target = owned && !promoted ? promoteTarget(def.rarity) : null;
+  const cost = target ? PROMOTE_COST[target] : 0;
+  const stats = effectiveStats(def, level, owned?.stars ?? 0, owned?.promote ?? 0);
   const keys: StatKey[] = ['war', 'int', 'lead'];
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <GeneralToken def={def} size="lg" />
+        <GeneralToken def={def} rarity={rank} size="lg" />
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <RarityBadge rarity={def.rarity} />
+            <RarityBadge rarity={rank} />
             <FactionBadge faction={def.faction} />
             <span className="text-xs text-stone-400">{TROOP[def.troop].emoji} {TROOP[def.troop].label}</span>
           </div>
@@ -170,8 +181,23 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
             <span className="tabular">EXP {owned.exp} / {expToNext(owned.level)}</span>
           </div>
           <Bar value={owned.exp} max={expToNext(owned.level)} color="bg-amber-400" />
-          <div className="mt-1 text-[10px] text-stone-500">돌파 {owned.stars}/{MAX_STARS} · 중복 등용 시 능력치 +4%</div>
+          <div className="mt-1 text-[10px] text-stone-500">돌파 {owned.stars}/{MAX_STARS} · 중복 등용 시 능력치 +4%{promoted ? ` · 태생 ${def.rarity}에서 승급` : ''}</div>
         </div>
+      )}
+
+      {owned && target && (
+        <button
+          type="button"
+          disabled={gold < cost}
+          onClick={() => promote(def.id)}
+          className="flex w-full flex-col items-center rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-[#1c1612] disabled:opacity-40"
+        >
+          <span>{target}로 승급</span>
+          <span className="text-xs font-semibold">금화 {cost.toLocaleString()} · 능력치 +10%{gold < cost ? ' · 금화 부족' : ''}</span>
+        </button>
+      )}
+      {owned && !target && def.rarity === 'SSR' && (
+        <p className="text-center text-[11px] text-stone-500">이미 최고의 품계입니다.</p>
       )}
 
       <div className="space-y-2">

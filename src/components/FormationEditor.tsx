@@ -7,7 +7,7 @@ import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP } from '../data/meta';
 import { matchupGrade, matchupVs } from '../engine/matchup';
 import { emptyUnit, unitProfile } from '../engine/profiles';
 import { calcSynergy } from '../engine/synergy';
-import { effectiveStats, type UnitProfile } from '../engine/unit';
+import { effectiveStats, shownRarity, type UnitProfile } from '../engine/unit';
 import { useGame } from '../store/gameStore';
 import type { Faction, GeneralDef, Slot, Unit } from '../types';
 import { SLOTS } from '../types';
@@ -119,6 +119,7 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
                 {SLOTS.map((slot) => {
                   const id = u[slot];
                   const def = id ? GENERAL_MAP[id] ?? null : null;
+                  const owned = id ? roster[id] : undefined;
                   const active = target.unit === ui && target.slot === slot;
                   const badCommander = !!enemy && slot === 'commander' && def && matchupGrade(matchupVs(def.troop, enemyTroops)) === 'bad';
                   return (
@@ -129,7 +130,7 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
                         <span className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>{SLOT_LABEL[slot].label}</span>
                         {def ? (
                           <>
-                            <GeneralToken def={def} size="fill" className="w-full max-w-[84px]" />
+                            <GeneralToken def={def} rarity={shownRarity(def.rarity, owned?.promote)} size="fill" className="w-full max-w-[84px]" />
                             <span className="text-xs font-bold">{def.name}</span>
                             {badCommander && <span className="text-[9px] font-bold text-red-300">⚠ 상성 열세</span>}
                           </>
@@ -181,18 +182,19 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
 
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {owned.map(({ def, owned: o }) => {
-            const st = effectiveStats(def, o.level, o.stars);
+            const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
+            const rank = shownRarity(def.rarity, o.promote);
             const where = placed[def.id];
             const gains = preview[def.id];
             const cmdGrade = enemy && target.slot === 'commander' ? matchupGrade(matchupVs(def.troop, enemyTroops)) : null;
             return (
               <div key={def.id} className={cn('flex items-center gap-2.5 rounded-xl border p-2 transition-colors',
                 gains ? 'border-amber-400/40 bg-amber-400/5' : 'border-stone-800 bg-stone-950/40')}>
-                <button type="button" onClick={() => setDetail(def)} title="상세 보기"><GeneralToken def={def} size="md" /></button>
+                <button type="button" onClick={() => setDetail(def)} title="상세 보기"><GeneralToken def={def} rarity={rank} size="md" /></button>
                 <button type="button" onClick={() => place(def.id)} className="min-w-0 flex-1 text-left">
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold">{def.name}</span>
-                    <RarityBadge rarity={def.rarity} />
+                    <RarityBadge rarity={rank} />
                     <span className="text-[11px] text-stone-500">Lv.{o.level}</span>
                     <Stars n={o.stars} />
                   </div>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { GENERAL_MAP } from '../data/generals';
 import { TROOP } from '../data/meta';
 import type { CounterResult } from '../engine/counterFormation';
+import { shownRarity } from '../engine/unit';
 import { useGame } from '../store/gameStore';
 import type { EnemyUnit, Unit } from '../types';
 import { SLOTS } from '../types';
@@ -117,6 +118,7 @@ function ResultView({ result, onApply, onClose }: { result: CounterResult; onApp
 }
 
 function FormationPreview({ units }: { units: Unit[] }) {
+  const roster = useGame((s) => s.roster);
   return (
     <div className="space-y-2">
       {units.map((u, i) => {
@@ -132,7 +134,7 @@ function FormationPreview({ units }: { units: Unit[] }) {
                 const def = u[s] ? GENERAL_MAP[u[s]!] : undefined;
                 return def ? (
                   <div key={s} className="flex flex-col items-center">
-                    <GeneralToken def={def} size="sm" />
+                    <GeneralToken def={def} rarity={shownRarity(def.rarity, roster[def.id]?.promote)} size="sm" />
                     <span className="text-[10px] text-stone-400">{def.name}</span>
                   </div>
                 ) : null;

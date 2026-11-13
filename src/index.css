@@ -92,6 +92,17 @@ body {
 
 .tabular { font-variant-numeric: tabular-nums; }
 
+/* 시대 그림 위의 제목. 테마 색이 바뀌어도 그림 위에서는 흰 글자로 둔다. */
+.hero-on-art,
+.hero-on-art p {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.hero-on-art button {
+  color: #fde68a;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
 /* 카드 뒤집기 등장 */
 @keyframes pop-in {
   0% { transform: scale(0.6) rotateY(90deg); opacity: 0; }
