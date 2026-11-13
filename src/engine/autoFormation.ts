@@ -7,7 +7,7 @@
 //  3) 가장 점수가 높은 부대를 확정하고 사용한 장수는 다음 부대 후보에서 제외
 // 점수 = 전투력 × (1 + 연쇄 확률 × 0.5) × (1 + 전법 발동률 × 0.3)
 // ============================================================
-import { getGeneral } from '../data/generals';
+import { GENERAL_MAP } from '../data/generals';
 import type { OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 import { buildProfile, makeMember, type UnitMember } from './unit';
@@ -23,7 +23,10 @@ export function unitScore(members: (UnitMember | null)[]): number {
 
 export function autoFormation(roster: Record<string, OwnedGeneral>, unitCount = 3): Unit[] {
   const pool = new Map<string, UnitMember>();
-  for (const [id, o] of Object.entries(roster)) pool.set(id, makeMember(getGeneral(id), o.level, o.stars));
+  for (const [id, o] of Object.entries(roster)) {
+    const def = GENERAL_MAP[id];
+    if (def) pool.set(id, makeMember(def, o.level, o.stars));
+  }
 
   const used = new Set<string>();
   const units: Unit[] = [];

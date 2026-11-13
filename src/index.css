@@ -5,6 +5,72 @@
   --font-serif: "Noto Serif KR", "Batang", "AppleMyungjo", serif;
 }
 
+/*
+  기본은 밝은 종이색. html.dark 에서만 밤색을 되돌린다.
+  Tailwind 색 유틸은 var(--color-*)를 쓰므로, 여기서 변수만 바꾸면 화면 전체가 따라온다.
+  글자로 쓰는 옅은 강조색은 종이 위에서 읽히게 짙게 두고,
+  면으로 쓰는 아주 어두운 빨강·파랑은 옅은 바탕색으로 바꾼다.
+*/
+:root {
+  color-scheme: light;
+  --color-stone-50: #1a120c;
+  --color-stone-100: #241c16;
+  --color-stone-200: #3a3128;
+  --color-stone-300: #4e453c;
+  --color-stone-400: #5c534a;
+  --color-stone-500: #6f675e;
+  --color-stone-600: #8c8276;
+  --color-stone-700: #cbbba3;
+  --color-stone-800: #d9cbb3;
+  --color-stone-900: #fffdf8;
+  --color-stone-950: #f3eadb;
+  --color-red-200: #9f1239;
+  --color-red-300: #be123c;
+  --color-red-900: #f6c5c5;
+  --color-red-950: #fde8e8;
+  --color-amber-200: #92400e;
+  --color-amber-300: #b45309;
+  --color-sky-200: #075985;
+  --color-sky-300: #0369a1;
+  --color-sky-900: #7dd3fc;
+  --color-sky-950: #e0f2fe;
+  --color-emerald-300: #047857;
+  --color-violet-200: #5b21b6;
+  --color-violet-300: #6d28d9;
+  --color-rose-300: #be123c;
+  --color-orange-300: #c2410c;
+}
+
+html.dark {
+  color-scheme: dark;
+  --color-stone-50: oklch(98.5% 0.001 106.423);
+  --color-stone-100: oklch(97% 0.001 106.424);
+  --color-stone-200: oklch(92.3% 0.003 48.717);
+  --color-stone-300: oklch(86.9% 0.005 56.366);
+  --color-stone-400: oklch(70.9% 0.01 56.259);
+  --color-stone-500: oklch(55.3% 0.013 58.071);
+  --color-stone-600: oklch(44.4% 0.011 73.639);
+  --color-stone-700: oklch(37.4% 0.01 67.558);
+  --color-stone-800: oklch(26.8% 0.007 34.298);
+  --color-stone-900: oklch(21.6% 0.006 56.043);
+  --color-stone-950: oklch(14.7% 0.004 49.25);
+  --color-red-200: oklch(88.5% 0.062 18.334);
+  --color-red-300: oklch(80.8% 0.114 19.571);
+  --color-red-900: oklch(39.6% 0.141 25.723);
+  --color-red-950: oklch(25.8% 0.092 26.042);
+  --color-amber-200: oklch(92.4% 0.12 95.746);
+  --color-amber-300: oklch(87.9% 0.169 91.605);
+  --color-sky-200: oklch(90.1% 0.058 230.902);
+  --color-sky-300: oklch(82.8% 0.111 230.318);
+  --color-sky-900: oklch(39.1% 0.09 240.876);
+  --color-sky-950: oklch(29.3% 0.066 243.157);
+  --color-emerald-300: oklch(84.5% 0.143 164.978);
+  --color-violet-200: oklch(89.4% 0.057 293.283);
+  --color-violet-300: oklch(81.1% 0.111 293.571);
+  --color-rose-300: oklch(81% 0.117 11.638);
+  --color-orange-300: oklch(83.7% 0.128 66.29);
+}
+
 html,
 body,
 #root {
@@ -13,15 +79,15 @@ body,
 
 body {
   background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(185, 28, 28, 0.12), transparent 60%),
-    #0c0a09;
-  color: #e7e5e4;
+    radial-gradient(1200px 600px at 50% -10%, rgba(185, 28, 28, 0.1), transparent 60%),
+    var(--color-stone-950);
+  color: var(--color-stone-100);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #292524; border-radius: 8px; }
+::-webkit-scrollbar-thumb { background: var(--color-stone-600); border-radius: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 .tabular { font-variant-numeric: tabular-nums; }

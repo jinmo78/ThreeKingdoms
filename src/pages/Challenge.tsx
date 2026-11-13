@@ -272,7 +272,7 @@ function EditorSection({ enemy }: { enemy: UnitProfile[] }) {
   return (
     <section className="space-y-2">
       <div>
-        <h3 className="flex items-center gap-1.5 font-serif text-lg font-black"><Swords size={16} className="text-red-400" /> 내 부대 편성</h3>
+        <h3 className="flex items-center gap-1.5 font-serif text-lg font-black"><Swords size={16} className="text-red-300" /> 내 부대 편성</h3>
         <p className="hidden text-[11px] text-stone-500 sm:block">
           이 상대를 기준으로 상성 배지와 "주장 상성 유리/불리"가 표시됩니다. 여기서 바꾼 편성은 편성 탭과 같은 편성입니다.
         </p>

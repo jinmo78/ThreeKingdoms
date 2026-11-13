@@ -6,7 +6,7 @@
 //    시간 예산 안에서 반복하고, 승률이 오르면 채택 (같은 난수 시드 묶음으로 비교해 잡음 최소화)
 // 3) 탐색에 쓰지 않은 시드로 현재 편성과 다시 비교해, 실제로 나아졌을 때만 제안
 // ============================================================
-import { getGeneral } from '../data/generals';
+import { GENERAL_MAP } from '../data/generals';
 import type { EnemyUnit, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 import { autoFormation } from './autoFormation';
@@ -56,7 +56,10 @@ export function counterFormation(input: CounterInput, onProgress?: (ratio: numbe
   const enemy = enemyUnitsToProfiles(input.enemies);
   const advice = troopAdvice(enemy.map(briefOf));
   const all = Object.keys(roster);
-  const goodCommanders = all.filter((id) => advice.best.includes(getGeneral(id).troop));
+  const goodCommanders = all.filter((id) => {
+    const def = GENERAL_MAP[id];
+    return !!def && advice.best.includes(def.troop);
+  });
   const rng = mulberry32(0x5eed + all.length);
   const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
   const start = now();

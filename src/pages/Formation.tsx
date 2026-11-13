@@ -22,7 +22,7 @@ export default function Formation() {
 
   // 상대: 마지막으로 본 상대(원정 스테이지 · 토벌전 · 모의전), 없으면 아직 못 깬 첫 스테이지
   const unlockedStages = STAGES.filter((st) => isUnlocked(st.id, cleared));
-  const fallback = (unlockedStages.find((st) => !cleared[st.id]) ?? unlockedStages[unlockedStages.length - 1]).id;
+  const fallback = (unlockedStages.find((st) => !cleared[st.id]) ?? unlockedStages[unlockedStages.length - 1] ?? STAGES[0]).id;
   const key =
     focusStage === 'practice' ? 'practice'
       : focusStage === 'conquest' && conquestOpen ? 'conquest'

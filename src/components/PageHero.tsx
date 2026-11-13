@@ -17,7 +17,7 @@ export function PageHero({ image, title, aside, children }: {
       <div className="absolute inset-0 bg-gradient-to-r from-stone-950/94 via-stone-950/80 to-stone-950/45" />
       <div className="relative flex items-end justify-between gap-3 px-4 py-4 sm:px-5 sm:py-5">
         <div className="min-w-0">
-          <h2 className="font-serif text-2xl font-black text-stone-50 drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]">{title}</h2>
+          <h2 className="font-serif text-2xl font-black text-stone-50">{title}</h2>
           {children}
         </div>
         {aside}

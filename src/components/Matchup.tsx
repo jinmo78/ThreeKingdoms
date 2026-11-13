@@ -31,7 +31,7 @@ export function TroopAdviceBox({ enemy, mine, compact }: { enemy: UnitProfile[];
   return (
     <div className={cn('rounded-xl border p-3 text-xs', advice.lopsided ? 'border-amber-500/40 bg-amber-500/5' : 'border-stone-800 bg-stone-950/60')}>
       <div className="mb-1.5 flex items-center gap-1.5 font-bold text-stone-200">
-        <Compass size={14} className="text-amber-400" /> 병과 상성 분석
+        <Compass size={14} className="text-amber-300" /> 병과 상성 분석
       </div>
       <div className="text-stone-400">
         적 주장{' '}

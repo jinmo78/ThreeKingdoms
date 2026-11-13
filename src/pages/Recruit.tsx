@@ -52,7 +52,7 @@ export default function Recruit() {
             <div className="relative mx-auto h-32 w-32">
               <div className="absolute inset-0 animate-spin-slow rounded-full border-2 border-dashed border-red-800/60" />
               <div className="absolute inset-4 flex items-center justify-center rounded-full bg-red-950/60">
-                <Flag size={44} className="text-red-400" />
+                <Flag size={44} className="text-red-300" />
               </div>
             </div>
             <p className="mt-4 font-serif text-lg text-stone-300">천하의 인재를 구하라</p>
@@ -64,9 +64,9 @@ export default function Recruit() {
           <div className="text-center">
             <div className={cn('relative mx-auto h-36 w-36')}>
               <div className={cn('absolute inset-0 animate-spin rounded-full border-4 border-t-transparent',
-                best === 'SSR' ? 'border-amber-300' : best === 'SR' ? 'border-violet-400' : 'border-red-500')} />
+                best === 'SSR' ? 'border-amber-500' : best === 'SR' ? 'border-violet-400' : 'border-red-500')} />
               <div className="absolute inset-6 flex items-center justify-center rounded-full bg-stone-900">
-                <Flag size={48} className={cn('animate-wave', best === 'SSR' ? 'text-amber-300' : best === 'SR' ? 'text-violet-300' : 'text-red-400')} />
+                <Flag size={48} className={cn('animate-wave', best === 'SSR' ? 'text-amber-300' : best === 'SR' ? 'text-violet-300' : 'text-red-300')} />
               </div>
             </div>
             <p className="mt-4 animate-pulse font-serif text-lg">
@@ -77,13 +77,13 @@ export default function Recruit() {
 
         {phase === 'reveal' && (
           <div className="w-full">
-            {best === 'SSR' && <div className="pointer-events-none absolute inset-0 animate-flash bg-amber-200/40" />}
+            {best === 'SSR' && <div className="pointer-events-none absolute inset-0 animate-flash bg-amber-400/40" />}
             <div className={cn('mx-auto grid gap-2', results.length === 1 ? 'max-w-[180px] grid-cols-1' : 'grid-cols-3 sm:grid-cols-5')}>
               {results.map((r, i) => (
                 <div key={i} className="animate-pop-in relative" style={{ animationDelay: `${i * 0.12}s` }}>
                   <GeneralCard def={r.def} highlight onClick={() => setDetail(r.def)} />
                   <span className={cn('absolute left-1/2 top-[52%] -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-px text-[10px] font-black',
-                    r.isNew ? 'bg-red-600 text-white' : r.refund ? 'bg-stone-700 text-amber-200' : 'bg-amber-400 text-stone-900')}>
+                    r.isNew ? 'bg-red-600 text-white' : r.refund ? 'bg-stone-700 text-amber-200' : 'bg-amber-400 text-[#1c1612]')}>
                     {r.isNew ? 'NEW' : r.refund ? `+${r.refund}금` : `돌파 ★${r.stars}`}
                   </span>
                 </div>

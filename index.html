@@ -6,7 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Oath &amp; Banner - 맹세와 깃발</title>
     <meta name="description" content="삼국지 장수를 등용하고 주장·부장·참모를 조합해 시너지 연쇄 전법으로 싸우는 가벼운 웹 덱빌딩 전략 게임" />
-    <meta name="theme-color" content="#0c0a09" />
+    <meta name="theme-color" content="#f3eadb" />
+    <script>
+      try {
+        if (localStorage.getItem('oath-banner-theme') === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0c0a09');
+        }
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&display=swap" rel="stylesheet" />

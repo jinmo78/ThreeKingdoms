@@ -104,7 +104,7 @@ const SYN_STYLE = {
 export function SynergyBadge({ s }: { s: ActiveSynergy }) {
   const Icon = SYN_ICON[s.kind];
   return (
-    <span className={cn('animate-slide-in inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold', SYN_STYLE[s.kind], s.maxed && 'ring-1 ring-amber-300/50')}>
+    <span className={cn('animate-slide-in inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold', SYN_STYLE[s.kind], s.maxed && 'ring-1 ring-amber-500/50')}>
       <Icon size={12} />
       <span>{s.label}</span>
       <span className="font-normal opacity-75">{s.detail}</span>

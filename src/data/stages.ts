@@ -65,8 +65,9 @@ export function stageIndex(id: string) {
 export function nextStage(id: string): Stage | null {
   return STAGES[stageIndex(id) + 1] ?? null;
 }
-/** 직전 스테이지를 클리어해야 열림 */
+/** 직전 스테이지를 클리어해야 열림. 스테이지가 아닌 id(모의전·토벌전 등)는 잠김. */
 export function isUnlocked(id: string, cleared: Record<string, number>) {
   const i = stageIndex(id);
-  return i <= 0 || (cleared[STAGES[i - 1].id] ?? 0) > 0;
+  if (i < 0) return false;
+  return i === 0 || (cleared[STAGES[i - 1].id] ?? 0) > 0;
 }

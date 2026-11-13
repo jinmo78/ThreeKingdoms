@@ -1,7 +1,7 @@
 // 적군 맞춤 편성: 버튼 + 계산 진행 + 결과 비교 모달
 import { Brain, Lock, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { getGeneral } from '../data/generals';
+import { GENERAL_MAP } from '../data/generals';
 import { TROOP } from '../data/meta';
 import type { CounterResult } from '../engine/counterFormation';
 import { useGame } from '../store/gameStore';
@@ -120,8 +120,8 @@ function FormationPreview({ units }: { units: Unit[] }) {
   return (
     <div className="space-y-2">
       {units.map((u, i) => {
-        if (!u.commander) return null;
-        const cmd = getGeneral(u.commander);
+        const cmd = u.commander ? GENERAL_MAP[u.commander] : undefined;
+        if (!cmd) return null;
         return (
           <div key={i} className="rounded-xl border border-stone-800 bg-stone-950/50 p-2">
             <div className="mb-1.5 text-xs font-bold">
@@ -129,11 +129,11 @@ function FormationPreview({ units }: { units: Unit[] }) {
             </div>
             <div className="flex flex-wrap gap-1.5">
               {SLOTS.map((s) => {
-                const id = u[s];
-                return id ? (
+                const def = u[s] ? GENERAL_MAP[u[s]!] : undefined;
+                return def ? (
                   <div key={s} className="flex flex-col items-center">
-                    <GeneralToken def={getGeneral(id)} size="sm" />
-                    <span className="text-[10px] text-stone-400">{getGeneral(id).name}</span>
+                    <GeneralToken def={def} size="sm" />
+                    <span className="text-[10px] text-stone-400">{def.name}</span>
                   </div>
                 ) : null;
               })}

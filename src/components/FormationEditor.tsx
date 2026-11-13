@@ -2,10 +2,10 @@
 // 칸을 고른 뒤 장수 목록에서 탭하면 배치. 배치하면 새로 켜지는 시너지와 주장 상성을 목록에 미리 표시
 import { Plus, Sparkles, Trash2, Wand2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { getGeneral } from '../data/generals';
+import { GENERAL_MAP } from '../data/generals';
 import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP } from '../data/meta';
 import { matchupGrade, matchupVs } from '../engine/matchup';
-import { unitProfile } from '../engine/profiles';
+import { emptyUnit, unitProfile } from '../engine/profiles';
 import { calcSynergy } from '../engine/synergy';
 import { effectiveStats, type UnitProfile } from '../engine/unit';
 import { useGame } from '../store/gameStore';
@@ -17,8 +17,11 @@ import { Btn, cn, Modal } from './ui';
 
 type Target = { unit: number; slot: Slot };
 
-function unitDefs(u: Unit): (GeneralDef | null)[] {
-  return SLOTS.map((s) => (u[s] ? getGeneral(u[s]!) : null));
+function unitDefs(u: Unit | undefined): (GeneralDef | null)[] {
+  return SLOTS.map((s) => {
+    const id = u?.[s];
+    return id ? GENERAL_MAP[id] ?? null : null;
+  });
 }
 
 export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
@@ -48,7 +51,10 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
   const owned = useMemo(
     () =>
       Object.entries(roster)
-        .map(([id, o]) => ({ def: getGeneral(id), owned: o }))
+        .flatMap(([id, o]) => {
+          const def = GENERAL_MAP[id];
+          return def ? [{ def, owned: o }] : [];
+        })
         .filter((x) => filter === 'all' || x.def.faction === filter)
         .sort((a, b) => rarityRank(b.def) - rarityRank(a.def) || b.owned.level - a.owned.level),
     [roster, filter],
@@ -56,7 +62,7 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
 
   // 현재 선택 슬롯에 넣었을 때 새로 생기거나 강화되는 시너지
   const preview = useMemo(() => {
-    const unit = formation[target.unit];
+    const unit = formation[target.unit] ?? emptyUnit();
     const before = calcSynergy(unitDefs(unit));
     const beforeKeys = new Map(before.list.map((s) => [s.key, s.power + s.chain]));
     const out: Record<string, string[]> = {};
@@ -95,6 +101,7 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
 
       <div className={cn('grid gap-3', unitGridClass)}>
         {formation.map((u, ui) => {
+          if (!u) return null;
           const p = unitProfile(u, roster);
           const syn = p?.synergy ?? calcSynergy(unitDefs(u));
           return (
@@ -111,7 +118,7 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
               <div className="grid grid-cols-3 gap-2">
                 {SLOTS.map((slot) => {
                   const id = u[slot];
-                  const def = id ? getGeneral(id) : null;
+                  const def = id ? GENERAL_MAP[id] ?? null : null;
                   const active = target.unit === ui && target.slot === slot;
                   const badCommander = !!enemy && slot === 'commander' && def && matchupGrade(matchupVs(def.troop, enemyTroops)) === 'bad';
                   return (

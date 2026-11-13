@@ -5,7 +5,7 @@ import { TroopAdviceBox } from '../components/Matchup';
 import { PageHero } from '../components/PageHero';
 import { PowerCompare, UnitPreview } from '../components/UnitPreview';
 import { Btn, cn, Modal, Panel } from '../components/ui';
-import { CHAPTERS, isUnlocked, STAGES } from '../data/stages';
+import { CHAPTERS, isUnlocked, STAGE_MAP, STAGES } from '../data/stages';
 import { enemyProfiles, playerProfiles, useGame } from '../store/gameStore';
 
 export default function Campaign() {
@@ -17,17 +17,19 @@ export default function Campaign() {
   const focusStage = useGame((s) => s.focusStage);
   const setFocusStage = useGame((s) => s.setFocusStage);
 
-  // 기본 선택: 마지막으로 본 스테이지, 없으면 아직 클리어 못 한 첫 스테이지
+  // 기본 선택: 마지막으로 본 원정 스테이지. 모의전·토벌전 표시는 스테이지가 아니므로 쓰지 않는다.
   const firstOpen = STAGES.find((s) => !cleared[s.id] && isUnlocked(s.id, cleared)) ?? STAGES[STAGES.length - 1];
-  const [selected, setSelectedState] = useState(focusStage && isUnlocked(focusStage, cleared) ? focusStage : firstOpen.id);
+  const [selected, setSelectedState] = useState(
+    focusStage && STAGE_MAP[focusStage] && isUnlocked(focusStage, cleared) ? focusStage : firstOpen.id,
+  );
   const setSelected = (id: string) => {
     setSelectedState(id);
     setFocusStage(id);
   };
-  const stage = STAGES.find((s) => s.id === selected)!;
+  const stage = STAGE_MAP[selected] ?? firstOpen;
 
   const mine = useMemo(() => playerProfiles(formation, roster), [formation, roster]);
-  const enemies = useMemo(() => enemyProfiles(selected), [selected]);
+  const enemies = useMemo(() => enemyProfiles(stage.id), [stage.id]);
   const myPower = mine.reduce((s, p) => s + p.power, 0);
   const enemyPower = enemies.reduce((s, p) => s + p.power, 0);
   const clearedCount = STAGES.filter((s) => cleared[s.id]).length;
@@ -74,7 +76,7 @@ export default function Campaign() {
         <PageHero
           image="scene-campaign.webp"
           title="천하 원정"
-          aside={<div className="flex shrink-0 items-center gap-1 rounded-full bg-stone-950/70 px-2.5 py-1 text-xs text-stone-200"><Trophy size={14} className="text-amber-400" /> {clearedCount}/{STAGES.length}</div>}
+          aside={<div className="flex shrink-0 items-center gap-1 rounded-full bg-stone-950/70 px-2.5 py-1 text-xs text-stone-200"><Trophy size={14} className="text-amber-300" /> {clearedCount}/{STAGES.length}</div>}
         >
           <p className="mt-1 hidden text-xs text-stone-300 sm:block">스테이지를 선택하고 편성한 부대로 출진하세요.</p>
         </PageHero>
@@ -116,7 +118,7 @@ export default function Campaign() {
                     )}
                   >
                     <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-serif text-sm font-black',
-                      done ? 'bg-amber-400 text-stone-900' : unlocked ? 'bg-red-800 text-white' : 'bg-stone-800 text-stone-500')}>
+                      done ? 'bg-amber-400 text-[#1c1612]' : unlocked ? 'bg-red-800 text-white' : 'bg-stone-800 text-stone-500')}>
                       {!unlocked ? <Lock size={14} /> : done ? <Check size={16} /> : s.id}
                     </div>
                     <div className="min-w-0">

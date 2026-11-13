@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
 import { Bar, Btn, cn } from '../components/ui';
-import { getGeneral } from '../data/generals';
+import { GENERAL_MAP } from '../data/generals';
 import { TROOP } from '../data/meta';
 import { nextStage } from '../data/stages';
 import type { BattleEvent, Side } from '../engine/battle';
@@ -95,7 +95,7 @@ export default function BattlePage() {
           <SideRow side={1} units={result.units[1]} ev={ev} events={events} idx={idx} cinematic={speed === 1} label="적군" />
 
           <div className="relative my-3 flex h-16 items-center justify-center">
-            <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-red-900 to-transparent" />
+            <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-red-700 to-transparent" />
             {showBanner ? (
               <div key={ev.id} className="animate-banner relative text-center">
                 {ev.kind === 'chain' && (
@@ -103,7 +103,7 @@ export default function BattlePage() {
                     <Zap size={16} fill="currentColor" /> {ev.chainStep && ev.chainStep > 1 ? `연쇄 ${ev.chainStep}단${'!'.repeat(ev.chainStep)}` : '연쇄 발동!'} <Zap size={16} fill="currentColor" />
                   </div>
                 )}
-                <div className={cn('font-serif font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]',
+                <div className={cn('font-serif font-black',
                   ev.kind === 'chain' ? 'text-3xl text-amber-200' : 'text-2xl text-red-200')}>
                   【{ev.skill}】
                 </div>
@@ -112,9 +112,9 @@ export default function BattlePage() {
             ) : ev.kind === 'start' ? (
               <div key={ev.id} className="animate-banner relative font-serif text-2xl font-black text-stone-100">전투 개시</div>
             ) : (
-              <Swords size={20} className="relative text-stone-700" />
+              <Swords size={20} className="relative text-stone-400" />
             )}
-            {ev.kind === 'chain' && <div key={`f${ev.id}`} className="pointer-events-none absolute -inset-x-3 -inset-y-40 animate-flash bg-amber-300/10" />}
+            {ev.kind === 'chain' && <div key={`f${ev.id}`} className="pointer-events-none absolute -inset-x-3 -inset-y-40 animate-flash bg-amber-400/20" />}
           </div>
 
           <SideRow side={0} units={result.units[0]} ev={ev} events={events} idx={idx} cinematic={speed === 1} label="아군" />
@@ -200,7 +200,7 @@ function SideRow({
                   cinematic && announced.has(i) && !justRouted && 'translate-y-2.5 opacity-30 grayscale')}>
                   {u.members.map((m, mi) => m ? (
                     <div key={mi} className="relative">
-                      <GeneralToken def={getGeneral(m.def.id)} size="xs"
+                      <GeneralToken def={m.def} size="xs"
                         className={cn(acting && ev.caster === m.def.name && 'z-10 scale-125 transition-transform')} />
                       {cinematic && hit?.kind === 'dmg' && (
                         <span className="animate-portrait-hit pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-md" />
@@ -212,12 +212,12 @@ function SideRow({
               <Bar value={hp} max={u.hp} className="mt-2" color={side === 0 ? 'bg-sky-500' : 'bg-red-500'} />
               <div className="tabular mt-0.5 text-right text-[10px] text-stone-400">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
               {(cinematic ? announced.has(i) || justRouted : routed) && (
-                <div className={cn('absolute inset-0 flex items-center justify-center font-serif text-lg font-black text-red-400/90',
+                <div className={cn('absolute inset-0 flex items-center justify-center font-serif text-lg font-black text-red-600',
                   justRouted && 'animate-rout-pop')}>궤멸</div>
               )}
               {hit && (
                 <span key={ev.id}
-                  className={cn('animate-float-up pointer-events-none absolute left-1/2 top-2 font-black drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]',
+                  className={cn('animate-float-up pointer-events-none absolute left-1/2 top-2 font-black',
                     hit.kind === 'heal' ? 'text-emerald-300' : ev.kind === 'chain' ? 'text-xl text-amber-300' : ev.kind === 'skill' ? 'text-lg text-red-300' : 'text-base text-stone-100')}>
                   {hit.kind === 'heal' ? '+' : '-'}{hit.amount}
                   {hit.matchup === 'adv' && <span className="ml-0.5 text-[10px] text-orange-300">상성!</span>}
@@ -253,11 +253,15 @@ function ResultOverlay({
             <div className="flex justify-between"><span className="text-stone-400">출진 장수 경험치</span><span className="font-bold">+{reward.exp}</span></div>
             {reward.levelUps.length > 0 && (
               <div className="flex flex-wrap justify-center gap-1.5 border-t border-stone-800 pt-2">
-                {reward.levelUps.map((l) => (
-                  <span key={l.id} className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-300">
-                    {getGeneral(l.id).name} Lv.{l.from}→{l.to}
-                  </span>
-                ))}
+                {reward.levelUps.map((l) => {
+                  const name = GENERAL_MAP[l.id]?.name;
+                  if (!name) return null;
+                  return (
+                    <span key={l.id} className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-300">
+                      {name} Lv.{l.from}→{l.to}
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>

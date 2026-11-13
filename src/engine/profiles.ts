@@ -1,5 +1,5 @@
 // 편성(장수 id) → 전투 프로필 변환. 저장소(localStorage)와 무관해서 Web Worker에서도 사용
-import { getGeneral, GENERAL_MAP } from '../data/generals';
+import { GENERAL_MAP } from '../data/generals';
 import { STAGE_MAP } from '../data/stages';
 import type { EnemyUnit, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
@@ -8,11 +8,13 @@ import { buildProfile, makeMember, type UnitProfile } from './unit';
 export const emptyUnit = (): Unit => ({ commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null });
 
 export function unitProfile(u: Unit, roster: Record<string, OwnedGeneral>): UnitProfile | null {
+  if (!u) return null;
   return buildProfile(
     SLOTS.map((slot) => {
       const id = u[slot];
       const owned = id ? roster[id] : undefined;
-      return id && owned && GENERAL_MAP[id] ? makeMember(getGeneral(id), owned.level, owned.stars) : null;
+      const def = id ? GENERAL_MAP[id] : undefined;
+      return id && owned && def ? makeMember(def, owned.level, owned.stars) : null;
     }),
   );
 }
@@ -31,16 +33,23 @@ export function deployedAvgLevel(formation: Unit[], roster: Record<string, Owned
   return ids.length ? Math.round(ids.reduce((s, id) => s + roster[id].level, 0) / ids.length) : 1;
 }
 
-/** 적 부대 정의 → 전투 프로필 */
+/** 적 부대 정의 → 전투 프로필. 알 수 없는 장수 id나 주장이 없는 부대는 건너뛴다. */
 export function enemyUnitsToProfiles(units: EnemyUnit[]): UnitProfile[] {
-  return units.map(
-    (e) =>
-      buildProfile(
-        SLOTS.map((_, i) => e.members[i] ?? null).map((id) => (id ? makeMember(getGeneral(id), e.level, e.stars ?? 0) : null)),
-      )!,
-  );
+  const profiles: UnitProfile[] = [];
+  for (const e of units) {
+    const profile = buildProfile(
+      SLOTS.map((_, i) => {
+        const id = e.members[i];
+        const def = id ? GENERAL_MAP[id] : undefined;
+        return def ? makeMember(def, e.level, e.stars ?? 0) : null;
+      }),
+    );
+    if (profile) profiles.push(profile);
+  }
+  return profiles;
 }
 
 export function enemyProfiles(stageId: string): UnitProfile[] {
-  return enemyUnitsToProfiles(STAGE_MAP[stageId].enemies);
+  const stage = STAGE_MAP[stageId];
+  return stage ? enemyUnitsToProfiles(stage.enemies) : [];
 }

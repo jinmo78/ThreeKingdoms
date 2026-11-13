@@ -1,6 +1,6 @@
 import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'lucide-react';
 import { BannerEmblem } from './components/BannerEmblem';
-import { cn } from './components/ui';
+import { cn, ThemeToggle } from './components/ui';
 import BattlePage from './pages/Battle';
 import Campaign from './pages/Campaign';
 import Challenge from './pages/Challenge';
@@ -41,20 +41,23 @@ export default function App() {
             </div>
           </button>
           {!inBattle && (
-            <nav className="ml-6 hidden gap-1 sm:flex">
+            <nav className="ml-6 hidden gap-1 lg:flex">
               {TABS.map((t) => (
                 <TabButton key={t.id} active={view === t.id} onClick={() => setView(t.id)} icon={t.icon} label={t.label} />
               ))}
             </nav>
           )}
-          <div className="ml-auto flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-bold text-amber-300">
-            <Coins size={15} />
-            <span className="tabular">{gold.toLocaleString()}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+            <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-bold text-amber-300">
+              <Coins size={15} />
+              <span className="tabular">{gold.toLocaleString()}</span>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className={cn('flex-1 px-4 py-5', !inBattle && 'pb-24 sm:pb-8')}>
+      <main className={cn('flex-1 px-4 py-5', !inBattle && 'pb-24 lg:pb-8')}>
         {view === 'campaign' && <Campaign />}
         {view === 'formation' && <Formation />}
         {view === 'recruit' && <Recruit />}
@@ -64,7 +67,7 @@ export default function App() {
       </main>
 
       {!inBattle && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-800 bg-stone-950 pb-[env(safe-area-inset-bottom)] sm:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-800 bg-stone-950 pb-[env(safe-area-inset-bottom)] lg:hidden">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = view === t.id;
@@ -85,7 +88,7 @@ export default function App() {
 function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold transition-colors',
+      className={cn('flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-bold transition-colors',
         active ? 'bg-red-900/40 text-red-200' : 'text-stone-400 hover:bg-stone-800 hover:text-stone-200')}>
       <Icon size={15} />
       {label}

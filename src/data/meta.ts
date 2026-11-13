@@ -13,7 +13,7 @@ export const RARITY: Record<Rarity, { border: string; text: string; badge: strin
   SSR: {
     border: 'border-amber-400/80',
     text: 'text-amber-300',
-    badge: 'bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 text-stone-900',
+    badge: 'bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 text-[#1c1612]',
     glow: 'shadow-[0_0_24px_-4px_rgba(251,191,36,0.55)]',
   },
   SR: {
