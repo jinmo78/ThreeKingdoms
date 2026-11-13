@@ -2,6 +2,7 @@
 import { ChevronRight, Coins, FastForward, RotateCcw, SkipForward, Swords, Trophy, Zap } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { GeneralToken } from '../components/General';
+import { sceneUrl } from '../components/PageHero';
 import { Bar, Btn, cn } from '../components/ui';
 import { getGeneral } from '../data/generals';
 import { TROOP } from '../data/meta';
@@ -23,14 +24,18 @@ export default function BattlePage() {
   const setView = useGame((s) => s.setView);
   const [idx, setIdx] = useState(0);
   const [speed, setSpeed] = useState(1);
+  const [seenBattle, setSeenBattle] = useState(battle);
   const logRef = useRef<HTMLDivElement>(null);
+
+  // 새 전투의 첫 화면이 이전 인덱스를 잠깐 보여 주지 않게, 그리기 전에 되돌린다
+  if (battle !== seenBattle) {
+    setSeenBattle(battle);
+    setIdx(0);
+  }
 
   const events = battle?.result.events ?? [];
   const ev = events[Math.min(idx, events.length - 1)];
   const done = idx >= events.length - 1;
-
-  // 전투가 바뀌면 처음부터 재생
-  useEffect(() => setIdx(0), [battle]);
 
   useEffect(() => {
     if (!battle || done) return;
@@ -57,8 +62,8 @@ export default function BattlePage() {
   };
   // 다음: 원정은 다음 스테이지, 토벌전은 다음 층 (승리했을 때만)
   const onNext = !result.win ? undefined
-    : mode === 'stage' && next ? () => startBattle(next.id)
-      : mode === 'conquest' ? () => startConquest() : undefined;
+    : mode === 'stage' && next ? () => { startBattle(next.id); }
+      : mode === 'conquest' ? () => { startConquest(); } : undefined;
   const nextTitle = mode === 'stage' ? next?.title : mode === 'conquest' ? `${(battle.floor ?? 0) + 1}층` : undefined;
   const showBanner = ev.kind === 'skill' || ev.kind === 'chain';
 
@@ -83,7 +88,10 @@ export default function BattlePage() {
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* 전장 */}
-        <div className="relative overflow-hidden rounded-2xl border border-stone-800 bg-[linear-gradient(180deg,#1c1917_0%,#0c0a09_50%,#1c1917_100%)] p-3">
+        <div className="relative overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-3">
+          <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35" />
+          <div className="pointer-events-none absolute inset-0 bg-stone-950/60" />
+          <div className="relative">
           <SideRow side={1} units={result.units[1]} ev={ev} events={events} idx={idx} cinematic={speed === 1} label="적군" />
 
           <div className="relative my-3 flex h-16 items-center justify-center">
@@ -123,6 +131,7 @@ export default function BattlePage() {
             onCampaign={closeBattle}
             backLabel={mode === 'stage' ? '원정 지도' : '돌아가기'}
           />}
+          </div>
         </div>
 
         {/* 전투 기록 */}
@@ -231,7 +240,7 @@ function ResultOverlay({
   onRetry: () => void; onNext?: () => void; nextTitle?: string; onFormation: () => void; onCampaign: () => void; backLabel: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80">
       <div className="flex min-h-full items-center justify-center p-4">
       <div className="animate-pop-in w-full max-w-sm rounded-2xl border border-stone-700 bg-stone-900 p-5 text-center">
         {win ? <Trophy size={40} className="mx-auto text-amber-300" /> : <RotateCcw size={36} className="mx-auto text-stone-400" />}

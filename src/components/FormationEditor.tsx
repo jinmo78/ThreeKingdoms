@@ -35,6 +35,7 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
   const [target, setTarget] = useState<Target>({ unit: 0, slot: 'commander' });
   const [filter, setFilter] = useState<Faction | 'all'>('all');
   const [detail, setDetail] = useState<GeneralDef | null>(null);
+  const [info, setInfo] = useState<number | null>(null);
   const enemyTroops = enemy?.map((e) => e.troop) ?? [];
 
   // 배치 위치 역참조: 장수 id → "1부대 주장"
@@ -143,7 +144,11 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
                 })}
               </div>
 
-              <div className="mt-3 space-y-2">
+              <button type="button" onClick={() => setInfo(ui)}
+                className="mt-2 w-full rounded-lg bg-stone-950/60 py-1.5 text-[11px] font-bold text-stone-300 sm:hidden">
+                전투력·시너지
+              </button>
+              <div className="mt-3 hidden space-y-2 sm:block">
                 {p ? <UnitStats p={p} /> : <p className="rounded-lg bg-stone-950/50 py-2 text-center text-xs text-stone-500">주장을 배치해야 출진할 수 있습니다</p>}
                 <SynergyList synergy={syn} empty="활성 시너지 없음 — 세력·병과·인연을 맞춰 보세요" />
               </div>
@@ -184,10 +189,10 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
                     <span className="text-[11px] text-stone-500">Lv.{o.level}</span>
                     <Stars n={o.stars} />
                   </div>
-                  <div className="tabular text-[11px] text-stone-400">
+                  <div className="tabular hidden text-[11px] text-stone-400 sm:block">
                     {STAT_LABEL.war} {st.war} · {STAT_LABEL.int} {st.int} · {STAT_LABEL.lead} {st.lead}
                   </div>
-                  <div className="mt-0.5 flex flex-wrap gap-1">
+                  <div className="mt-0.5 hidden flex-wrap gap-1 sm:flex">
                     {def.bonds.map((b) => <BondTag key={b} id={b} />)}
                   </div>
                   {(where || gains || (cmdGrade && cmdGrade !== 'even')) && (
@@ -206,6 +211,13 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
         {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">해당 세력의 장수가 없습니다.</p>}
       </section>
 
+      {info !== null && (
+        <Modal onClose={() => setInfo(null)}>
+          <UnitInfo index={info} />
+          <Btn variant="ghost" className="mt-4 w-full" onClick={() => setInfo(null)}>닫기</Btn>
+        </Modal>
+      )}
+
       {detail && (
         <Modal onClose={() => setDetail(null)}>
           <GeneralDetail def={detail} owned={roster[detail.id]} />
@@ -218,6 +230,23 @@ export function FormationEditor({ enemy, unitGridClass = 'lg:grid-cols-3' }: {
         </Modal>
       )}
     </div>
+  );
+}
+
+function UnitInfo({ index }: { index: number }) {
+  const formation = useGame((s) => s.formation);
+  const roster = useGame((s) => s.roster);
+  const u = formation[index];
+  const p = unitProfile(u, roster);
+  const syn = p?.synergy ?? calcSynergy(unitDefs(u));
+  return (
+    <>
+      <h3 className="mb-3 font-serif text-lg font-black">제{index + 1}부대 {p && <span className="text-sm font-normal text-stone-400">{p.name}</span>}</h3>
+      {p ? <UnitStats p={p} /> : <p className="rounded-lg bg-stone-950/50 py-2 text-center text-xs text-stone-500">주장을 배치해야 출진할 수 있습니다</p>}
+      <div className="mt-3">
+        <SynergyList synergy={syn} empty="활성 시너지 없음 — 세력·병과·인연을 맞춰 보세요" />
+      </div>
+    </>
   );
 }
 

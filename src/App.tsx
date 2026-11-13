@@ -31,7 +31,7 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
-      <header className="sticky top-0 z-30 border-b border-stone-800/80 bg-stone-950/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-stone-800/80 bg-stone-950">
         <div className="flex items-center gap-3 px-4 py-2.5">
           <button type="button" onClick={() => !inBattle && setView('campaign')} className="flex items-center gap-2">
             <BannerEmblem className="h-8 w-8" />
@@ -64,7 +64,7 @@ export default function App() {
       </main>
 
       {!inBattle && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-800 bg-stone-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-800 bg-stone-950 pb-[env(safe-area-inset-bottom)] sm:hidden">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = view === t.id;

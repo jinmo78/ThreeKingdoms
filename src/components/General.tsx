@@ -77,10 +77,6 @@ export function GeneralCard({
         r.border, highlight && r.glow, className,
       )}
     >
-      {def.rarity === 'SSR' && (
-        <div className="pointer-events-none absolute -inset-1/2 animate-spin-slow opacity-20"
-          style={{ background: 'conic-gradient(from 0deg, transparent, #fbbf24, transparent 30%)' }} />
-      )}
       <div className="relative flex w-full items-center justify-between">
         <RarityBadge rarity={def.rarity} />
         <FactionBadge faction={def.faction} />

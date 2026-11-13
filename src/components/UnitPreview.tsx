@@ -43,7 +43,7 @@ export function PowerCompare({ mine, enemy }: { mine: number; enemy: number }) {
         <div className="bg-sky-500 transition-all" style={{ width: `${(mine / total) * 100}%` }} />
         <div className="flex-1 bg-red-600" />
       </div>
-      <p className="mt-1.5 text-[10px] text-stone-500">전투력은 참고치입니다. 병과 상성과 연쇄 전법이 승부를 뒤집을 수 있습니다.</p>
+      <p className="mt-1.5 hidden text-[10px] text-stone-500 sm:block">전투력은 참고치입니다. 병과 상성과 연쇄 전법이 승부를 뒤집을 수 있습니다.</p>
     </div>
   );
 }

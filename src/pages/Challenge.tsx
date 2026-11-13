@@ -2,9 +2,11 @@
 import { BarChart3, ChevronRight, Coins, Crown, Dices, Eye, Lock, Mountain, Swords, Target } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
+import { EnemyLineup } from '../components/EnemyLineup';
 import { FormationEditor } from '../components/FormationEditor';
 import { TroopAdviceBox } from '../components/Matchup';
-import { PowerCompare, UnitPreview } from '../components/UnitPreview';
+import { PageHero } from '../components/PageHero';
+import { PowerCompare } from '../components/UnitPreview';
 import { Btn, cn, Panel } from '../components/ui';
 import { ARMY_THEMES, practiceOpponent, themeLabel } from '../engine/aiArmy';
 import { simulateBattle } from '../engine/battle';
@@ -29,18 +31,20 @@ export default function Challenge() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-serif text-2xl font-black">도전</h2>
-          <p className="text-xs text-stone-500">AI 군단을 상대로 편성을 시험하거나, 끝없는 토벌전에 도전하세요.</p>
-        </div>
-        <div className="flex gap-1 rounded-xl bg-stone-900 p-1">
-          <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>
-          <TabBtn active={tab === 'conquest'} onClick={() => setTab('conquest')}>
-            {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 천하 토벌전
-          </TabBtn>
-        </div>
-      </div>
+      <PageHero
+        image="scene-challenge.webp"
+        title="도전"
+        aside={
+          <div className="flex shrink-0 gap-1 rounded-xl bg-stone-950/80 p-1">
+            <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>
+            <TabBtn active={tab === 'conquest'} onClick={() => setTab('conquest')}>
+              {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 토벌전
+            </TabBtn>
+          </div>
+        }
+      >
+        <p className="mt-1 hidden text-xs text-stone-300 sm:block">AI 군단을 상대로 편성을 시험하거나, 끝없는 토벌전에 도전하세요.</p>
+      </PageHero>
       {tab === 'practice' ? <Practice /> : <Conquest />}
     </div>
   );
@@ -110,7 +114,7 @@ function Practice() {
               </div>
             </div>
             <Btn size="sm" variant="ghost" onClick={() => setPractice({ seed: randomSeed() })}><Dices size={13} /> 새 상대 뽑기</Btn>
-            <p className="text-[11px] text-stone-500">
+            <p className="hidden text-[11px] text-stone-500 sm:block">
               상대는 해당 세력 장수 18명을 무작위로 뽑아 <b className="text-stone-300">자동 편성으로 시너지를 맞춘 AI 군단</b>입니다.
               모의전은 보상·경험치가 없습니다.
             </p>
@@ -118,9 +122,7 @@ function Practice() {
         </Panel>
 
         <Panel title={`상대: ${opponent}`} icon={<Swords size={15} />}>
-          <div className="space-y-2">
-            {enemyProf.map((p, i) => <UnitPreview key={i} p={p} />)}
-          </div>
+          <EnemyLineup units={enemyProf} />
         </Panel>
 
         <EditorSection enemy={enemyProf} />
@@ -233,16 +235,14 @@ function Conquest() {
               <span className="text-stone-400">EXP {floor.reward.exp}</span>
               {floor.boss && <span className="rounded bg-red-500/15 px-1.5 py-0.5 font-bold text-red-300">보스층</span>}
             </div>
-            <div className="space-y-2">
-              {enemyProf.map((p, i) => <UnitPreview key={i} p={p} />)}
-            </div>
+            <EnemyLineup units={enemyProf} />
           </Panel>
 
           <Panel title="출진" icon={<Swords size={15} />}>
             <div className="space-y-3">
               <TroopAdviceBox enemy={enemyProf} mine={mine} />
               <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
-              <Btn size="lg" className="w-full" disabled={mine.length === 0} onClick={startConquest}>
+              <Btn size="lg" className="w-full" disabled={mine.length === 0} onClick={() => startConquest()}>
                 <Swords size={18} /> {floor.floor}층 도전!
               </Btn>
               {mine.length === 0 && <p className="text-center text-xs text-red-300">아래 편성에서 주장을 1명 이상 배치하세요.</p>}
@@ -273,7 +273,7 @@ function EditorSection({ enemy }: { enemy: UnitProfile[] }) {
     <section className="space-y-2">
       <div>
         <h3 className="flex items-center gap-1.5 font-serif text-lg font-black"><Swords size={16} className="text-red-400" /> 내 부대 편성</h3>
-        <p className="text-[11px] text-stone-500">
+        <p className="hidden text-[11px] text-stone-500 sm:block">
           이 상대를 기준으로 상성 배지와 "주장 상성 유리/불리"가 표시됩니다. 여기서 바꾼 편성은 편성 탭과 같은 편성입니다.
         </p>
       </div>

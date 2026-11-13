@@ -2,6 +2,7 @@
 import { Coins, Flag, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { GeneralCard, GeneralDetail } from '../components/General';
+import { sceneUrl } from '../components/PageHero';
 import { Btn, cn, Modal, Panel } from '../components/ui';
 import { RECRUITABLE } from '../data/generals';
 import { PULL_COST, RATES } from '../engine/gacha';
@@ -18,6 +19,7 @@ export default function Recruit() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [results, setResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<GeneralDef | null>(null);
+  const [ratesOpen, setRatesOpen] = useState(false);
 
   function pull(count: 1 | 10) {
     const r = recruit(count);
@@ -32,16 +34,19 @@ export default function Recruit() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-end justify-between">
-        <div>
+      <div>
+        <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-serif text-2xl font-black">장수 등용</h2>
-          <p className="text-xs text-stone-500">금화로 재야의 장수를 초빙합니다. 이미 있는 장수가 나오면 돌파(★)로 능력치가 오릅니다.</p>
+          <span className="shrink-0 text-xs text-stone-400">도감 {ownedCount}/{RECRUITABLE.length}</span>
         </div>
-        <span className="text-xs text-stone-400">도감 {ownedCount}/{RECRUITABLE.length}</span>
+        <p className="text-xs text-stone-500">금화로 재야의 장수를 초빙합니다. 이미 있는 장수가 나오면 돌파(★)로 능력치가 오릅니다.</p>
       </div>
 
       {/* 등용 무대 */}
-      <div className="relative flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border border-stone-800 bg-[radial-gradient(ellipse_at_center,#292524_0%,#0c0a09_70%)] p-4">
+      <div className="relative flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-4">
+        <img src={sceneUrl('scene-recruit.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-55" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-stone-950/35 via-stone-950/55 to-stone-950/80" />
+        <div className="relative w-full">
         {phase === 'idle' && (
           <div className="text-center">
             <div className="relative mx-auto h-32 w-32">
@@ -86,6 +91,7 @@ export default function Recruit() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -94,18 +100,21 @@ export default function Recruit() {
           note="SR 이상 1명 확정 · 10% 할인" gold10 />
       </div>
 
-      <Panel title="등용 확률" icon={<Sparkles size={15} />}>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          {(['SSR', 'SR', 'R'] as Rarity[]).map((r) => (
-            <div key={r} className="rounded-lg bg-stone-950/60 p-2">
-              <div className={cn('font-black', r === 'SSR' ? 'text-amber-300' : r === 'SR' ? 'text-violet-300' : 'text-stone-300')}>{r}</div>
-              <div className="tabular text-stone-200">{Math.round(RATES[r] * 100)}%</div>
-              <div className="text-[10px] text-stone-500">{RECRUITABLE.filter((g) => g.rarity === r).length}명</div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-2 text-[11px] text-stone-500">돌파는 최대 ★5. 그 이후 중복은 금화로 환급됩니다 (SSR 300 · SR 120 · R 40).</p>
-      </Panel>
+      <div className="hidden sm:block">
+        <Panel title="등용 확률" icon={<Sparkles size={15} />}><RatesBody /></Panel>
+      </div>
+      <button type="button" onClick={() => setRatesOpen(true)}
+        className="w-full rounded-xl border border-stone-700 py-2.5 text-xs font-bold text-stone-300 sm:hidden">
+        등용 확률
+      </button>
+
+      {ratesOpen && (
+        <Modal onClose={() => setRatesOpen(false)}>
+          <h3 className="mb-3 font-serif text-lg font-black">등용 확률</h3>
+          <RatesBody />
+          <Btn variant="ghost" className="mt-4 w-full" onClick={() => setRatesOpen(false)}>닫기</Btn>
+        </Modal>
+      )}
 
       {detail && (
         <Modal onClose={() => setDetail(null)}>
@@ -114,6 +123,23 @@ export default function Recruit() {
         </Modal>
       )}
     </div>
+  );
+}
+
+function RatesBody() {
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+        {(['SSR', 'SR', 'R'] as Rarity[]).map((r) => (
+          <div key={r} className="rounded-lg bg-stone-950/60 p-2">
+            <div className={cn('font-black', r === 'SSR' ? 'text-amber-300' : r === 'SR' ? 'text-violet-300' : 'text-stone-300')}>{r}</div>
+            <div className="tabular text-stone-200">{Math.round(RATES[r] * 100)}%</div>
+            <div className="text-[10px] text-stone-500">{RECRUITABLE.filter((g) => g.rarity === r).length}명</div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-stone-500">돌파는 최대 ★5. 그 이후 중복은 금화로 환급됩니다 (SSR 300 · SR 120 · R 40).</p>
+    </>
   );
 }
 

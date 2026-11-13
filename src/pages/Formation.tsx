@@ -1,7 +1,9 @@
 // 부대 편성 — 상대(원정 스테이지 · 천하 토벌전 · 모의전)를 골라 상성 힌트를 보며 편성
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FormationEditor } from '../components/FormationEditor';
 import { TroopAdviceBox } from '../components/Matchup';
+import { PageHero } from '../components/PageHero';
+import { Btn, Modal } from '../components/ui';
 import { isUnlocked, STAGES, STAGE_MAP } from '../data/stages';
 import { practiceOpponent } from '../engine/aiArmy';
 import { conquestFloor } from '../engine/conquest';
@@ -37,19 +39,16 @@ export default function Formation() {
     [key, practiceOpp, conquestBest],
   );
   const enemy = useMemo(() => enemyUnitsToProfiles(enemyUnits), [enemyUnits]);
+  const [help, setHelp] = useState(false);
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="font-serif text-2xl font-black">부대 편성</h2>
-        <p className="text-xs text-stone-500">
-          칸을 고른 뒤 아래에서 장수를 탭하세요. 같은 <b className="text-sky-300">세력</b>·<b className="text-orange-300">병과</b>·
-          <b className="text-amber-300">인연</b>을 맞추면 전투력과 <b className="text-red-300">연쇄 전법</b> 확률이 올라갑니다.
+      <PageHero image="scene-formation.webp" title="부대 편성">
+        <p className="mt-1 text-xs text-stone-300">
+          같은 세력·병과·인연을 맞추면 전투력과 연쇄가 오릅니다.
+          <button type="button" className="ml-2 font-bold text-amber-200 underline-offset-2 hover:underline" onClick={() => setHelp(true)}>칸 설명</button>
         </p>
-        <p className="mt-0.5 text-[11px] text-stone-500">
-          부대 6칸 — 주장(병과·주 전법) · 부장×2(연쇄 1·2단) · 참모(연쇄 3단, 발동률↑) · 보좌×2(능력 일부 + 시너지 인원)
-        </p>
-      </div>
+      </PageHero>
 
       <div className="space-y-2">
         <label className="flex items-center gap-2 text-xs text-stone-400">
@@ -67,6 +66,20 @@ export default function Formation() {
       </div>
 
       <FormationEditor enemy={enemy} />
+
+      {help && (
+        <Modal onClose={() => setHelp(false)}>
+          <h3 className="font-serif text-lg font-black">부대 6칸</h3>
+          <ul className="mt-3 list-inside list-disc space-y-1.5 text-sm text-stone-300">
+            <li>주장 — 병과와 주 전법을 정합니다.</li>
+            <li>부장 2명 — 연쇄 전법 1단·2단.</li>
+            <li>참모 — 연쇄 3단. 발동률이 오릅니다.</li>
+            <li>보좌 2명 — 전법은 없고, 능력 일부와 시너지 인원에 포함됩니다.</li>
+          </ul>
+          <p className="mt-3 text-xs text-stone-400">칸을 고른 뒤 아래 목록에서 장수를 누르면 배치됩니다.</p>
+          <Btn variant="ghost" className="mt-4 w-full" onClick={() => setHelp(false)}>닫기</Btn>
+        </Modal>
+      )}
     </div>
   );
 }

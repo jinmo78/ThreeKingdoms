@@ -67,7 +67,7 @@ export function Bar({ value, max, className, color = 'bg-red-500' }: { value: nu
 
 export function Modal({ children, onClose }: { children: ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div
         className="animate-slide-in max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-stone-700 bg-stone-900 p-5 sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}

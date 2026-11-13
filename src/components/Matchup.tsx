@@ -57,7 +57,7 @@ export function TroopAdviceBox({ enemy, mine, compact }: { enemy: UnitProfile[];
       {advice.lopsided && (
         <p className="mt-1 text-[11px] text-amber-200/80">적이 한 병과에 몰려 있어 상성이 승부를 크게 좌우합니다.</p>
       )}
-      <p className="mt-1 text-[10px] text-stone-500">
+      <p className="mt-1 hidden text-[10px] text-stone-500 sm:block">
         부대 순서(1·2·3부대)는 상관없습니다. 정해진 맞상대 없이 각 부대가 적을 골라 공격하며, 상성이 유리한 적을 더 자주 노립니다.
       </p>
 
