@@ -7,7 +7,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { STAGE_MAP } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
-import { PULL_COST, rollGenerals } from '../engine/gacha';
+import { DAILY_PULLS, DUPLICATE_REFUND, PULL_COST, rollGenerals, todayKey } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
 import type { ArmyTheme } from '../engine/aiArmy';
 import { conquestFloor } from '../engine/conquest';
@@ -75,6 +75,9 @@ interface SaveData {
   conquestBest: number;
   /** 가장 최근에 패배한 토벌전 층 — 그 층의 적군 맞춤 편성 개방 조건 */
   conquestFailFloor: number;
+  /** 등용 횟수를 센 날짜 (YYYY-MM-DD). 날짜가 바뀌면 하루 10회로 돌아간다 */
+  recruitDay: string;
+  recruitUsed: number;
 }
 
 interface GameState extends SaveData {
@@ -132,7 +135,6 @@ function grantExp(roster: Record<string, OwnedGeneral>, formation: Unit[], amoun
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
-const DUPLICATE_REFUND = { SSR: 300, SR: 120, R: 40 } as const;
 
 function freshSave(): SaveData {
   const roster: Record<string, OwnedGeneral> = {};
@@ -151,6 +153,8 @@ function freshSave(): SaveData {
     totalPulls: 0,
     conquestBest: 0,
     conquestFailFloor: 0,
+    recruitDay: '',
+    recruitUsed: 0,
   };
 }
 
@@ -165,6 +169,8 @@ export const useGame = create<GameState>()(
       totalPulls: 0,
       conquestBest: 0,
       conquestFailFloor: 0,
+      recruitDay: '',
+      recruitUsed: 0,
       view: 'campaign',
       battle: null,
       entered: false,
@@ -176,9 +182,12 @@ export const useGame = create<GameState>()(
 
       recruit: (count) => {
         const cost = count === 10 ? PULL_COST.ten : PULL_COST.single;
-        const { gold, roster } = get();
-        if (gold < cost) return null;
-        const next = { ...roster };
+        const state = get();
+        const today = todayKey();
+        const used = state.recruitDay === today ? state.recruitUsed : 0;
+        if (used + count > DAILY_PULLS) return null;
+        if (state.gold < cost) return null;
+        const next = { ...state.roster };
         let refundTotal = 0;
         const results = rollGenerals(count).map((def): RecruitResult => {
           const cur = next[def.id];
@@ -194,7 +203,13 @@ export const useGame = create<GameState>()(
           refundTotal += refund;
           return { def, isNew: false, stars: cur.stars, refund };
         });
-        set({ gold: gold - cost + refundTotal, roster: next, totalPulls: get().totalPulls + count });
+        set({
+          gold: state.gold - cost + refundTotal,
+          roster: next,
+          totalPulls: state.totalPulls + count,
+          recruitDay: today,
+          recruitUsed: used + count,
+        });
         return results;
       },
 
@@ -305,8 +320,8 @@ export const useGame = create<GameState>()(
     }),
     {
       name: 'oath-banner-save',
-      version: 3,
-      // v1(주장·부장·참모 3칸) → v2(6칸) → v3(품계 승급)
+      version: 4,
+      // v1(주장·부장·참모 3칸) → v2(6칸) → v3(품계 승급) → v4(하루 등용 횟수)
       migrate: (persisted, version) => {
         const s = persisted as SaveData;
         if (version < 2 && s?.formation) {
@@ -317,6 +332,10 @@ export const useGame = create<GameState>()(
         }
         if (version < 3 && s?.roster) {
           for (const id of Object.keys(s.roster)) s.roster[id] = { ...s.roster[id], promote: s.roster[id].promote ?? 0 };
+        }
+        if (version < 4) {
+          s.recruitDay = s.recruitDay ?? '';
+          s.recruitUsed = s.recruitUsed ?? 0;
         }
         return s as SaveData;
       },
@@ -330,6 +349,8 @@ export const useGame = create<GameState>()(
         totalPulls: s.totalPulls,
         conquestBest: s.conquestBest,
         conquestFailFloor: s.conquestFailFloor,
+        recruitDay: s.recruitDay,
+        recruitUsed: s.recruitUsed,
       }),
     },
   ),

@@ -5,7 +5,7 @@ import { GeneralCard, GeneralDetail } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
 import { Btn, cn, Modal, Panel } from '../components/ui';
 import { RECRUITABLE } from '../data/generals';
-import { PULL_COST, RATES } from '../engine/gacha';
+import { DAILY_PULLS, DUPLICATE_REFUND, PULL_COST, pullsRemaining, RATES } from '../engine/gacha';
 import { useGame, type RecruitResult } from '../store/gameStore';
 import type { GeneralDef, Rarity } from '../types';
 
@@ -16,6 +16,9 @@ export default function Recruit() {
   const roster = useGame((s) => s.roster);
   const recruit = useGame((s) => s.recruit);
   const totalPulls = useGame((s) => s.totalPulls);
+  const recruitDay = useGame((s) => s.recruitDay);
+  const recruitUsed = useGame((s) => s.recruitUsed);
+  const left = pullsRemaining(recruitDay, recruitUsed);
   const [phase, setPhase] = useState<Phase>('idle');
   const [results, setResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<GeneralDef | null>(null);
@@ -39,14 +42,15 @@ export default function Recruit() {
           <h2 className="font-serif text-2xl font-black">장수 등용</h2>
           <span className="shrink-0 text-xs text-stone-400">도감 {ownedCount}/{RECRUITABLE.length}</span>
         </div>
-        <p className="text-xs text-stone-500">금화로 재야의 장수를 초빙합니다. 이미 있는 장수는 돌파(★)로 오르고, 장수록에서 품계를 한 단계 올릴 수 있습니다.</p>
+        <p className="text-xs text-stone-500">금화로 재야의 장수를 초빙합니다. 이미 있는 장수는 돌파(★)로 오르고, 장수록에서 품계를 한 단계 올릴 수 있습니다. 등용은 하루 {DAILY_PULLS}회까지입니다.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <PullButton label="1회 등용" cost={PULL_COST.single} gold={gold} disabled={phase === 'summoning'} onClick={() => pull(1)} />
-        <PullButton label="10연 등용" cost={PULL_COST.ten} gold={gold} disabled={phase === 'summoning'} onClick={() => pull(10)}
-          note="SR 이상 1명 확정 · 10% 할인" gold10 />
+      <div className="grid grid-cols-2 gap-2">
+        <PullButton label="1회 등용" cost={PULL_COST.single} gold={gold} left={left} need={1} disabled={phase === 'summoning'} onClick={() => pull(1)} />
+        <PullButton label="10연 등용" cost={PULL_COST.ten} gold={gold} left={left} need={10} disabled={phase === 'summoning'} onClick={() => pull(10)}
+          note="SR 이상 확정" gold10 />
       </div>
+      <p className="text-center text-[11px] text-stone-500">오늘 남은 등용 {left}/{DAILY_PULLS}</p>
 
       {/* 등용 무대 */}
       <div className="relative flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-4">
@@ -84,6 +88,10 @@ export default function Recruit() {
         {phase === 'reveal' && (
           <div className="w-full">
             {best === 'SSR' && <div className="pointer-events-none absolute inset-0 animate-flash bg-amber-400/40" />}
+            <p className="mb-2 text-center text-xs font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+              금화 -{results.length === 10 ? PULL_COST.ten : PULL_COST.single}
+              {results.some((r) => r.refund) && ` · 중복 환급 +${results.reduce((n, r) => n + r.refund, 0)}`}
+            </p>
             <div className={cn('mx-auto grid gap-2', results.length === 1 ? 'max-w-[180px] grid-cols-1' : 'grid-cols-3 sm:grid-cols-5')}>
               {results.map((r, i) => (
                 <div key={i} className="animate-pop-in relative" style={{ animationDelay: `${i * 0.12}s` }}>
@@ -138,20 +146,23 @@ function RatesBody() {
           </div>
         ))}
       </div>
-      <p className="mt-2 text-[11px] text-stone-500">돌파는 최대 ★5. 그 이후 중복은 금화로 환급됩니다 (SSR 300 · SR 120 · R 40).</p>
+      <p className="mt-2 text-[11px] text-stone-500">돌파는 최대 ★5. 그 이후 중복은 금화로 조금 돌아옵니다 (SSR {DUPLICATE_REFUND.SSR} · SR {DUPLICATE_REFUND.SR} · R {DUPLICATE_REFUND.R}). 등용은 하루 {DAILY_PULLS}회까지입니다.</p>
     </>
   );
 }
 
-function PullButton({ label, cost, gold, onClick, disabled, note, gold10 }: {
-  label: string; cost: number; gold: number; onClick: () => void; disabled?: boolean; note?: string; gold10?: boolean;
+function PullButton({ label, cost, gold, left, need, onClick, disabled, note, gold10 }: {
+  label: string; cost: number; gold: number; left: number; need: number; onClick: () => void; disabled?: boolean; note?: string; gold10?: boolean;
 }) {
   const short = gold < cost;
+  const dailyShort = left < need;
   return (
-    <Btn size="lg" variant={gold10 ? 'gold' : 'primary'} onClick={onClick} disabled={disabled || short} className="flex-col gap-0 py-3">
-      <span>{label}</span>
-      <span className="flex items-center gap-1 text-xs font-semibold opacity-80"><Coins size={12} /> {cost}{note && ` · ${note}`}</span>
-      {short && <span className="text-[10px] font-normal">금화 부족 — 스테이지에서 획득하세요</span>}
+    <Btn size="md" variant={gold10 ? 'gold' : 'primary'} onClick={onClick} disabled={disabled || short || dailyShort} className="h-full w-full flex-col gap-0 px-2 py-2">
+      <span className="text-sm">{label}</span>
+      <span className="flex items-center gap-1 text-[11px] font-semibold opacity-80"><Coins size={11} /> {cost}</span>
+      {note && !short && !dailyShort && <span className="text-[10px] font-normal leading-tight">{note}</span>}
+      {dailyShort && <span className="text-[10px] font-normal leading-tight">오늘 횟수 부족</span>}
+      {short && !dailyShort && <span className="text-[10px] font-normal leading-tight">금화 부족</span>}
     </Btn>
   );
 }
