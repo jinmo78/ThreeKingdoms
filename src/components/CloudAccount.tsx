@@ -58,16 +58,16 @@ export function CloudPanel() {
     <div className="mt-4 flex w-full max-w-md flex-col items-center gap-2">
       {!user && (
         <>
-          <Btn size="md" onClick={() => { void signInGoogle(); }} disabled={busy} className="w-56">
-            <LogIn size={16} /> 구글로 이어하기
-          </Btn>
-          <button type="button" disabled={busy} onClick={() => { void signInGuest(); }}
-            className="text-xs text-stone-400 hover:text-stone-200 disabled:opacity-40">
-            구글 계정 없이 이 브라우저에 클라우드 저장
+          <button type="button" disabled={busy} onClick={() => { void signInGoogle(); }}
+            className="inline-flex w-56 items-center justify-center gap-1.5 rounded-xl bg-white px-6 py-3 text-base font-bold text-[#1c1612] shadow-[0_6px_20px_-8px_rgba(255,255,255,0.8)] hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40">
+            <LogIn size={18} /> 구글 계정으로 로그인
           </button>
-          <p className="max-w-sm text-[11px] leading-relaxed text-stone-500">
-            구글 계정으로 로그인하면 PC와 모바일에서 같은 진행을 이어갑니다. 계정 없이 남긴 기록은 이 브라우저에서만 이어지고, 나중에 구글을 연결할 수 있습니다.
-          </p>
+          <p className="max-w-sm text-[11px] leading-relaxed text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">PC와 휴대폰에서 같은 진행을 이어갑니다.</p>
+          <button type="button" disabled={busy} onClick={() => { void signInGuest(); }}
+            className="inline-flex w-56 items-center justify-center gap-1.5 rounded-xl bg-sky-700 px-6 py-3 text-base font-bold text-white shadow-[0_6px_20px_-8px_rgba(3,105,161,0.8)] hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-40">
+            익명으로 로그인
+          </button>
+          <p className="max-w-sm text-[11px] leading-relaxed text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">구글 계정 없이 이 브라우저에만 클라우드로 남깁니다.</p>
         </>
       )}
       {user && (
@@ -109,8 +109,18 @@ export function AccountButton() {
           </p>
           {notice && <p className="mt-2 text-xs text-stone-400">{notice}</p>}
           <div className="mt-4 flex flex-wrap gap-2">
-            {!user && <Btn disabled={busy} onClick={() => { void signInGoogle(); }}><LogIn size={16} /> 구글로 로그인</Btn>}
-            {!user && <Btn variant="outline" disabled={busy} onClick={() => { void signInGuest(); }}>계정 없이 저장</Btn>}
+            {!user && (
+              <button type="button" disabled={busy} onClick={() => { void signInGoogle(); }}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-bold text-[#1c1612] hover:bg-stone-100 disabled:opacity-40">
+                <LogIn size={16} /> 구글 계정으로 로그인
+              </button>
+            )}
+            {!user && (
+              <button type="button" disabled={busy} onClick={() => { void signInGuest(); }}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-700 px-4 py-2 text-sm font-bold text-white hover:bg-sky-600 disabled:opacity-40">
+                익명으로 로그인
+              </button>
+            )}
             {user?.anonymous && <Btn disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정에 연결</Btn>}
             {user && (
               <Btn variant="ghost" disabled={busy} onClick={() => { void signOutCloud(); }}>

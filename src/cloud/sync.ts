@@ -25,6 +25,7 @@ import { applySaveState, useGame } from '../store/gameStore';
 import { SAVE_VERSION, migrateSave, pickSave, sanitizeSave, saveSignature, type SaveData } from '../store/saveData';
 
 const STAMP_KEY = 'oath-banner-saved-at';
+const ENTER_KEY = 'oath-banner-enter-after-auth';
 
 let booted = false;
 let hydrated = false;
@@ -134,6 +135,20 @@ async function uploadNow(force: boolean) {
     }
     useCloud.setState({ phase: 'error', notice: noticeFor(error instanceof FirebaseError ? error.code : 'unavailable') });
   }
+}
+
+function wantEnterAfterAuth() {
+  try { sessionStorage.setItem(ENTER_KEY, '1'); } catch { /* 사생활 보호 모드 */ }
+}
+
+/** 로그인 버튼으로 들어온 경우에만 게임을 연다. 첫 화면 로고로 돌아온 경우는 그대로 둔다. */
+function enterGameAfterAuth() {
+  let pending = false;
+  try { pending = sessionStorage.getItem(ENTER_KEY) === '1'; } catch { return; }
+  if (!pending || useCloud.getState().conflict) return;
+  try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
+  const game = useGame.getState();
+  if (game.started && !game.entered) game.enter();
 }
 
 function scheduleUpload() {
@@ -265,8 +280,10 @@ export function startCloudSync() {
         const gen = ++authGen;
         activeUid = user.uid;
         void reconcile(user, gen).then((ok) => {
-          if (!ok && gen === authGen) activeUid = null;
-          if (gen === authGen) useCloud.setState({ busy: false });
+          if (gen !== authGen) return;
+          if (!ok) activeUid = null;
+          else enterGameAfterAuth();
+          useCloud.setState({ busy: false });
         });
       });
     })().catch(fail);
@@ -281,31 +298,35 @@ export function startCloudSync() {
 
 export async function signInGoogle() {
   if (!cloudConfigured) return;
+  wantEnterAfterAuth();
   useCloud.setState({ busy: true, notice: '' });
+  const before = firebaseAuth().currentUser?.uid ?? null;
   try {
     await google(firebaseAuth());
+    // 익명 계정에 구글을 연결하면 uid가 그대로라 인증 리스너가 다시 돌지 않는다.
+    if (firebaseAuth().currentUser?.uid && firebaseAuth().currentUser?.uid === before) enterGameAfterAuth();
   } catch (error) {
+    try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
     fail(error);
-  } finally {
-    useCloud.setState({ busy: false });
   }
 }
 
 export async function signInGuest() {
   if (!cloudConfigured || useCloud.getState().user) return;
+  wantEnterAfterAuth();
   useCloud.setState({ busy: true, notice: '' });
   try {
     await signInAnonymously(firebaseAuth());
   } catch (error) {
+    try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
     fail(error);
-  } finally {
-    useCloud.setState({ busy: false });
   }
 }
 
 export async function signOutCloud() {
   canUpload = false;
   pending = false;
+  try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
   await signOut(firebaseAuth());
   useCloud.setState({
     phase: 'signed-out',
@@ -321,7 +342,10 @@ export async function keepLocalSave() {
   useCloud.setState({ busy: true });
   await uploadNow(true);
   useCloud.setState({ busy: false });
-  if (!useCloud.getState().conflict) useCloud.setState({ notice: '이 기기의 진행을 클라우드에 남겼습니다.' });
+  if (!useCloud.getState().conflict) {
+    useCloud.setState({ notice: '이 기기의 진행을 클라우드에 남겼습니다.' });
+    enterGameAfterAuth();
+  }
 }
 
 export async function keepCloudSave() {
@@ -330,4 +354,5 @@ export async function keepCloudSave() {
   rememberRemote(conflict.remote, conflict.remoteAt);
   canUpload = true;
   useCloud.setState({ conflict: null, phase: 'ready', notice: '클라우드 진행을 이 기기에 불러왔습니다.' });
+  enterGameAfterAuth();
 }
