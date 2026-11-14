@@ -64,7 +64,7 @@ export default function TitleScreen() {
             <p className="text-sm text-stone-200">다른 기기의 기록을 확인하고 있습니다…</p>
           ) : started ? (
             <>
-              <Btn size="lg" onClick={enter} className="w-56"><Play size={18} /> 이어하기</Btn>
+              <Btn size="lg" onClick={enter} className="w-56"><Play size={18} /> {cloudUser && !cloudUser.anonymous ? '입장' : '이어하기'}</Btn>
               {confirm ? (
                 <div className="flex items-center gap-2 text-xs text-stone-300">
                   {cloudUser ? '이 기기와 클라우드의 진행이 모두 지워집니다.' : '저장된 진행이 모두 지워집니다.'}
@@ -82,9 +82,7 @@ export default function TitleScreen() {
           )}
         </div>
         <CloudPanel />
-        <p className="mt-4 text-[11px] text-stone-500">
-          {cloudUser ? '진행 상황은 이 브라우저와 클라우드에 자동 저장됩니다.' : '진행 상황은 이 브라우저에 자동 저장됩니다.'}
-        </p>
+        <p className="mt-4 text-[11px] text-stone-500">진행 상황은 이 브라우저에 자동 저장됩니다.</p>
       </div>
       </div>
     </div>

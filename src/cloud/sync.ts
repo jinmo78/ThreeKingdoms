@@ -122,7 +122,7 @@ async function uploadNow(force: boolean) {
     await writeRemote(user.uid, save, updatedAt, force);
     baseUpdatedAt = updatedAt;
     setStamp(updatedAt);
-    useCloud.setState({ phase: 'ready', notice: '클라우드에 저장했습니다.', conflict: null });
+    useCloud.setState({ phase: 'ready', notice: '', conflict: null });
     if (saveSignature(useGame.getState()) !== saveSignature(save)) scheduleUpload();
   } catch (error) {
     const stale = error as { code?: string; remote?: SaveData; remoteAt?: number };
@@ -201,7 +201,7 @@ async function reconcile(user: User, gen: number): Promise<boolean> {
   const decision = decideSync(local, remote?.save ?? null);
   if (decision === 'download' && remote) {
     rememberRemote(remote.save, remote.updatedAt);
-    useCloud.setState({ phase: 'ready', notice: '다른 기기의 진행을 불러왔습니다.' });
+    useCloud.setState({ phase: 'ready', notice: '' });
   } else if (decision === 'conflict' && remote) {
     useCloud.setState({
       phase: 'ready',
@@ -213,12 +213,12 @@ async function reconcile(user: User, gen: number): Promise<boolean> {
     canUpload = true;
     await uploadNow(true);
     if (gen !== authGen) return false;
-    useCloud.setState({ notice: remote ? '클라우드에 저장했습니다.' : '이 진행을 클라우드에 올렸습니다.' });
+    useCloud.setState({ notice: '' });
     return true;
   } else if (remote) {
     baseUpdatedAt = remote.updatedAt;
     setStamp(remote.updatedAt);
-    useCloud.setState({ phase: 'ready', notice: '클라우드 기록과 같습니다.' });
+    useCloud.setState({ phase: 'ready', notice: '' });
   }
   canUpload = true;
   return true;
@@ -364,7 +364,7 @@ export async function keepLocalSave() {
   await uploadNow(true);
   useCloud.setState({ busy: false });
   if (!useCloud.getState().conflict) {
-    useCloud.setState({ notice: '이 기기의 진행을 클라우드에 남겼습니다.' });
+    useCloud.setState({ notice: '' });
     enterGameAfterAuth();
   }
 }
@@ -374,6 +374,6 @@ export async function keepCloudSave() {
   if (!conflict) return;
   rememberRemote(conflict.remote, conflict.remoteAt);
   canUpload = true;
-  useCloud.setState({ conflict: null, phase: 'ready', notice: '클라우드 진행을 이 기기에 불러왔습니다.' });
+  useCloud.setState({ conflict: null, phase: 'ready', notice: '' });
   enterGameAfterAuth();
 }

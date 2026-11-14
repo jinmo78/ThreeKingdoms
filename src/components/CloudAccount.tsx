@@ -76,7 +76,7 @@ export function CloudPanel() {
             {user.anonymous ? '익명으로 로그인되어 있습니다.' : `${user.email ?? user.name ?? '구글 계정'} 로 로그인되어 있습니다.`}
           </p>
           <p className="max-w-sm text-center text-[11px] leading-relaxed text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-            위의 이어하기로 이 기록을 엽니다. 다른 브라우저의 로그인과는 따로입니다.
+            {user.anonymous ? '위의 이어하기로 이 기록을 엽니다.' : '위의 입장으로 이 기록을 엽니다.'} 다른 브라우저의 로그인과는 따로입니다.
           </p>
           {user.anonymous && (
             <Btn size="sm" variant="outline" disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정에 연결</Btn>

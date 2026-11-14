@@ -29,8 +29,8 @@ export function GeneralToken({ def, size = 'md', dim, className, rarity }: {
   return (
     <div className={cn('relative shrink-0', className)}>
       <div className={cn('overflow-hidden', s.box, RARITY[rank].border)}>
-        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className={cn('block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]', dim && 'saturate-[0.85]')} />
-          : <Portrait def={def} className="block h-full w-full" />}
+        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className={cn('block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]', dim && 'scale-110 blur-[3px]')} />
+          : <Portrait def={def} className={cn('block h-full w-full', dim && 'scale-110 blur-[3px]')} />}
       </div>
       <span className={cn('absolute leading-none', s.troop)} aria-label={TROOP[def.troop].label}>{TROOP[def.troop].emoji}</span>
     </div>
