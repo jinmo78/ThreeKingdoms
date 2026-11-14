@@ -1,9 +1,9 @@
-import { Link2, Play, RotateCcw, Swords, Users } from 'lucide-react';
+import { Play, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { BannerEmblem } from '../components/BannerEmblem';
-import { CloudPanel } from '../components/CloudAccount';
+import { CloudPanel, TitleButton } from '../components/CloudAccount';
 import { GeneralToken } from '../components/General';
-import { Btn, ThemeToggle } from '../components/ui';
+import { ThemeToggle } from '../components/ui';
 import { useCloud } from '../cloud/account';
 import { GAME_SUBTITLE, GAME_TAGLINE, GAME_TITLE } from '../config';
 import { getGeneral } from '../data/generals';
@@ -53,36 +53,22 @@ export default function TitleScreen() {
           ))}
         </div>
 
-        <ul className="mx-auto mt-6 grid w-full max-w-md gap-2 break-keep rounded-2xl bg-stone-950/70 px-4 py-3 text-left text-sm text-stone-300">
-          <li className="flex items-center gap-2"><Users size={16} className="shrink-0 text-red-300" /> 장수를 등용하고 주장·부장·참모·보좌 6인 부대를 편성</li>
-          <li className="flex items-center gap-2"><Link2 size={16} className="shrink-0 text-amber-300" /> 세력·병과·인연을 맞춰 시너지를 완성</li>
-          <li className="flex items-center gap-2"><Swords size={16} className="shrink-0 text-sky-300" /> 자동 전투에서 터지는 연쇄 전법으로 승리</li>
-        </ul>
-
-        <div className="mt-6 flex flex-col items-center gap-3">
-          {conflict ? null : waitingCloud ? (
-            <p className="text-sm text-stone-200">다른 기기의 기록을 확인하고 있습니다…</p>
-          ) : started ? (
+        <div className="mt-8 flex flex-col items-center gap-3">
+          {conflict || waitingCloud ? null : started ? (
+            <TitleButton color="red" icon={Play} onClick={enter}>{cloudUser && !cloudUser.anonymous ? '입장' : '이어하기'}</TitleButton>
+          ) : (
+            <TitleButton color="red" icon={Play} onClick={newGame}>출사표 던지기</TitleButton>
+          )}
+          <CloudPanel />
+          {started && !conflict && (confirm ? (
             <>
-              <Btn size="lg" onClick={enter} className="w-56"><Play size={18} /> {cloudUser && !cloudUser.anonymous ? '입장' : '이어하기'}</Btn>
-              {confirm ? (
-                <div className="flex items-center gap-2 text-xs text-stone-300">
-                  {cloudUser ? '이 기기와 클라우드의 진행이 모두 지워집니다.' : '저장된 진행이 모두 지워집니다.'}
-                  <Btn size="sm" variant="outline" onClick={newGame}>새로 시작</Btn>
-                  <Btn size="sm" variant="ghost" onClick={() => setConfirm(false)}>취소</Btn>
-                </div>
-              ) : (
-                <button type="button" onClick={() => setConfirm(true)} className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-200">
-                  <RotateCcw size={12} /> 처음부터 다시 하기
-                </button>
-              )}
+              <TitleButton color="stone" icon={RotateCcw} onClick={newGame}>초기화</TitleButton>
+              <TitleButton color="ink" onClick={() => setConfirm(false)}>취소</TitleButton>
             </>
           ) : (
-            <Btn size="lg" onClick={newGame} className="w-56"><Play size={18} /> 출사표 던지기</Btn>
-          )}
+            <TitleButton color="stone" icon={RotateCcw} onClick={() => setConfirm(true)}>계정 초기화</TitleButton>
+          ))}
         </div>
-        <CloudPanel />
-        <p className="mt-4 text-[11px] text-stone-500">진행 상황은 이 브라우저에 자동 저장됩니다.</p>
       </div>
       </div>
     </div>

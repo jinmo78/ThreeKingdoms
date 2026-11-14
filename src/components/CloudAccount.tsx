@@ -1,9 +1,35 @@
-import { LogIn, LogOut, UserRound } from 'lucide-react';
-import { useState } from 'react';
+import { LogIn, LogOut, UserRound, type LucideIcon } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { keepCloudSave, keepLocalSave, signInGoogle, signInGuest, signOutCloud } from '../cloud/sync';
 import { useCloud } from '../cloud/account';
 import { saveSummary } from '../store/saveData';
-import { Btn, Modal } from './ui';
+import { Btn, cn, Modal } from './ui';
+
+const TITLE_BTN = 'inline-flex w-56 items-center justify-center gap-1.5 rounded-xl px-6 py-3 text-base font-bold transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none';
+const TITLE_COLOR = {
+  red: 'bg-red-700 text-white hover:bg-red-600 shadow-[0_6px_20px_-8px_rgba(220,38,38,0.7)]',
+  white: 'bg-white text-[#1c1612] hover:bg-stone-100 shadow-[0_6px_20px_-8px_rgba(255,255,255,0.45)]',
+  sky: 'bg-sky-700 text-white hover:bg-sky-600 shadow-[0_6px_20px_-8px_rgba(3,105,161,0.8)]',
+  stone: 'bg-stone-600 text-white hover:bg-stone-500 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.45)]',
+  ink: 'bg-[#2c2622] text-stone-100 hover:bg-[#3d342e] shadow-[0_6px_20px_-8px_rgba(0,0,0,0.45)]',
+} as const;
+
+export function TitleButton({
+  color, children, onClick, disabled, icon: Icon,
+}: {
+  color: keyof typeof TITLE_COLOR;
+  children: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  icon?: LucideIcon;
+}) {
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} className={cn(TITLE_BTN, TITLE_COLOR[color])}>
+      {Icon && <Icon size={18} />}
+      {children}
+    </button>
+  );
+}
 
 function when(ts: number) {
   if (!ts) return '';
@@ -39,55 +65,26 @@ export function CloudPanel() {
   const configured = useCloud((s) => s.configured);
   const phase = useCloud((s) => s.phase);
   const user = useCloud((s) => s.user);
-  const notice = useCloud((s) => s.notice);
   const conflict = useCloud((s) => s.conflict);
   const busy = useCloud((s) => s.busy);
 
-  if (!configured) {
-    if (!import.meta.env.DEV) return null;
-    return (
-      <p className="mt-3 max-w-sm text-[11px] leading-relaxed text-stone-400">
-        클라우드 저장을 쓰려면 .env.local에 Firebase 설정을 넣으세요. 지금은 이 브라우저에만 저장됩니다.
-      </p>
-    );
-  }
-  if (conflict) return <div className="mt-4"><ConflictBody /></div>;
-  if (phase === 'booting') return null;
+  if (!configured || phase === 'booting') return null;
+  if (conflict) return <ConflictBody />;
 
   return (
-    <div className="mt-4 flex w-full max-w-md flex-col items-center gap-2">
+    <div className="flex w-full max-w-md flex-col items-center gap-3">
       {!user && (
         <>
-          <button type="button" disabled={busy} onClick={() => { void signInGoogle(); }}
-            className="inline-flex w-56 items-center justify-center gap-1.5 rounded-xl bg-white px-6 py-3 text-base font-bold text-[#1c1612] shadow-[0_6px_20px_-8px_rgba(255,255,255,0.8)] hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40">
-            <LogIn size={18} /> 구글 계정으로 로그인
-          </button>
-          <p className="max-w-sm text-[11px] leading-relaxed text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">PC와 휴대폰에서 같은 진행을 이어갑니다.</p>
-          <button type="button" disabled={busy} onClick={() => { void signInGuest(); }}
-            className="inline-flex w-56 items-center justify-center gap-1.5 rounded-xl bg-sky-700 px-6 py-3 text-base font-bold text-white shadow-[0_6px_20px_-8px_rgba(3,105,161,0.8)] hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-40">
-            익명으로 로그인
-          </button>
-          <p className="max-w-sm text-[11px] leading-relaxed text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">구글 계정 없이 이 브라우저에만 클라우드로 남깁니다.</p>
+          <TitleButton color="white" icon={LogIn} disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정으로 로그인</TitleButton>
+          <TitleButton color="sky" disabled={busy} onClick={() => { void signInGuest(); }}>익명으로 로그인</TitleButton>
         </>
       )}
-      {user && (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-center text-sm font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-            {user.anonymous ? '익명으로 로그인되어 있습니다.' : `${user.email ?? user.name ?? '구글 계정'} 로 로그인되어 있습니다.`}
-          </p>
-          <p className="max-w-sm text-center text-[11px] leading-relaxed text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-            {user.anonymous ? '위의 이어하기로 이 기록을 엽니다.' : '위의 입장으로 이 기록을 엽니다.'} 다른 브라우저의 로그인과는 따로입니다.
-          </p>
-          {user.anonymous && (
-            <Btn size="sm" variant="outline" disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정에 연결</Btn>
-          )}
-          <button type="button" disabled={busy} onClick={() => { void signOutCloud(); }}
-            className="text-xs text-white/70 underline decoration-white/40 underline-offset-2 hover:text-white disabled:opacity-40">
-            로그아웃
-          </button>
-        </div>
+      {user?.anonymous && (
+        <TitleButton color="white" icon={LogIn} disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정에 연결</TitleButton>
       )}
-      {notice && <p className="text-center text-[11px] text-stone-400">{notice}</p>}
+      {user && (
+        <TitleButton color="ink" icon={LogOut} disabled={busy} onClick={() => { void signOutCloud(); }}>로그아웃</TitleButton>
+      )}
     </div>
   );
 }
