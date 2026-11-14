@@ -3,7 +3,7 @@ import { Flame, Link2, Sparkles, Star, Users } from 'lucide-react';
 import { BOND_MAP } from '../data/bonds';
 import { EFFECT_LABEL, FACTION, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
-import { effectiveStats, expToNext, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
+import { effectiveStats, expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
 import { useGame } from '../store/gameStore';
 import type { GeneralDef, OwnedGeneral, StatKey } from '../types';
 import { portraitImageUrl } from '../data/portraitImages';
@@ -28,8 +28,8 @@ export function GeneralToken({ def, size = 'md', dim, className, rarity }: {
   const rank = rarity ?? def.rarity;
   return (
     <div className={cn('relative shrink-0', className)}>
-      <div className={cn('overflow-hidden', s.box, RARITY[rank].border, dim && 'opacity-30 grayscale')}>
-        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className="block h-full w-full object-cover object-top" />
+      <div className={cn('overflow-hidden', s.box, RARITY[rank].border)}>
+        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className={cn('block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]', dim && 'saturate-[0.85]')} />
           : <Portrait def={def} className="block h-full w-full" />}
       </div>
       <span className={cn('absolute leading-none', s.troop)} aria-label={TROOP[def.troop].label}>{TROOP[def.troop].emoji}</span>
@@ -158,6 +158,12 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
   const target = owned && !promoted ? promoteTarget(def.rarity) : null;
   const cost = target ? PROMOTE_COST[target] : 0;
   const stats = effectiveStats(def, level, owned?.stars ?? 0, owned?.promote ?? 0);
+  const ready = !!owned && owned.level >= MAX_LEVEL && owned.stars >= MAX_STARS;
+  const ladder = def.rarity === 'R'
+    ? [{ rarity: 'R' as const, promote: 0, label: '태생' }, { rarity: 'SR' as const, promote: 1, label: '승급' }]
+    : def.rarity === 'SR'
+      ? [{ rarity: 'SR' as const, promote: 0, label: '태생' }, { rarity: 'SSR' as const, promote: 1, label: '승급' }]
+      : [{ rarity: 'SSR' as const, promote: 0, label: '태생' }];
   const keys: StatKey[] = ['war', 'int', 'lead'];
   return (
     <div className="space-y-4">
@@ -185,15 +191,47 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
         </div>
       )}
 
+      <div>
+        <div className="text-xs font-bold text-stone-400">품계</div>
+        <p className="mt-1 text-[11px] text-stone-500">
+          {def.rarity === 'SSR'
+            ? '태생 SSR입니다. R·SR 카드가 따로 없고, 이 장수 한 명이 최고 품계입니다.'
+            : `태생 ${def.rarity}에서 한 단계만 올릴 수 있습니다. 같은 장수의 등급별 카드는 없습니다.`}
+        </p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {ladder.map((step) => {
+            const st = effectiveStats(def, level, owned?.stars ?? 0, step.promote);
+            const current = (owned?.promote ?? 0) === step.promote;
+            return (
+              <div key={step.rarity} className={cn('rounded-xl border p-2 text-xs', current ? 'border-amber-400/70 bg-amber-400/10' : 'border-stone-800')}>
+                <div className="flex items-center gap-1.5">
+                  <RarityBadge rarity={step.rarity} />
+                  <span className="font-bold">{step.label}</span>
+                  {current && <span className="text-[10px] text-stone-500">현재</span>}
+                </div>
+                <div className="mt-1 text-stone-500">무력 {st.war} · 지력 {st.int} · 통솔 {st.lead}</div>
+                {step.promote > 0 && step.rarity !== 'R' && (
+                  <div className="mt-1 text-[10px] text-stone-500">Lv.{MAX_LEVEL} · 돌파 ★{MAX_STARS} · 금화 {PROMOTE_COST[step.rarity].toLocaleString()} · 능력치 +10%</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {owned && target && (
         <button
           type="button"
-          disabled={gold < cost}
+          disabled={!ready || gold < cost}
           onClick={() => promote(def.id)}
           className="flex w-full flex-col items-center rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-[#1c1612] disabled:opacity-40"
         >
           <span>{target}로 승급</span>
-          <span className="text-xs font-semibold">금화 {cost.toLocaleString()} · 능력치 +10%{gold < cost ? ' · 금화 부족' : ''}</span>
+          <span className="text-xs font-semibold">
+            {ready
+              ? `금화 ${cost.toLocaleString()} · 능력치 +10%${gold < cost ? ' · 금화 부족' : ''}`
+              : `Lv.${MAX_LEVEL}과 돌파 ★${MAX_STARS}를 채워야 합니다 (${owned.level}/${MAX_LEVEL} · ★${owned.stars}/${MAX_STARS})`}
+          </span>
         </button>
       )}
       {owned && !target && def.rarity === 'SSR' && (

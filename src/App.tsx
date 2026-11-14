@@ -25,6 +25,7 @@ export default function App() {
   const view = useGame((s) => s.view);
   const gold = useGame((s) => s.gold);
   const setView = useGame((s) => s.setView);
+  const goTitle = useGame((s) => s.goTitle);
   const inBattle = view === 'battle';
 
   if (!started || !entered) return <TitleScreen />;
@@ -33,7 +34,7 @@ export default function App() {
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
       <header className="sticky top-0 z-30 border-b border-stone-800/80 bg-stone-950">
         <div className="flex items-center gap-3 px-4 py-2.5">
-          <button type="button" onClick={() => !inBattle && setView('campaign')} className="flex items-center gap-2">
+          <button type="button" onClick={goTitle} title="첫 화면" aria-label="첫 화면으로" className="flex items-center gap-2">
             <BannerEmblem className="h-8 w-8" />
             <div className="text-left leading-tight">
               <div className="font-serif text-base font-black tracking-wide text-stone-100">{GAME_TITLE}</div>

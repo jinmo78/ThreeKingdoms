@@ -1,5 +1,5 @@
 import { Moon, Sun } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { applyTheme, currentTheme, type Theme } from '../theme';
 
 export function cn(...cls: (string | false | null | undefined)[]) {
@@ -92,11 +92,45 @@ export function ThemeToggle({ className }: { className?: string }) {
   );
 }
 
+let scrollLocks = 0;
+let lockedScrollY = 0;
+
+function lockPageScroll() {
+  if (scrollLocks === 0) {
+    lockedScrollY = window.scrollY;
+    const body = document.body;
+    body.style.position = 'fixed';
+    body.style.top = `-${lockedScrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+  }
+  scrollLocks += 1;
+}
+
+function unlockPageScroll() {
+  scrollLocks = Math.max(0, scrollLocks - 1);
+  if (scrollLocks > 0) return;
+  const body = document.body;
+  body.style.position = '';
+  body.style.top = '';
+  body.style.left = '';
+  body.style.right = '';
+  body.style.width = '';
+  body.style.overflow = '';
+  window.scrollTo(0, lockedScrollY);
+}
+
 export function Modal({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+  useEffect(() => {
+    lockPageScroll();
+    return unlockPageScroll;
+  }, []);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center overscroll-none bg-black/75 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="animate-slide-in max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-stone-700 bg-stone-900 p-5 sm:rounded-2xl"
+        className="animate-slide-in max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-stone-700 bg-stone-900 p-5 sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

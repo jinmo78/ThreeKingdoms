@@ -86,6 +86,8 @@ interface GameState extends SaveData {
   /** 이번 접속에서 타이틀 화면을 지나왔는지 (저장 안 함) */
   entered: boolean;
   enter: () => void;
+  /** 저장은 두고 첫 화면으로 돌아간다 */
+  goTitle: () => void;
   newGame: () => void;
   setView: (v: View) => void;
   recruit: (count: 1 | 10) => RecruitResult[] | null;
@@ -176,6 +178,7 @@ export const useGame = create<GameState>()(
       entered: false,
 
       enter: () => set({ entered: true, view: 'campaign' }),
+      goTitle: () => set({ entered: false }),
       newGame: () => set({ ...freshSave(), view: 'campaign', battle: null, entered: true }),
 
       setView: (view) => set({ view }),
@@ -232,6 +235,7 @@ export const useGame = create<GameState>()(
         const owned = roster[id];
         const def = GENERAL_MAP[id];
         if (!owned || !def || (owned.promote ?? 0) > 0) return false;
+        if (owned.level < MAX_LEVEL || owned.stars < MAX_STARS) return false;
         const target = promoteTarget(def.rarity);
         if (!target) return false;
         const cost = PROMOTE_COST[target];
