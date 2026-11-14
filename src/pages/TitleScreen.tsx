@@ -1,8 +1,10 @@
 import { Link2, Play, RotateCcw, Swords, Users } from 'lucide-react';
 import { useState } from 'react';
 import { BannerEmblem } from '../components/BannerEmblem';
+import { CloudPanel } from '../components/CloudAccount';
 import { GeneralToken } from '../components/General';
 import { Btn, ThemeToggle } from '../components/ui';
+import { useCloud } from '../cloud/account';
 import { GAME_SUBTITLE, GAME_TAGLINE, GAME_TITLE } from '../config';
 import { getGeneral } from '../data/generals';
 import { useGame } from '../store/gameStore';
@@ -14,7 +16,12 @@ export default function TitleScreen() {
   const started = useGame((s) => s.started);
   const enter = useGame((s) => s.enter);
   const newGame = useGame((s) => s.newGame);
+  const configured = useCloud((s) => s.configured);
+  const phase = useCloud((s) => s.phase);
+  const cloudUser = useCloud((s) => s.user);
+  const conflict = useCloud((s) => s.conflict);
   const [confirm, setConfirm] = useState(false);
+  const waitingCloud = configured && !started && (phase === 'booting' || phase === 'syncing');
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-[#140e0c]">
@@ -53,12 +60,14 @@ export default function TitleScreen() {
         </ul>
 
         <div className="mt-6 flex flex-col items-center gap-3">
-          {started ? (
+          {conflict ? null : waitingCloud ? (
+            <p className="text-sm text-stone-200">다른 기기의 기록을 확인하고 있습니다…</p>
+          ) : started ? (
             <>
               <Btn size="lg" onClick={enter} className="w-56"><Play size={18} /> 이어하기</Btn>
               {confirm ? (
                 <div className="flex items-center gap-2 text-xs text-stone-300">
-                  저장된 진행이 모두 지워집니다.
+                  {cloudUser ? '이 기기와 클라우드의 진행이 모두 지워집니다.' : '저장된 진행이 모두 지워집니다.'}
                   <Btn size="sm" variant="outline" onClick={newGame}>새로 시작</Btn>
                   <Btn size="sm" variant="ghost" onClick={() => setConfirm(false)}>취소</Btn>
                 </div>
@@ -72,7 +81,10 @@ export default function TitleScreen() {
             <Btn size="lg" onClick={newGame} className="w-56"><Play size={18} /> 출사표 던지기</Btn>
           )}
         </div>
-        <p className="mt-4 text-[11px] text-stone-500">진행 상황은 이 브라우저에 자동 저장됩니다.</p>
+        <CloudPanel />
+        <p className="mt-4 text-[11px] text-stone-500">
+          {cloudUser ? '진행 상황은 이 브라우저와 클라우드에 자동 저장됩니다.' : '진행 상황은 이 브라우저에 자동 저장됩니다.'}
+        </p>
       </div>
       </div>
     </div>

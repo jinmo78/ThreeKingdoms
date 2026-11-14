@@ -1,6 +1,7 @@
 // ============================================================
 // 게임 상태 — Zustand + persist(localStorage)
 // 저장 대상: 금화 · 보유 장수 · 부대 편성 · 스테이지 진행도
+// 로그인한 경우에는 같은 본문을 Firestore에도 올린다.
 // ============================================================
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -18,6 +19,10 @@ export { emptyUnit, enemyProfiles, playerProfiles, unitProfile } from '../engine
 import type { EnemyUnit, GeneralDef, OwnedGeneral, Slot, Unit } from '../types';
 import { GENERAL_MAP } from '../data/generals';
 import { SLOTS } from '../types';
+import { freshSave, migrateSave, pickSave, SAVE_VERSION, type SaveData } from './saveData';
+
+export type { SaveData } from './saveData';
+export { SAVE_VERSION } from './saveData';
 
 export type View = 'campaign' | 'formation' | 'recruit' | 'roster' | 'challenge' | 'battle';
 
@@ -62,22 +67,6 @@ export interface PracticeRecord {
   commanders: string;
   winRate: number;
   avgChains: number;
-}
-
-interface SaveData {
-  started: boolean;
-  gold: number;
-  roster: Record<string, OwnedGeneral>;
-  formation: Unit[];
-  cleared: Record<string, number>;
-  totalPulls: number;
-  /** 천하 토벌전 최고 돌파 층 */
-  conquestBest: number;
-  /** 가장 최근에 패배한 토벌전 층 — 그 층의 적군 맞춤 편성 개방 조건 */
-  conquestFailFloor: number;
-  /** 등용 횟수를 센 날짜 (YYYY-MM-DD). 날짜가 바뀌면 하루 10회로 돌아간다 */
-  recruitDay: string;
-  recruitUsed: number;
 }
 
 interface GameState extends SaveData {
@@ -134,30 +123,6 @@ function grantExp(roster: Record<string, OwnedGeneral>, formation: Unit[], amoun
     if (level > from) levelUps.push({ id, from, to: level });
   }
   return { roster: next, levelUps };
-}
-
-const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
-
-function freshSave(): SaveData {
-  const roster: Record<string, OwnedGeneral> = {};
-  for (const id of STARTERS) roster[id] = { level: 1, exp: 0, stars: 0, promote: 0 };
-  return {
-    started: true,
-    gold: 1500,
-    roster,
-    // 튜토리얼: 도원결의(유비·장비)와 촉한의 기틀(유비·미축·간옹)이 바로 보이도록 미리 배치
-    formation: [
-      { commander: 'liubei', vice1: 'zhangfei', vice2: 'xuchu', strategist: 'lusu', aide1: 'mizhu', aide2: 'jianyong' },
-      emptyUnit(),
-      emptyUnit(),
-    ],
-    cleared: {},
-    totalPulls: 0,
-    conquestBest: 0,
-    conquestFailFloor: 0,
-    recruitDay: '',
-    recruitUsed: 0,
-  };
 }
 
 export const useGame = create<GameState>()(
@@ -324,38 +289,21 @@ export const useGame = create<GameState>()(
     }),
     {
       name: 'oath-banner-save',
-      version: 4,
+      version: SAVE_VERSION,
       // v1(주장·부장·참모 3칸) → v2(6칸) → v3(품계 승급) → v4(하루 등용 횟수)
-      migrate: (persisted, version) => {
-        const s = persisted as SaveData;
-        if (version < 2 && s?.formation) {
-          const old = s.formation as unknown as Record<string, string | null>[];
-          s.formation = old.map((u) => ({
-            ...emptyUnit(), commander: u.commander ?? null, vice1: u.vice ?? null, strategist: u.strategist ?? null,
-          }));
-        }
-        if (version < 3 && s?.roster) {
-          for (const id of Object.keys(s.roster)) s.roster[id] = { ...s.roster[id], promote: s.roster[id].promote ?? 0 };
-        }
-        if (version < 4) {
-          s.recruitDay = s.recruitDay ?? '';
-          s.recruitUsed = s.recruitUsed ?? 0;
-        }
-        return s as SaveData;
-      },
+      migrate: (persisted, version) => migrateSave(persisted, version),
       storage: createJSONStorage(() => localStorage),
-      partialize: (s): SaveData => ({
-        started: s.started,
-        gold: s.gold,
-        roster: s.roster,
-        formation: s.formation,
-        cleared: s.cleared,
-        totalPulls: s.totalPulls,
-        conquestBest: s.conquestBest,
-        conquestFailFloor: s.conquestFailFloor,
-        recruitDay: s.recruitDay,
-        recruitUsed: s.recruitUsed,
-      }),
+      partialize: (s): SaveData => pickSave(s),
     },
   ),
 );
+
+/** 클라우드에서 받은 기록으로 저장 본문만 바꾼다. 화면 이동과 로그인은 건드리지 않는다. */
+export function applySaveState(save: SaveData) {
+  const view = useGame.getState().view;
+  useGame.setState({
+    ...pickSave(save),
+    battle: null,
+    view: view === 'battle' ? 'campaign' : view,
+  });
+}

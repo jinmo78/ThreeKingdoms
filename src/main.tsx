@@ -1,7 +1,10 @@
 import { Component, StrictMode, type ErrorInfo, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { startCloudSync } from './cloud/sync';
 import App from './App';
 import './index.css';
+
+startCloudSync();
 
 class ScreenGuard extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };

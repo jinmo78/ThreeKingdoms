@@ -1,5 +1,6 @@
 import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'lucide-react';
 import { BannerEmblem } from './components/BannerEmblem';
+import { AccountButton, GameConflict } from './components/CloudAccount';
 import { cn, ThemeToggle } from './components/ui';
 import BattlePage from './pages/Battle';
 import Campaign from './pages/Campaign';
@@ -49,6 +50,7 @@ export default function App() {
             </nav>
           )}
           <div className="ml-auto flex items-center gap-2">
+            <AccountButton />
             <ThemeToggle />
             <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-bold text-amber-300">
               <Coins size={15} />
@@ -66,6 +68,8 @@ export default function App() {
         {view === 'challenge' && <Challenge />}
         {view === 'battle' && <BattlePage />}
       </main>
+
+      <GameConflict />
 
       {!inBattle && (
         <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-800 bg-stone-950 pb-[env(safe-area-inset-bottom)] lg:hidden">
