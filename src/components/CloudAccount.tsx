@@ -71,12 +71,21 @@ export function CloudPanel() {
         </>
       )}
       {user && (
-        <p className="text-center text-xs text-stone-300">
-          {user.anonymous ? '구글에 연결하지 않은 클라우드 기록입니다.' : `${user.email ?? user.name ?? '구글 계정'}에 저장합니다.`}
-        </p>
-      )}
-      {user?.anonymous && (
-        <Btn size="sm" variant="outline" disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정에 연결</Btn>
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-center text-sm font-bold text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+            {user.anonymous ? '익명으로 로그인되어 있습니다.' : `${user.email ?? user.name ?? '구글 계정'} 로 로그인되어 있습니다.`}
+          </p>
+          <p className="max-w-sm text-center text-[11px] leading-relaxed text-white/80 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+            위의 이어하기로 이 기록을 엽니다. 다른 브라우저의 로그인과는 따로입니다.
+          </p>
+          {user.anonymous && (
+            <Btn size="sm" variant="outline" disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정에 연결</Btn>
+          )}
+          <button type="button" disabled={busy} onClick={() => { void signOutCloud(); }}
+            className="text-xs text-white/70 underline decoration-white/40 underline-offset-2 hover:text-white disabled:opacity-40">
+            로그아웃
+          </button>
+        </div>
       )}
       {notice && <p className="text-center text-[11px] text-stone-400">{notice}</p>}
     </div>

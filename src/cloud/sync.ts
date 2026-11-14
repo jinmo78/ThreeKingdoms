@@ -26,6 +26,8 @@ import { SAVE_VERSION, migrateSave, pickSave, sanitizeSave, saveSignature, type 
 
 const STAMP_KEY = 'oath-banner-saved-at';
 const ENTER_KEY = 'oath-banner-enter-after-auth';
+/** 구글 리다이렉트가 끝난 직후. 삼성 브라우저는 sessionStorage를 비우는 경우가 있다. */
+let redirectEnter = false;
 
 let booted = false;
 let hydrated = false;
@@ -138,15 +140,32 @@ async function uploadNow(force: boolean) {
 }
 
 function wantEnterAfterAuth() {
-  try { sessionStorage.setItem(ENTER_KEY, '1'); } catch { /* 사생활 보호 모드 */ }
+  try { localStorage.setItem(ENTER_KEY, '1'); } catch { /* 사생활 보호 모드 */ }
+  try { sessionStorage.setItem(ENTER_KEY, '1'); } catch { /* ignore */ }
+}
+
+function hasEnterIntent() {
+  if (redirectEnter) return true;
+  try {
+    if (localStorage.getItem(ENTER_KEY) === '1') return true;
+  } catch { /* ignore */ }
+  try {
+    return sessionStorage.getItem(ENTER_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function clearEnterIntent() {
+  redirectEnter = false;
+  try { localStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
+  try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
 }
 
 /** 로그인 버튼으로 들어온 경우에만 게임을 연다. 첫 화면 로고로 돌아온 경우는 그대로 둔다. */
 function enterGameAfterAuth() {
-  let pending = false;
-  try { pending = sessionStorage.getItem(ENTER_KEY) === '1'; } catch { return; }
-  if (!pending || useCloud.getState().conflict) return;
-  try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
+  if (!hasEnterIntent() || useCloud.getState().conflict) return;
+  clearEnterIntent();
   const game = useGame.getState();
   if (game.started && !game.entered) game.enter();
 }
@@ -213,26 +232,26 @@ async function adoptExistingGoogle(error: unknown) {
   await signInWithCredential(firebaseAuth(), credential);
 }
 
-function wantsRedirect() {
-  return window.matchMedia('(pointer: coarse)').matches;
+function shouldUseRedirect(error: unknown) {
+  if (!(error instanceof FirebaseError)) return false;
+  return error.code === 'auth/popup-blocked' || error.code === 'auth/operation-not-supported-in-this-environment';
 }
 
 async function google(auth: Auth) {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
-  const redirect = wantsRedirect();
   const current = auth.currentUser;
   try {
-    if (current?.isAnonymous) {
-      if (redirect) await linkWithRedirect(current, provider);
-      else await linkWithPopup(current, provider);
-    } else if (redirect) {
-      await signInWithRedirect(auth, provider);
-    } else {
-      await signInWithPopup(auth, provider);
-    }
+    // 삼성 브라우저는 리다이렉트 왕복에서 로그인 직후 표시를 잃는다. 팝업을 먼저 쓴다.
+    if (current?.isAnonymous) await linkWithPopup(current, provider);
+    else await signInWithPopup(auth, provider);
   } catch (error) {
-    await adoptExistingGoogle(error);
+    if (!shouldUseRedirect(error)) {
+      await adoptExistingGoogle(error);
+      return;
+    }
+    if (current?.isAnonymous) await linkWithRedirect(current, provider);
+    else await signInWithRedirect(auth, provider);
   }
 }
 
@@ -257,7 +276,8 @@ export function startCloudSync() {
       auth.languageCode = 'ko';
       await setPersistence(auth, browserLocalPersistence);
       try {
-        await getRedirectResult(auth);
+        const redirected = await getRedirectResult(auth);
+        if (redirected?.user) redirectEnter = true;
       } catch (error) {
         try {
           await adoptExistingGoogle(error);
@@ -272,6 +292,7 @@ export function startCloudSync() {
           activeUid = null;
           canUpload = false;
           baseUpdatedAt = 0;
+          if (!redirectEnter) clearEnterIntent();
           useCloud.setState({ phase: 'signed-out', user: null, conflict: null, busy: false });
           return;
         }
@@ -306,7 +327,7 @@ export async function signInGoogle() {
     // 익명 계정에 구글을 연결하면 uid가 그대로라 인증 리스너가 다시 돌지 않는다.
     if (firebaseAuth().currentUser?.uid && firebaseAuth().currentUser?.uid === before) enterGameAfterAuth();
   } catch (error) {
-    try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
+    clearEnterIntent();
     fail(error);
   }
 }
@@ -318,7 +339,7 @@ export async function signInGuest() {
   try {
     await signInAnonymously(firebaseAuth());
   } catch (error) {
-    try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
+    clearEnterIntent();
     fail(error);
   }
 }
@@ -326,7 +347,7 @@ export async function signInGuest() {
 export async function signOutCloud() {
   canUpload = false;
   pending = false;
-  try { sessionStorage.removeItem(ENTER_KEY); } catch { /* ignore */ }
+  clearEnterIntent();
   await signOut(firebaseAuth());
   useCloud.setState({
     phase: 'signed-out',
