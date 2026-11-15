@@ -6,7 +6,7 @@ import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
 import type { OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export interface FormationPreset {
   id: string;
@@ -27,9 +27,14 @@ export interface SaveData {
   conquestBest: number;
   /** 가장 최근에 패배한 토벌전 층 */
   conquestFailFloor: number;
-  /** 등용 횟수를 센 날짜 (YYYY-MM-DD) */
-  recruitDay: string;
-  recruitUsed: number;
+  /** 보유 중인 무료 등용 횟수 (일일 지급 · 출석 보상) */
+  freePulls: number;
+  /** 일일 무료 등용을 지급한 날짜 (YYYY-MM-DD) */
+  freeGrantDay: string;
+  /** 마지막으로 출석한 날짜 */
+  attendDay: string;
+  /** 연속 출석 일수 */
+  attendStreak: number;
   presets: FormationPreset[];
 }
 
@@ -53,8 +58,10 @@ export function freshSave(): SaveData {
     totalPulls: 0,
     conquestBest: 0,
     conquestFailFloor: 0,
-    recruitDay: '',
-    recruitUsed: 0,
+    freePulls: 0,
+    freeGrantDay: '',
+    attendDay: '',
+    attendStreak: 0,
     presets: [],
   };
 }
@@ -129,7 +136,7 @@ export function sanitizeSave(raw: unknown): SaveData {
   for (const [id, n] of Object.entries(cleared)) {
     if (fought[id] == null) fought[id] = n;
   }
-  const recruitDay = typeof src.recruitDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(src.recruitDay) ? src.recruitDay : '';
+  const day = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
   return {
     started: typeof src.started === 'boolean' ? src.started : Object.keys(roster).length > 0,
     gold: clampInt(src.gold, 0, 1_000_000_000, 0),
@@ -140,8 +147,10 @@ export function sanitizeSave(raw: unknown): SaveData {
     totalPulls: clampInt(src.totalPulls, 0, 1_000_000_000, 0),
     conquestBest: clampInt(src.conquestBest, 0, 999, 0),
     conquestFailFloor: clampInt(src.conquestFailFloor, 0, 999, 0),
-    recruitDay,
-    recruitUsed: clampInt(src.recruitUsed, 0, 1_000_000_000, 0),
+    freePulls: clampInt(src.freePulls, 0, 1_000_000, 0),
+    freeGrantDay: day(src.freeGrantDay),
+    attendDay: day(src.attendDay),
+    attendStreak: clampInt(src.attendStreak, 0, 9999, 0),
     presets: sanitizePresets(src.presets, roster),
   };
 }
@@ -157,7 +166,7 @@ function sanitizeCounts(raw: unknown): Record<string, number> {
   return out;
 }
 
-/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) */
+/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) */
 export function migrateSave(persisted: unknown, version: number): SaveData {
   const src = (persisted && typeof persisted === 'object' ? { ...(persisted as Record<string, unknown>) } : {}) as Record<string, unknown>;
   if (version < 2 && Array.isArray(src.formation)) {
@@ -196,6 +205,14 @@ export function migrateSave(persisted: unknown, version: number): SaveData {
     }
     src.fought = fought;
   }
+  if (version < 9) {
+    if (typeof src.freePulls !== 'number') src.freePulls = 0;
+    if (typeof src.freeGrantDay !== 'string') src.freeGrantDay = '';
+    if (typeof src.attendDay !== 'string') src.attendDay = '';
+    if (typeof src.attendStreak !== 'number') src.attendStreak = 0;
+    delete src.recruitDay;
+    delete src.recruitUsed;
+  }
   return sanitizeSave(src);
 }
 
@@ -210,8 +227,10 @@ export function pickSave(s: SaveData): SaveData {
     totalPulls: s.totalPulls,
     conquestBest: s.conquestBest,
     conquestFailFloor: s.conquestFailFloor,
-    recruitDay: s.recruitDay,
-    recruitUsed: s.recruitUsed,
+    freePulls: s.freePulls,
+    freeGrantDay: s.freeGrantDay,
+    attendDay: s.attendDay,
+    attendStreak: s.attendStreak,
     presets: s.presets,
   };
 }

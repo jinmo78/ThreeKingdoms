@@ -9,7 +9,8 @@ import { STAGE_MAP } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
 import { PRESET_LIMIT, formationGold, presetLoadCost } from '../engine/formationBook';
-import { DUPLICATE_REFUND, PULL_COST, rollGenerals } from '../engine/gacha';
+import { attendancePreview, recruitCost, todayKey, withDailyFreeGrant } from '../engine/attendance';
+import { DUPLICATE_REFUND, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
 import type { ArmyTheme } from '../engine/aiArmy';
 import { conquestFloor } from '../engine/conquest';
@@ -37,6 +38,9 @@ export interface RecruitResult {
   isNew: boolean;
   stars: number;
   refund: number;
+  /** 이번 등용에 쓴 무료 횟수 · 금화 */
+  freeUsed?: number;
+  goldSpent?: number;
 }
 
 export interface BattleReward {
@@ -85,6 +89,10 @@ interface GameState extends SaveData {
   goTitle: () => void;
   newGame: () => void;
   setView: (v: View) => void;
+  /** 날짜가 바뀌었으면 일일 무료 등용을 지급 */
+  refreshDailyFree: () => void;
+  /** 오늘 출석. 이미 했으면 null */
+  claimAttendance: () => { streak: number; reward: number } | null;
   recruit: (count: 1 | 10) => RecruitResult[] | null;
   assign: (unit: number, slot: Slot, id: string | null) => void;
   clearUnit: (unit: number) => void;
@@ -150,43 +158,83 @@ export const useGame = create<GameState>()(
       totalPulls: 0,
       conquestBest: 0,
       conquestFailFloor: 0,
-      recruitDay: '',
-      recruitUsed: 0,
+      freePulls: 0,
+      freeGrantDay: '',
+      attendDay: '',
+      attendStreak: 0,
       presets: [],
       view: 'campaign',
       battle: null,
       entered: false,
 
-      enter: () => set({ entered: true, view: 'campaign' }),
+      enter: () => {
+        const state = get();
+        const granted = withDailyFreeGrant({ freePulls: state.freePulls, freeGrantDay: state.freeGrantDay });
+        set({
+          entered: true,
+          view: 'campaign',
+          ...(granted.changed ? { freePulls: granted.freePulls, freeGrantDay: granted.freeGrantDay } : {}),
+        });
+      },
       goTitle: () => set({ entered: false }),
       newGame: () => set({ ...freshSave(), view: 'campaign', battle: null, entered: true }),
 
       setView: (view) => set({ view }),
 
-      recruit: (count) => {
-        const cost = count === 10 ? PULL_COST.ten : PULL_COST.single;
+      refreshDailyFree: () => {
         const state = get();
-        if (state.gold < cost) return null;
+        const next = withDailyFreeGrant({ freePulls: state.freePulls, freeGrantDay: state.freeGrantDay });
+        if (!next.changed) return;
+        set({ freePulls: next.freePulls, freeGrantDay: next.freeGrantDay });
+      },
+
+      claimAttendance: () => {
+        const state = get();
+        const granted = withDailyFreeGrant({ freePulls: state.freePulls, freeGrantDay: state.freeGrantDay });
+        const preview = attendancePreview(state.attendDay, state.attendStreak);
+        if (!preview.canClaim) {
+          if (granted.changed) set({ freePulls: granted.freePulls, freeGrantDay: granted.freeGrantDay });
+          return null;
+        }
+        set({
+          freePulls: granted.freePulls + preview.reward,
+          freeGrantDay: granted.freeGrantDay,
+          attendDay: todayKey(),
+          attendStreak: preview.nextStreak,
+        });
+        return { streak: preview.nextStreak, reward: preview.reward };
+      },
+
+      recruit: (count) => {
+        const state = get();
+        const granted = withDailyFreeGrant({ freePulls: state.freePulls, freeGrantDay: state.freeGrantDay });
+        const cost = recruitCost(count, granted.freePulls);
+        if (state.gold < cost.gold) {
+          if (granted.changed) set({ freePulls: granted.freePulls, freeGrantDay: granted.freeGrantDay });
+          return null;
+        }
         const next = { ...state.roster };
         let refundTotal = 0;
         const results = rollGenerals(count).map((def): RecruitResult => {
           const cur = next[def.id];
           if (!cur) {
             next[def.id] = { level: 1, exp: 0, stars: 0, promote: 0 };
-            return { def, isNew: true, stars: 0, refund: 0 };
+            return { def, isNew: true, stars: 0, refund: 0, freeUsed: cost.freeUsed, goldSpent: cost.gold };
           }
           if (cur.stars < MAX_STARS) {
             next[def.id] = { ...cur, stars: cur.stars + 1 };
-            return { def, isNew: false, stars: cur.stars + 1, refund: 0 };
+            return { def, isNew: false, stars: cur.stars + 1, refund: 0, freeUsed: cost.freeUsed, goldSpent: cost.gold };
           }
           const refund = DUPLICATE_REFUND[def.rarity];
           refundTotal += refund;
-          return { def, isNew: false, stars: cur.stars, refund };
+          return { def, isNew: false, stars: cur.stars, refund, freeUsed: cost.freeUsed, goldSpent: cost.gold };
         });
         set({
-          gold: state.gold - cost + refundTotal,
+          gold: state.gold - cost.gold + refundTotal,
           roster: next,
           totalPulls: state.totalPulls + count,
+          freePulls: granted.freePulls - cost.freeUsed,
+          freeGrantDay: granted.freeGrantDay,
         });
         return results;
       },
@@ -338,7 +386,7 @@ export const useGame = create<GameState>()(
     {
       name: 'oath-banner-save',
       version: SAVE_VERSION,
-      // v1(주장·부장·참모 3칸) → v2(6칸) → v3(품계 승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수)
+      // v1(주장·부장·참모 3칸) → … → v8(전투 횟수) → v9(무료 등용·출석)
       migrate: (persisted, version) => {
         const save = migrateSave(persisted, version);
         const src = (persisted && typeof persisted === 'object' ? persisted : {}) as { entered?: unknown; view?: unknown };

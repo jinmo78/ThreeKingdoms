@@ -1,10 +1,16 @@
-// 장수 등용(가챠) 화면
-import { Coins, Flag, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+// 장수 등용(가챠) 화면 — 일일 무료 · 출석 · 금화 등용
+import { CalendarCheck, Coins, Flag, Gift, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { GeneralCard, GeneralDetail } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
 import { Btn, cn, Modal, Panel } from '../components/ui';
 import { RECRUITABLE } from '../data/generals';
+import {
+  ATTEND_REWARDS,
+  attendancePreview,
+  FREE_DAILY_PULLS,
+  recruitCost,
+} from '../engine/attendance';
 import { DUPLICATE_REFUND, PULL_COST, RATES } from '../engine/gacha';
 import { useGame, type RecruitResult } from '../store/gameStore';
 import type { GeneralDef, Rarity } from '../types';
@@ -15,11 +21,25 @@ export default function Recruit() {
   const gold = useGame((s) => s.gold);
   const roster = useGame((s) => s.roster);
   const recruit = useGame((s) => s.recruit);
+  const refreshDailyFree = useGame((s) => s.refreshDailyFree);
+  const claimAttendance = useGame((s) => s.claimAttendance);
   const totalPulls = useGame((s) => s.totalPulls);
+  const freePulls = useGame((s) => s.freePulls);
+  const attendDay = useGame((s) => s.attendDay);
+  const attendStreak = useGame((s) => s.attendStreak);
   const [phase, setPhase] = useState<Phase>('idle');
   const [results, setResults] = useState<RecruitResult[]>([]);
   const [detail, setDetail] = useState<GeneralDef | null>(null);
   const [ratesOpen, setRatesOpen] = useState(false);
+  const [attendNote, setAttendNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    refreshDailyFree();
+  }, [refreshDailyFree]);
+
+  const attend = attendancePreview(attendDay, attendStreak);
+  const cost1 = recruitCost(1, freePulls);
+  const cost10 = recruitCost(10, freePulls);
 
   function pull(count: 1 | 10) {
     const r = recruit(count);
@@ -29,8 +49,19 @@ export default function Recruit() {
     setTimeout(() => setPhase('reveal'), 1100);
   }
 
+  function onAttend() {
+    const r = claimAttendance();
+    if (!r) {
+      setAttendNote('오늘은 이미 출석했습니다.');
+      return;
+    }
+    setAttendNote(`연속 ${r.streak}일 출석! 무료 등용 +${r.reward}`);
+  }
+
   const best: Rarity | null = results.some((r) => r.def.rarity === 'SSR') ? 'SSR' : results.some((r) => r.def.rarity === 'SR') ? 'SR' : results.length ? 'R' : null;
   const ownedCount = RECRUITABLE.filter((g) => roster[g.id]).length;
+  const spentFree = results[0]?.freeUsed ?? 0;
+  const spentGold = results[0]?.goldSpent ?? 0;
 
   return (
     <div className="space-y-5">
@@ -39,68 +70,133 @@ export default function Recruit() {
           <h2 className="font-serif text-2xl font-black">장수 등용</h2>
           <span className="shrink-0 text-xs text-stone-400">도감 {ownedCount}/{RECRUITABLE.length}</span>
         </div>
-        <p className="text-xs text-stone-500">금화로 재야의 장수를 초빙합니다. 금화가 있으면 계속 등용할 수 있습니다. 이미 있는 장수는 돌파(★)로 오르고, 장수록에서 품계를 한 단계 올릴 수 있습니다.</p>
+        <p className="text-xs text-stone-500">
+          매일 무료 {FREE_DAILY_PULLS}회가 쌓이고, 출석하면 추가 무료 등용을 받습니다. 무료가 없으면 금화로 이어서 등용할 수 있습니다.
+        </p>
+      </div>
+
+      <Panel title="출석" icon={<CalendarCheck size={15} />}>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-stone-200">
+              연속 {attend.claimedToday ? attendStreak : Math.max(0, attend.nextStreak - 1)}일
+              {attend.canClaim && <span className="ml-2 text-xs font-normal text-amber-300">출석 시 {attend.nextStreak}일 · 무료 +{attend.reward}</span>}
+            </p>
+            <p className="mt-0.5 text-[11px] text-stone-500">하루 한 번. 하루를 비우면 연속이 1일부터 다시 시작합니다.</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {ATTEND_REWARDS.map((n, i) => {
+                const day = i + 1;
+                const cycle = attend.claimedToday
+                  ? ((attendStreak - 1) % 7) + 1
+                  : attend.canClaim
+                    ? ((attend.nextStreak - 1) % 7) + 1
+                    : 0;
+                const done = cycle > 0 && day < cycle;
+                const current = day === cycle;
+                return (
+                  <span
+                    key={day}
+                    className={cn(
+                      'rounded-lg px-2 py-1 text-[10px] font-bold',
+                      current ? 'bg-amber-400/20 text-amber-200 ring-1 ring-amber-400/50'
+                        : done ? 'bg-emerald-500/15 text-emerald-300'
+                          : 'bg-stone-950/60 text-stone-500',
+                    )}
+                  >
+                    {day}일 +{n}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+          <Btn variant={attend.canClaim ? 'gold' : 'ghost'} disabled={!attend.canClaim} onClick={onAttend} className="shrink-0">
+            <Gift size={15} /> {attend.canClaim ? '출석하기' : '출석 완료'}
+          </Btn>
+        </div>
+        {attendNote && <p className="mt-2 text-xs text-amber-300">{attendNote}</p>}
+      </Panel>
+
+      <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs">
+        <span className="font-bold text-amber-200">무료 등용 {freePulls}회</span>
+        <span className="text-stone-500">매일 +{FREE_DAILY_PULLS} · 출석 추가</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <PullButton label="1회 등용" cost={PULL_COST.single} gold={gold} disabled={phase === 'summoning'} onClick={() => pull(1)} />
-        <PullButton label="10연 등용" cost={PULL_COST.ten} gold={gold} disabled={phase === 'summoning'} onClick={() => pull(10)}
-          note="SR 이상 확정" gold10 />
+        <PullButton
+          label="1회 등용"
+          free={cost1.freeUsed}
+          gold={cost1.gold}
+          canAfford={gold >= cost1.gold}
+          disabled={phase === 'summoning'}
+          onClick={() => pull(1)}
+        />
+        <PullButton
+          label="10연 등용"
+          free={cost10.freeUsed}
+          gold={cost10.gold}
+          canAfford={gold >= cost10.gold}
+          disabled={phase === 'summoning'}
+          onClick={() => pull(10)}
+          note="SR 이상 확정"
+          gold10
+        />
       </div>
 
-      {/* 등용 무대 */}
       <div className="relative flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-4">
         <img src={sceneUrl('scene-recruit.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover brightness-[1.85] contrast-[1.05] saturate-[1.08]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
         <div className="relative w-full">
-        {phase === 'idle' && (
-          <div className="text-center">
-            <div className="relative mx-auto h-32 w-32">
-              <div className="absolute inset-0 animate-spin-slow rounded-full border-2 border-dashed border-red-800/60" />
-              <div className="absolute inset-4 flex items-center justify-center rounded-full bg-red-950/60">
-                <Flag size={44} className="text-red-300" />
-              </div>
-            </div>
-            <p className="mt-4 font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">천하의 인재를 구하라</p>
-            <p className="text-xs text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">누적 등용 {totalPulls}회</p>
-          </div>
-        )}
-
-        {phase === 'summoning' && (
-          <div className="text-center">
-            <div className={cn('relative mx-auto h-36 w-36')}>
-              <div className={cn('absolute inset-0 animate-spin rounded-full border-4 border-t-transparent',
-                best === 'SSR' ? 'border-amber-500' : best === 'SR' ? 'border-violet-400' : 'border-red-500')} />
-              <div className="absolute inset-6 flex items-center justify-center rounded-full bg-stone-900">
-                <Flag size={48} className={cn('animate-wave', best === 'SSR' ? 'text-amber-300' : best === 'SR' ? 'text-violet-300' : 'text-red-300')} />
-              </div>
-            </div>
-            <p className="mt-4 animate-pulse font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-              {best === 'SSR' ? '하늘에 금빛 기운이 서린다…!' : best === 'SR' ? '보랏빛 기운이 감돈다…' : '장수를 찾는 중…'}
-            </p>
-          </div>
-        )}
-
-        {phase === 'reveal' && (
-          <div className="w-full">
-            {best === 'SSR' && <div className="pointer-events-none absolute inset-0 animate-flash bg-amber-400/40" />}
-            <p className="mb-2 text-center text-xs font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
-              금화 -{results.length === 10 ? PULL_COST.ten : PULL_COST.single}
-              {results.some((r) => r.refund) && ` · 중복 환급 +${results.reduce((n, r) => n + r.refund, 0)}`}
-            </p>
-            <div className={cn('mx-auto grid gap-2', results.length === 1 ? 'max-w-[180px] grid-cols-1' : 'grid-cols-3 sm:grid-cols-5')}>
-              {results.map((r, i) => (
-                <div key={i} className="animate-pop-in relative" style={{ animationDelay: `${i * 0.12}s` }}>
-                  <GeneralCard def={r.def} highlight onClick={() => setDetail(r.def)} />
-                  <span className={cn('absolute left-1/2 top-[52%] -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-px text-[10px] font-black',
-                    r.isNew ? 'bg-red-600 text-white' : r.refund ? 'bg-stone-700 text-amber-200' : 'bg-amber-400 text-[#1c1612]')}>
-                    {r.isNew ? 'NEW' : r.refund ? `+${r.refund}금` : `돌파 ★${r.stars}`}
-                  </span>
+          {phase === 'idle' && (
+            <div className="text-center">
+              <div className="relative mx-auto h-32 w-32">
+                <div className="absolute inset-0 animate-spin-slow rounded-full border-2 border-dashed border-red-800/60" />
+                <div className="absolute inset-4 flex items-center justify-center rounded-full bg-red-950/60">
+                  <Flag size={44} className="text-red-300" />
                 </div>
-              ))}
+              </div>
+              <p className="mt-4 font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">천하의 인재를 구하라</p>
+              <p className="text-xs text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">누적 등용 {totalPulls}회</p>
             </div>
-          </div>
-        )}
+          )}
+
+          {phase === 'summoning' && (
+            <div className="text-center">
+              <div className="relative mx-auto h-36 w-36">
+                <div className={cn('absolute inset-0 animate-spin rounded-full border-4 border-t-transparent',
+                  best === 'SSR' ? 'border-amber-500' : best === 'SR' ? 'border-violet-400' : 'border-red-500')} />
+                <div className="absolute inset-6 flex items-center justify-center rounded-full bg-stone-900">
+                  <Flag size={48} className={cn('animate-wave', best === 'SSR' ? 'text-amber-300' : best === 'SR' ? 'text-violet-300' : 'text-red-300')} />
+                </div>
+              </div>
+              <p className="mt-4 animate-pulse font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                {best === 'SSR' ? '하늘에 금빛 기운이 서린다…!' : best === 'SR' ? '보랏빛 기운이 감돈다…' : '장수를 찾는 중…'}
+              </p>
+            </div>
+          )}
+
+          {phase === 'reveal' && (
+            <div className="w-full">
+              {best === 'SSR' && <div className="pointer-events-none absolute inset-0 animate-flash bg-amber-400/40" />}
+              <p className="mb-2 text-center text-xs font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+                {spentFree > 0 && `무료 -${spentFree}`}
+                {spentFree > 0 && spentGold > 0 && ' · '}
+                {spentGold > 0 && `금화 -${spentGold}`}
+                {spentFree === 0 && spentGold === 0 && '무료'}
+                {results.some((r) => r.refund) && ` · 중복 환급 +${results.reduce((n, r) => n + r.refund, 0)}`}
+              </p>
+              <div className={cn('mx-auto grid gap-2', results.length === 1 ? 'max-w-[180px] grid-cols-1' : 'grid-cols-3 sm:grid-cols-5')}>
+                {results.map((r, i) => (
+                  <div key={i} className="animate-pop-in relative" style={{ animationDelay: `${i * 0.12}s` }}>
+                    <GeneralCard def={r.def} highlight onClick={() => setDetail(r.def)} />
+                    <span className={cn('absolute left-1/2 top-[52%] -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-px text-[10px] font-black',
+                      r.isNew ? 'bg-red-600 text-white' : r.refund ? 'bg-stone-700 text-amber-200' : 'bg-amber-400 text-[#1c1612]')}>
+                      {r.isNew ? 'NEW' : r.refund ? `+${r.refund}금` : `돌파 ★${r.stars}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -142,19 +238,26 @@ function RatesBody() {
           </div>
         ))}
       </div>
-      <p className="mt-2 text-[11px] text-stone-500">돌파는 최대 ★5. 그 이후 중복은 금화로 조금 돌아옵니다 (SSR {DUPLICATE_REFUND.SSR} · SR {DUPLICATE_REFUND.SR} · R {DUPLICATE_REFUND.R}).</p>
+      <p className="mt-2 text-[11px] text-stone-500">
+        매일 무료 {FREE_DAILY_PULLS}회. 1회 {PULL_COST.single} · 10연 {PULL_COST.ten}. 돌파 최대 ★5, 이후 중복은 금화 환급 (SSR {DUPLICATE_REFUND.SSR} · SR {DUPLICATE_REFUND.SR} · R {DUPLICATE_REFUND.R}).
+      </p>
     </>
   );
 }
 
-function PullButton({ label, cost, gold, onClick, disabled, note, gold10 }: {
-  label: string; cost: number; gold: number; onClick: () => void; disabled?: boolean; note?: string; gold10?: boolean;
+function PullButton({ label, free, gold, canAfford, onClick, disabled, note, gold10 }: {
+  label: string; free: number; gold: number; canAfford: boolean; onClick: () => void; disabled?: boolean; note?: string; gold10?: boolean;
 }) {
-  const short = gold < cost;
+  const short = !canAfford;
   return (
     <Btn size="md" variant={gold10 ? 'gold' : 'primary'} onClick={onClick} disabled={disabled || short} className="h-full w-full flex-col gap-0 px-2 py-2">
       <span className="text-sm">{label}</span>
-      <span className="flex items-center gap-1 text-[11px] font-semibold opacity-80"><Coins size={11} /> {cost}</span>
+      <span className="flex flex-wrap items-center justify-center gap-x-1.5 text-[11px] font-semibold opacity-80">
+        {free > 0 && <span>무료 {free}</span>}
+        {free > 0 && gold > 0 && <span>·</span>}
+        {gold > 0 && <span className="inline-flex items-center gap-0.5"><Coins size={11} />{gold}</span>}
+        {free === 0 && gold === 0 && <span>무료</span>}
+      </span>
       {note && !short && <span className="text-[10px] font-normal leading-tight">{note}</span>}
       {short && <span className="text-[10px] font-normal leading-tight">금화 부족</span>}
     </Btn>
