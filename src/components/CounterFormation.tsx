@@ -87,8 +87,8 @@ export function CounterFormationButton({ enemies, unlocked, lockedNote, classNam
       </Btn>
 
       {phase.kind !== 'idle' && (
-        <Modal onClose={close}>
-          <div className="mb-3 flex items-center gap-2 font-serif text-lg font-black">
+        <Modal onClose={close} wide={phase.kind === 'done' && phase.result.improved}>
+          <div className="mb-3 flex shrink-0 items-center gap-2 font-serif text-lg font-black">
             <Brain size={18} className="text-amber-300" /> 적군 맞춤 편성
           </div>
 
@@ -114,8 +114,8 @@ export function CounterFormationButton({ enemies, unlocked, lockedNote, classNam
 function ResultView({ result, refunded, onApply, onClose }: { result: CounterResult; refunded: boolean; onApply: () => void; onClose: () => void }) {
   const pct = (n: number) => `${Math.round(n * 100)}%`;
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 text-center">
+    <div className={cn('flex min-h-0 flex-1 flex-col gap-4', result.improved && 'overflow-hidden')}>
+      <div className="grid shrink-0 grid-cols-2 gap-2 text-center">
         <div className="rounded-xl bg-stone-950/70 p-3">
           <div className="text-[11px] text-stone-500">현재 편성 예상 승률</div>
           <div className="tabular text-2xl font-black text-stone-300">{pct(result.before)}</div>
@@ -128,11 +128,13 @@ function ResultView({ result, refunded, onApply, onClose }: { result: CounterRes
 
       {result.improved ? (
         <>
-          <p className="text-xs text-stone-400">
+          <p className="shrink-0 text-xs text-stone-400">
             금화 {COUNTER_GOLD}을 사용했습니다. 편성 {result.tried.toLocaleString()}가지를 각각 100번씩 싸워 보고, 새 전투 400번으로 다시 검증한 결과입니다.
           </p>
-          <FormationPreview units={result.formation} />
-          <div className="flex gap-2">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <FormationPreview units={result.formation} />
+          </div>
+          <div className="flex shrink-0 gap-2 border-t border-stone-800 pt-3">
             <Btn className="flex-1" onClick={onApply}>이 편성 적용</Btn>
             <Btn variant="ghost" onClick={onClose}>취소</Btn>
           </div>
@@ -152,12 +154,12 @@ function ResultView({ result, refunded, onApply, onClose }: { result: CounterRes
 function FormationPreview({ units }: { units: Unit[] }) {
   const roster = useGame((s) => s.roster);
   return (
-    <div className="space-y-2">
+    <div className="grid gap-2 sm:grid-cols-3">
       {units.map((u, i) => {
         const cmd = u.commander ? GENERAL_MAP[u.commander] : undefined;
         if (!cmd) return null;
         return (
-          <div key={i} className="rounded-xl border border-stone-800 bg-stone-950/50 p-2">
+          <div key={i} className="min-w-0 rounded-xl border border-stone-800 bg-stone-950/50 p-2">
             <div className="mb-1.5 text-xs font-bold">
               제{i + 1}부대 <span className="font-normal text-stone-400">{TROOP[cmd.troop].emoji} {cmd.name} 부대</span>
             </div>
@@ -165,9 +167,9 @@ function FormationPreview({ units }: { units: Unit[] }) {
               {SLOTS.map((s) => {
                 const def = u[s] ? GENERAL_MAP[u[s]!] : undefined;
                 return def ? (
-                  <div key={s} className="flex flex-col items-center">
+                  <div key={s} className="flex min-w-0 flex-col items-center">
                     <GeneralToken def={def} rarity={shownRarity(def.rarity, roster[def.id]?.promote)} size="sm" />
-                    <span className="text-[10px] text-stone-400">{def.name}</span>
+                    <span className="max-w-[4.5rem] truncate text-[10px] text-stone-400">{def.name}</span>
                   </div>
                 ) : null;
               })}

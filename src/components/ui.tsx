@@ -1,5 +1,6 @@
 import { Moon, RefreshCw, Sun } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { applyTheme, currentTheme, type Theme } from '../theme';
 
 export function cn(...cls: (string | false | null | undefined)[]) {
@@ -142,7 +143,8 @@ export function Modal({ children, onClose, wide }: { children: ReactNode; onClos
     lockPageScroll();
     return unlockPageScroll;
   }, []);
-  return (
+  // sticky·overflow 조상 안에서는 fixed가 뷰포트에 안 붙고 레이아웃이 깨지므로 body로 포털한다
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center overscroll-none bg-black/75 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div
         className={cn(
@@ -153,6 +155,7 @@ export function Modal({ children, onClose, wide }: { children: ReactNode; onClos
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
