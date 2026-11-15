@@ -21,19 +21,25 @@
 - 적군 맞춤 편성은 `src/workers/counter.worker.ts`에서 실행
 - 편성 편집기는 `src/components/FormationEditor.tsx` 하나를 편성 탭 · 토벌전 · 모의전이 공용으로 씀
 - 모바일 레이아웃: grid 열은 `minmax(0,1fr)` + `min-w-0`로 가로 넘침 방지
+- `Modal`은 `createPortal(..., document.body)` — sticky/overflow 조상 안에 두면 PC에서 레이아웃이 깨짐
 
-## 장수 초상
+## 장수 초상 · 전신
 - 기본은 SVG 상반신 (`src/components/Portrait.tsx`, 외형 정의 `src/data/portraits.ts`). 모든 장수 토큰(`GeneralToken`)이 사용
-- 그림 초상으로 교체 진행 중: `public/portraits/<장수 id>.webp`를 넣고 `src/data/portraitImages.ts`의
-  `PORTRAIT_IMAGES`에 id를 추가하면 그 장수만 그림으로 바뀐다 (목록에 없으면 SVG 유지)
-- 규격: 정사각형 512×512 webp, 장당 60KB 이하 목표, 얼굴이 위쪽 절반 중앙 (토큰이 `object-top`으로 잘라 씀,
-  작게는 32px까지 축소되므로 얼굴이 크게 보이는 구도)
-- 화풍: 실사풍 디지털 페인팅(semi-realistic painterly), 극적인 역광, 어두운 배경에 세력 색 기운
+- 그림 초상: `public/portraits/<id>.webp` + `PORTRAIT_IMAGES` (목록에 없으면 SVG)
+- 전신: `public/portraits/<id>-full.webp` + `PORTRAIT_FULL_IMAGES`. 상세에서 초상 클릭 → 전체화면
+- 상반신 규격: 정사각형 512×512 webp, 장당 60KB 이하 목표, 얼굴이 위쪽 절반 중앙 (`object-top`)
+- 전신 비율: 등애 전신 정도의 자연스러운 ~7등신. 과도하게 긴 패션 크로키는 피할 것
+- 화풍: 실사풍 디지털 페인팅, 극적인 역광, 어두운 배경에 세력 색 기운
   (위 파랑 · 촉 초록 · 오 빨강 · 군웅 주황/황금). 글자·테두리·워터마크 없음
-- 저작권: 코에이 '삼국지 패도' 등 기존 게임 CG를 참고 이미지로 넣거나 캐릭터 디자인을 따라 하지 말 것.
-  프롬프트에는 게임 이름 없이 화풍과 인물의 역사·연의 속 특징만 쓴다 (예: 관우 = 붉은 얼굴, 긴 수염, 녹색 두건)
-- 장수 id·이름·세력 목록은 `src/data/generals.json` (적 전용 장수 포함 100명). 우선순위: SSR → SR → R → 적 전용
-- 2026-11-13 Figma AI 크레딧 소진으로 생성 보류. 작업용 Figma 파일(비어 있음): https://www.figma.com/design/VfMIQJInXIQa4j2eW6qHTp
+- 저작권: 코에이 CG를 참고 이미지로 넣거나 디자인을 따라 하지 말 것. 프롬프트에는 게임 이름 없이
+  화풍과 역사·연의 속 특징만 (예: 관우 = 붉은 얼굴, 긴 수염, 녹색 두건)
+- 장수 id 목록: `src/data/generals.json` (약 100명). 초상·전신 webp는 전원 등록된 상태(2026-11-15)
+
+## 등용 · 출석 · 금화
+- 유료: 1회 100 · 10연 900. 무료 잔여가 있으면 먼저 소모 (`src/engine/attendance.ts`)
+- 매일 무료 10회 자동 지급. 출석(하루 1회, 연속 보상 1·1·2·2·3·3·5)으로 추가 무료
+- 원정·토벌 금화 보상은 2026-11-15에 약 절반으로 축소. 체감이 가혹하면 재조정
+- SAVE_VERSION 9: `freePulls`, `freeGrantDay`, `attendDay`, `attendStreak`
 
 ## 밸런스 점검 방법
 수치를 바꿀 때는 감으로 하지 말고 시뮬레이션으로 확인:
@@ -43,7 +49,9 @@
 시너지를 무시한 무작위 배치는 보스에서 크게 지도록.
 
 ## 다음 단계 후보
-- 일기토(장수 1:1 미니게임), 장수·스테이지 확장, 장비/보물, 일일 보상
+- 출석·무료 등용 UX, 금화 수급 재조정
+- 일기토(장수 1:1 미니게임), 장수·스테이지 확장, 장비/보물
+- 일자별 상세 기록: `docs/작업기록-YYYY-MM-DD.md` (최근: 2026-11-15)
 
 ## PWA
 - `vite-plugin-pwa` + Workbox. 빌드 산출물에 SW·manifest 포함 (`registerType: autoUpdate`)
