@@ -5,11 +5,13 @@
 - 플레이: https://jinmo78.github.io/ThreeKingdoms/
 - 외부 이미지 없음 — SVG · CSS 도형 · 이모지 · lucide 아이콘만 사용
 - 진행 상황은 브라우저 `localStorage`에 자동 저장 (키: `oath-banner-save`)
+- PWA — 홈 화면 설치 · 오프라인 플레이(서비스 워커가 앱 셸·에셋 캐시). 설치 안내는 타이틀 화면
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # 타입 체크 + 프로덕션 빌드 (dist/)
+npm run preview    # 빌드 결과로 PWA 설치·오프라인 확인 (dev에서는 SW 비활성)
 ```
 
 `main` 브랜치에 푸시하면 GitHub Actions가 GitHub Pages로 자동 배포합니다.
@@ -54,6 +56,5 @@ src/
 | 성장 | 출진 장수 전원에게 경험치, 레벨당 능력치 +4%. 중복 등용 시 돌파 ★ (+4%, 최대 ★5) |
 
 ## 다음 단계 후보
-- 구글 로그인 + 클라우드 세이브 (StatEleven과 같은 Supabase 프로젝트, 별도 테이블)
-- PWA 홈 화면 설치 / 오프라인 실행
 - 장수·스테이지 확장, 장비/보물, 일일 보상
+- 일기토(장수 1:1 미니게임)

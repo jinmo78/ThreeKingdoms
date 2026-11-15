@@ -2,6 +2,7 @@ import { Play, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { BannerEmblem } from '../components/BannerEmblem';
 import { CloudPanel, TitleButton } from '../components/CloudAccount';
+import { InstallPrompt } from '../components/InstallPrompt';
 import { GeneralToken } from '../components/General';
 import { ThemeToggle } from '../components/ui';
 import { useCloud } from '../cloud/account';
@@ -60,6 +61,7 @@ export default function TitleScreen() {
             <TitleButton color="red" icon={Play} onClick={newGame}>출사표 던지기</TitleButton>
           )}
           <CloudPanel />
+          <InstallPrompt />
           {started && !conflict && (confirm ? (
             <>
               <TitleButton color="stone" icon={RotateCcw} onClick={newGame}>초기화</TitleButton>

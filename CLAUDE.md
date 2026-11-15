@@ -43,7 +43,9 @@
 시너지를 무시한 무작위 배치는 보스에서 크게 지도록.
 
 ## 다음 단계 후보
-- 구글 로그인 + 클라우드 세이브: StatEleven(jinmo78/StatEleven)의 cloudStore.ts 방식을 이식.
-  Supabase는 StatEleven과 같은 프로젝트를 공유하되 기존 `game_saves`(PK가 user_id 단독)와 별도 테이블을 만들 것.
-  Supabase Site URL은 바꾸지 말고 Redirect URLs에만 추가
-- PWA(홈 화면 설치), 일기토(장수 1:1 미니게임)
+- 일기토(장수 1:1 미니게임), 장수·스테이지 확장, 장비/보물, 일일 보상
+
+## PWA
+- `vite-plugin-pwa` + Workbox. 빌드 산출물에 SW·manifest 포함 (`registerType: autoUpdate`)
+- 아이콘은 `npm run icons:pwa`로 `public/pwa-*.png` · `apple-touch-icon.png` 재생성
+- 오프라인은 앱 셸·정적 에셋·웹폰트까지. Firebase(로그인·동기화)는 온라인 필요
