@@ -31,6 +31,6 @@ export function conquestFloor(floor: number): ConquestFloor {
     level,
     stars,
     enemies: generateArmy(theme, level, floor * 7919 + 17, { elite: boss, stars }),
-    reward: { gold: 80 + floor * 8 + (boss ? 120 : 0), exp: 450 + floor * 15 },
+    reward: { gold: 40 + floor * 4 + (boss ? 60 : 0), exp: 450 + floor * 15 },
   };
 }

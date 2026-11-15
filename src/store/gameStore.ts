@@ -9,7 +9,7 @@ import { STAGE_MAP } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
 import { PRESET_LIMIT, formationGold, presetLoadCost } from '../engine/formationBook';
-import { DAILY_PULLS, DUPLICATE_REFUND, PULL_COST, rollGenerals, todayKey } from '../engine/gacha';
+import { DUPLICATE_REFUND, PULL_COST, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
 import type { ArmyTheme } from '../engine/aiArmy';
 import { conquestFloor } from '../engine/conquest';
@@ -166,9 +166,6 @@ export const useGame = create<GameState>()(
       recruit: (count) => {
         const cost = count === 10 ? PULL_COST.ten : PULL_COST.single;
         const state = get();
-        const today = todayKey();
-        const used = state.recruitDay === today ? state.recruitUsed : 0;
-        if (used + count > DAILY_PULLS) return null;
         if (state.gold < cost) return null;
         const next = { ...state.roster };
         let refundTotal = 0;
@@ -190,8 +187,6 @@ export const useGame = create<GameState>()(
           gold: state.gold - cost + refundTotal,
           roster: next,
           totalPulls: state.totalPulls + count,
-          recruitDay: today,
-          recruitUsed: used + count,
         });
         return results;
       },

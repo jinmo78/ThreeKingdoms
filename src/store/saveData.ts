@@ -1,7 +1,6 @@
 // 저장 본문. 브라우저(localStorage)와 Firestore가 같은 모양을 쓴다.
 import { GENERAL_MAP } from '../data/generals';
 import { LEGACY_POINT_GOLD, PRESET_LIMIT } from '../engine/formationBook';
-import { DAILY_PULLS } from '../engine/gacha';
 import { emptyUnit } from '../engine/profiles';
 import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
 import type { OwnedGeneral, Unit } from '../types';
@@ -142,7 +141,7 @@ export function sanitizeSave(raw: unknown): SaveData {
     conquestBest: clampInt(src.conquestBest, 0, 999, 0),
     conquestFailFloor: clampInt(src.conquestFailFloor, 0, 999, 0),
     recruitDay,
-    recruitUsed: clampInt(src.recruitUsed, 0, DAILY_PULLS, 0),
+    recruitUsed: clampInt(src.recruitUsed, 0, 1_000_000_000, 0),
     presets: sanitizePresets(src.presets, roster),
   };
 }
