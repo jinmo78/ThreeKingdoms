@@ -35,6 +35,8 @@
   --color-sky-900: #7dd3fc;
   --color-sky-950: #e0f2fe;
   --color-emerald-300: #047857;
+  --color-emerald-900: #a7f3d0;
+  --color-emerald-950: #ecfdf5;
   --color-violet-200: #5b21b6;
   --color-violet-300: #6d28d9;
   --color-rose-300: #be123c;
@@ -65,6 +67,8 @@ html.dark {
   --color-sky-900: oklch(39.1% 0.09 240.876);
   --color-sky-950: oklch(29.3% 0.066 243.157);
   --color-emerald-300: oklch(84.5% 0.143 164.978);
+  --color-emerald-900: oklch(37.8% 0.077 168.94);
+  --color-emerald-950: oklch(26.2% 0.051 172.55);
   --color-violet-200: oklch(89.4% 0.057 293.283);
   --color-violet-300: oklch(81.1% 0.111 293.571);
   --color-rose-300: oklch(81% 0.117 11.638);

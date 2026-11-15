@@ -3,7 +3,7 @@
 import { useId } from 'react';
 import { FACTION } from '../data/meta';
 import { appearanceOf, isFemaleHead, type Appearance, type Skin } from '../data/portraits';
-import type { Faction, GeneralDef } from '../types';
+import type { Faction, GeneralDef, Troop } from '../types';
 
 const SKIN: Record<Skin, string> = {
   light: '#f6d7ba',
@@ -26,7 +26,7 @@ function tone(hex: string, amt: number) {
   return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`;
 }
 
-export function Portrait({ def, className }: { def: GeneralDef; className?: string }) {
+function usePortraitCtx(def: GeneralDef): Ctx {
   const uid = useId().replace(/:/g, '');
   const a = appearanceOf(def);
   const f = FACTION[def.faction].hex;
@@ -39,44 +39,74 @@ export function Portrait({ def, className }: { def: GeneralDef; className?: stri
   const trim = def.rarity === 'SSR' ? '#fbbf24' : def.rarity === 'SR' ? '#e7e5e4' : '#a8a29e';
   const metal = METAL[def.faction];
   const gear = a.gear ?? (a.head === 'helmet' ? metal : f);
+  return { a, skin, hair, L, R, rx, gear, trim, metal, f, female, uid };
+}
 
-  const ctx: Ctx = { a, skin, hair, L, R, rx, gear, trim, metal, f, female, uid };
-
+function PortraitBackdrop({ uid, f, h }: { uid: string; f: string; h: number }) {
   return (
-    <svg viewBox="0 0 100 100" className={className} aria-label={`${def.name} 초상`} role="img">
+    <>
       <defs>
         <linearGradient id={`bg${uid}`} x1="0" y1="0" x2="0.4" y2="1">
           <stop offset="0" stopColor={tone(f, 0.15)} />
           <stop offset="1" stopColor={tone(f, -0.75)} />
         </linearGradient>
-        <radialGradient id={`lt${uid}`} cx="0.5" cy="0.35" r="0.6">
+        <radialGradient id={`lt${uid}`} cx="0.5" cy="0.28" r={h > 100 ? 0.45 : 0.6}>
           <stop offset="0" stopColor="#fff" stopOpacity="0.28" />
           <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </radialGradient>
       </defs>
-      <rect width="100" height="100" fill={`url(#bg${uid})`} />
-      <rect width="100" height="100" fill={`url(#lt${uid})`} />
+      <rect width="100" height={h} fill={`url(#bg${uid})`} />
+      <rect width="100" height={h} fill={`url(#lt${uid})`} />
+    </>
+  );
+}
 
-      <BackLayer c={ctx} />
-      <BodyLayer c={ctx} />
+function PortraitHead({ c }: { c: Ctx }) {
+  const { skin, L, R, rx, female } = c;
+  return (
+    <g>
       {/* 목 */}
       <path d="M44 58 L44 74 Q50 78 56 74 L56 58 Z" fill={tone(skin, -0.18)} />
-      {/* 귀 */}
       {!female && (
         <>
           <ellipse cx={L + 0.5} cy="49" rx="2.6" ry="4.2" fill={tone(skin, -0.08)} />
           <ellipse cx={R - 0.5} cy="49" rx="2.6" ry="4.2" fill={tone(skin, -0.08)} />
         </>
       )}
-      {/* 얼굴 */}
       <path
         d={`M${L} 45 C${L} 31 ${R} 31 ${R} 45 C${R} 56 ${50 + rx * 0.55} 65 50 66 C${50 - rx * 0.55} 65 ${L} 56 ${L} 45 Z`}
         fill={skin}
       />
-      <Face c={ctx} />
-      <BeardLayer c={ctx} />
-      <HeadLayer c={ctx} />
-      <Extras c={ctx} />
+      <Face c={c} />
+      <BeardLayer c={c} />
+      <HeadLayer c={c} />
+      <Extras c={c} />
+    </g>
+  );
+}
+
+export function Portrait({ def, className }: { def: GeneralDef; className?: string }) {
+  const c = usePortraitCtx(def);
+  return (
+    <svg viewBox="0 0 100 100" className={className} aria-label={`${def.name} 초상`} role="img">
+      <PortraitBackdrop uid={c.uid} f={c.f} h={100} />
+      <BackLayer c={c} />
+      <BodyLayer c={c} />
+      <PortraitHead c={c} />
+    </svg>
+  );
+}
+
+/** 상세 창용 전신 — 초상과 같은 SVG 외형으로 발까지 그린다. */
+export function FullFigure({ def, className }: { def: GeneralDef; className?: string }) {
+  const c = usePortraitCtx(def);
+  return (
+    <svg viewBox="0 0 100 210" className={className} aria-label={`${def.name} 전신`} role="img">
+      <PortraitBackdrop uid={c.uid} f={c.f} h={210} />
+      <ellipse cx="50" cy="200" rx="26" ry="4.5" fill="#000" opacity="0.28" />
+      <BackLayer c={c} />
+      <StandingBody c={c} troop={def.troop} />
+      <PortraitHead c={c} />
     </svg>
   );
 }
@@ -137,11 +167,15 @@ function BackLayer({ c }: { c: Ctx }) {
   );
 }
 
+function robeColor(c: Ctx) {
+  return c.female ? tone(c.gear === c.f ? c.f : c.gear, -0.1) : tone(c.f, -0.25);
+}
+
 function BodyLayer({ c }: { c: Ctx }) {
   const { a, f, metal, trim } = c;
   const torso = 'M3 100 C5 85 17 75 34 72 L66 72 C83 75 95 85 97 100 Z';
   if (a.body === 'robe') {
-    const robe = c.female ? tone(c.gear === c.f ? f : c.gear, -0.1) : tone(f, -0.25);
+    const robe = robeColor(c);
     return (
       <g>
         <path d={torso} fill={robe} />
@@ -173,6 +207,82 @@ function BodyLayer({ c }: { c: Ctx }) {
       ))}
       {/* 목 가리개 */}
       <path d="M37 75 Q50 83 63 75 L61 71 Q50 77 39 71 Z" fill={tone(metal, 0.15)} stroke={tone(metal, -0.4)} strokeWidth="0.6" />
+    </g>
+  );
+}
+
+/** 전신용 몸 — 초상 BodyLayer와 같은 색·깃으로 발까지 이어 그린다. */
+function StandingBody({ c, troop }: { c: Ctx; troop: Troop }) {
+  const { a, f, metal, trim, skin, female } = c;
+  const boot = '#1c1917';
+  const hand = tone(skin, -0.05);
+  const sleeve = a.body === 'robe' ? robeColor(c) : metal;
+  const robe = robeColor(c);
+  const hem = female
+    ? 'M20 72 C10 100 12 140 18 186 L40 186 L45 118 L55 118 L60 186 L82 186 C88 140 90 100 80 72 Q50 84 20 72 Z'
+    : 'M26 72 C18 102 20 148 26 186 L42 186 L47 126 L53 126 L58 186 L74 186 C80 148 82 102 74 72 Q50 84 26 72 Z';
+
+  return (
+    <g>
+      {a.body === 'robe' ? (
+        <g>
+          <path d={hem} fill={robe} />
+          <path d={hem} fill="#000" opacity="0.12" />
+          <path d="M42 72 L50 96 L58 72 Z" fill="#f5f5f4" />
+          <path d="M42 71 L53 108" stroke={trim} strokeWidth="3" />
+          <path d="M58 71 L47 100" stroke={trim} strokeWidth="3" />
+          <path d="M50 100 L49 180" stroke={tone(robe, 0.35)} strokeWidth="1.2" opacity="0.55" />
+          <path d={female ? 'M18 180 L40 180 L38 196 L14 196 Z' : 'M22 180 L42 180 L40 196 L18 196 Z'} fill={boot} />
+          <path d={female ? 'M60 180 L82 180 L86 196 L64 196 Z' : 'M58 180 L78 180 L82 196 L60 196 Z'} fill={tone(boot, 0.18)} />
+        </g>
+      ) : (
+        <g>
+          <path d="M24 72 C16 100 18 128 28 148 L72 148 C82 128 84 100 76 72 Q50 86 24 72 Z" fill={tone(f, -0.35)} />
+          <path d="M33 77 L67 77 L70 118 L30 118 Z" fill={tone(metal, -0.1)} />
+          {[82, 90, 98, 106, 114].map((y) => (
+            <path key={y} d={`M${32 + (y - 77) * -0.08} ${y} Q50 ${y + 2.5} ${68 + (y - 77) * 0.08} ${y}`} stroke={tone(metal, -0.45)} strokeWidth="0.9" fill="none" />
+          ))}
+          <circle cx="50" cy="90" r="4.2" fill={trim} stroke={tone(trim, -0.4)} strokeWidth="0.8" />
+          {[20, 80].map((x) => (
+            <g key={x}>
+              <ellipse cx={x} cy="83" rx="15" ry="9.5" fill={metal} transform={`rotate(${x < 50 ? -18 : 18} ${x} 83)`} />
+              <ellipse cx={x} cy="83" rx="15" ry="9.5" fill="none" stroke={trim} strokeWidth="1.2" transform={`rotate(${x < 50 ? -18 : 18} ${x} 83)`} />
+            </g>
+          ))}
+          <path d="M37 75 Q50 83 63 75 L61 71 Q50 77 39 71 Z" fill={tone(metal, 0.15)} stroke={tone(metal, -0.4)} strokeWidth="0.6" />
+          <path d="M28 140 L26 148 L74 148 L72 140 Z" fill={tone(metal, -0.25)} />
+          <path d="M32 148 L28 184 L46 184 L48 148 Z" fill={tone(metal, -0.4)} />
+          <path d="M52 148 L54 184 L72 184 L68 148 Z" fill={tone(metal, -0.52)} />
+          <path d="M28 176 L46 176 L46 196 L24 196 Z" fill={boot} />
+          <path d="M54 176 L72 176 L76 196 L54 196 Z" fill={tone(boot, 0.18)} />
+        </g>
+      )}
+
+      <path d="M28 86 Q14 112 16 138" stroke={sleeve} strokeWidth="9" fill="none" strokeLinecap="round" />
+      <path d="M72 86 Q86 110 84 136" stroke={sleeve} strokeWidth="9" fill="none" strokeLinecap="round" />
+      <circle cx="16" cy="140" r="3.6" fill={hand} />
+      <circle cx="84" cy="138" r="3.6" fill={hand} />
+
+      {/* 도포는 병장기 없이, 갑옷만 병과 무기를 든다 */}
+      {a.body === 'armor' && troop === 'cavalry' && (
+        <g>
+          <path d="M84 138 L88 196" stroke={tone(metal, -0.35)} strokeWidth="2" />
+          <path d="M85 128 L93 142 L79 140 Z" fill="#e7e5e4" stroke={tone(metal, -0.4)} strokeWidth="0.6" />
+        </g>
+      )}
+      {a.body === 'armor' && troop === 'archer' && (
+        <g fill="none" strokeWidth="1.5">
+          <path d="M14 118 Q4 136 14 156" stroke={tone(f, 0.35)} />
+          <path d="M14 122 L14 152" stroke="#f5f5f4" />
+        </g>
+      )}
+      {a.body === 'armor' && troop === 'infantry' && (
+        <g>
+          <path d="M6 118 L16 152 L10 154 L2 122 Z" fill={tone(metal, 0.12)} stroke={tone(metal, -0.4)} strokeWidth="0.7" />
+          <path d="M84 138 L88 172" stroke="#d6d3d1" strokeWidth="1.8" />
+          <path d="M84 138 L92 144 L84 148 Z" fill="#e7e5e4" />
+        </g>
+      )}
     </g>
   );
 }

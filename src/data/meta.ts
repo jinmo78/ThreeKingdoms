@@ -57,6 +57,13 @@ export const EFFECT_LABEL: Record<SkillEffect, string> = {
   heal: '회복',
 };
 
+/** 제1·제2·제3부대. 밝은/어두운 화면 모두에서 쓰도록 테마가 바꿔 둔 색만 쓴다. */
+export const UNIT_TINT = [
+  { card: 'border-red-900/80 bg-red-950/50', title: 'text-red-300', bar: 'bg-red-500', chip: 'bg-red-900/70 text-red-300' },
+  { card: 'border-sky-900/80 bg-sky-950/60', title: 'text-sky-300', bar: 'bg-sky-500', chip: 'bg-sky-900/70 text-sky-300' },
+  { card: 'border-emerald-900/80 bg-emerald-950/60', title: 'text-emerald-300', bar: 'bg-emerald-500', chip: 'bg-emerald-900/70 text-emerald-300' },
+] as const;
+
 export const SLOT_LABEL = {
   commander: { label: '주장', hint: '병과·전법 결정' },
   vice1: { label: '부장', hint: '연쇄 1단' },

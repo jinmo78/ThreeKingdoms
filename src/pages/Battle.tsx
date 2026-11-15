@@ -5,11 +5,11 @@ import { GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
 import { Bar, Btn, cn } from '../components/ui';
 import { GENERAL_MAP } from '../data/generals';
-import { TROOP } from '../data/meta';
+import { TROOP, UNIT_TINT } from '../data/meta';
 import { nextStage } from '../data/stages';
 import type { BattleEvent, Side } from '../engine/battle';
 import { shownRarity, type UnitProfile } from '../engine/unit';
-import { useGame } from '../store/gameStore';
+import { useGame, type BattleReward } from '../store/gameStore';
 
 const DELAY: Record<BattleEvent['kind'], number> = {
   start: 900, attack: 520, skill: 1050, chain: 1150, rout: 700, end: 400,
@@ -122,6 +122,7 @@ export default function BattlePage() {
           {done && <ResultOverlay
             win={result.win}
             reward={reward}
+            mode={mode}
             maxChain={result.stats.maxChain}
             chains={result.stats.chains}
             onRetry={retry}
@@ -184,7 +185,7 @@ function SideRow({
             // 같은 부대가 연달아 맞아도 흔들림이 다시 재생되도록 피격 시 key를 바꿔 다시 마운트
             <div key={hit?.kind === 'dmg' ? `${i}-${ev.id}` : i}
               className={cn('relative rounded-xl border p-2 transition-all',
-                side === 0 ? 'border-sky-900/70 bg-sky-950/30' : 'border-red-900/70 bg-red-950/20',
+                side === 0 ? UNIT_TINT[i]?.card ?? 'border-sky-900/70 bg-sky-950/30' : 'border-red-900/70 bg-red-950/20',
                 acting && 'animate-pulse-ring border-amber-400/80',
                 hit?.kind === 'dmg' && 'animate-shake',
                 legacyFade && 'opacity-30 grayscale')}
@@ -193,6 +194,7 @@ function SideRow({
                 className={cn(cinematic && acting && (side === 0 ? 'animate-lunge-up' : 'animate-lunge-down'))}>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm">{TROOP[u.troop].emoji}</span>
+                  {side === 0 && <span className={cn('text-[10px] font-black', UNIT_TINT[i]?.title)}>{i + 1}</span>}
                   <span className="truncate text-xs font-bold">{u.name}</span>
                 </div>
                 <div className={cn('mt-1.5 grid grid-cols-3 justify-items-center gap-0.5 sm:grid-cols-6',
@@ -209,7 +211,7 @@ function SideRow({
                   ) : <div key={mi} className="h-8 w-8 rounded-md border border-dashed border-stone-800" />)}
                 </div>
               </div>
-              <Bar value={hp} max={u.hp} className="mt-2" color={side === 0 ? 'bg-sky-500' : 'bg-red-500'} />
+              <Bar value={hp} max={u.hp} className="mt-2" color={side === 0 ? UNIT_TINT[i]?.bar ?? 'bg-sky-500' : 'bg-red-500'} />
               <div className="tabular mt-0.5 text-right text-[10px] text-stone-400">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
               {(cinematic ? announced.has(i) || justRouted : routed) && (
                 <div className={cn('absolute inset-0 flex items-center justify-center font-serif text-lg font-black text-red-600',
@@ -232,10 +234,11 @@ function SideRow({
 }
 
 function ResultOverlay({
-  win, reward, maxChain, chains, onRetry, onNext, nextTitle, onFormation, onCampaign, backLabel,
+  win, reward, mode, maxChain, chains, onRetry, onNext, nextTitle, onFormation, onCampaign, backLabel,
 }: {
   win: boolean;
-  reward: { gold: number; exp: number; firstClear: boolean; levelUps: { id: string; from: number; to: number }[] } | null;
+  reward: BattleReward | null;
+  mode: 'stage' | 'practice' | 'conquest';
   maxChain: number; chains: number;
   onRetry: () => void; onNext?: () => void; nextTitle?: string; onFormation: () => void; onCampaign: () => void; backLabel: string;
 }) {
@@ -266,7 +269,11 @@ function ResultOverlay({
             )}
           </div>
         ) : (
-          <p className="mt-4 rounded-xl bg-stone-950/70 p-3 text-xs text-stone-400">모의전이라 보상과 경험치는 없습니다. 편성을 바꿔 가며 다시 시험해 보세요.</p>
+          <p className="mt-4 rounded-xl bg-stone-950/70 p-3 text-xs text-stone-400">
+            {mode === 'stage'
+              ? '이미 클리어한 전투라 금화·경험치는 없습니다.'
+              : '모의전이라 보상과 경험치는 없습니다. 편성을 바꿔 가며 다시 시험해 보세요.'}
+          </p>
         )}
 
         {!win && reward && <p className="mt-3 text-xs text-stone-400">시너지를 맞추거나 상성을 고려해 편성을 바꿔 보세요. 다른 스테이지에서 경험치를 쌓는 것도 방법입니다.</p>}

@@ -4,7 +4,7 @@ import type { GeneralDef, Rarity } from '../types';
 
 export const PULL_COST = { single: 100, ten: 900 } as const;
 /** 하루 등용 횟수. 1회는 1칸, 10연은 10칸을 쓴다 */
-export const DAILY_PULLS = 10;
+export const DAILY_PULLS = 30;
 /** 돌파 ★5 이후 중복 환급. 등용 비용(100·900)을 되돌리지 않을 만큼만 */
 export const DUPLICATE_REFUND = { SSR: 30, SR: 12, R: 5 } as const;
 export const RATES: Record<Rarity, number> = { SSR: 0.05, SR: 0.25, R: 0.7 };

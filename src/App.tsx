@@ -1,7 +1,8 @@
 import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { BannerEmblem } from './components/BannerEmblem';
 import { AccountButton, GameConflict } from './components/CloudAccount';
-import { cn, ThemeToggle } from './components/ui';
+import { cn, ReloadButton, ThemeToggle } from './components/ui';
 import BattlePage from './pages/Battle';
 import Campaign from './pages/Campaign';
 import Challenge from './pages/Challenge';
@@ -20,7 +21,19 @@ const TABS: { id: View; label: string; icon: LucideIcon }[] = [
   { id: 'roster', label: '장수록', icon: BookOpen },
 ];
 
+function useSaveHydrated() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const done = () => setReady(true);
+    const unsub = useGame.persist.onFinishHydration(done);
+    if (useGame.persist.hasHydrated()) done();
+    return unsub;
+  }, []);
+  return ready;
+}
+
 export default function App() {
+  const hydrated = useSaveHydrated();
   const started = useGame((s) => s.started);
   const entered = useGame((s) => s.entered);
   const view = useGame((s) => s.view);
@@ -29,6 +42,7 @@ export default function App() {
   const goTitle = useGame((s) => s.goTitle);
   const inBattle = view === 'battle';
 
+  if (!hydrated) return <div className="min-h-dvh" />;
   if (!started || !entered) return <TitleScreen />;
 
   return (
@@ -51,6 +65,7 @@ export default function App() {
           )}
           <div className="ml-auto flex items-center gap-2">
             <AccountButton />
+            <ReloadButton />
             <ThemeToggle />
             <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-bold text-amber-300">
               <Coins size={15} />

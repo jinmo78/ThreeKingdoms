@@ -10,6 +10,7 @@ import { enemyProfiles, playerProfiles, useGame } from '../store/gameStore';
 
 export default function Campaign() {
   const cleared = useGame((s) => s.cleared);
+  const fought = useGame((s) => s.fought);
   const formation = useGame((s) => s.formation);
   const roster = useGame((s) => s.roster);
   const startBattle = useGame((s) => s.startBattle);
@@ -39,11 +40,15 @@ export default function Campaign() {
     <>
       <p className="mb-3 text-xs text-stone-400">{stage.desc}</p>
 
-      <div className="mb-3 flex items-center gap-3 text-xs">
-        <span className="flex items-center gap-1 text-amber-300"><Coins size={13} /> {stage.reward.gold}</span>
-        <span className="text-stone-400">EXP {stage.reward.exp}</span>
-        {!cleared[stage.id] && <span className="rounded bg-amber-400/15 px-1.5 py-0.5 text-amber-200">첫 클리어 +{stage.firstClearGold}</span>}
-      </div>
+      {cleared[stage.id] ? (
+        <p className="mb-3 text-xs text-stone-500">이미 클리어했습니다. 다시 출진해도 금화·경험치는 없습니다.</p>
+      ) : (
+        <div className="mb-3 flex items-center gap-3 text-xs">
+          <span className="flex items-center gap-1 text-amber-300"><Coins size={13} /> {stage.reward.gold + stage.firstClearGold}</span>
+          <span className="text-stone-400">EXP {stage.reward.exp}</span>
+          <span className="rounded bg-amber-400/15 px-1.5 py-0.5 text-amber-200">첫 클리어만</span>
+        </div>
+      )}
 
       <div className="mb-2 text-xs font-bold text-stone-400">적군 편성</div>
       <div className="space-y-2">
@@ -66,7 +71,7 @@ export default function Campaign() {
           <Swords size={18} /> 출진! ({mine.length}부대)
         </Btn>
       )}
-      <CounterFormationButton enemies={stage.enemies} unlocked={(cleared[stage.id] ?? 0) > 0} lockedNote="1회 클리어 후 개방" className="mt-2 w-full" />
+      <CounterFormationButton enemies={stage.enemies} unlocked={(fought[stage.id] ?? 0) > 0} lockedNote="첫 전투 후 개방" className="mt-2 w-full" />
     </>
   );
 

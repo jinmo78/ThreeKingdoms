@@ -14,9 +14,11 @@ export default function Formation() {
   const roster = useGame((s) => s.roster);
   const formation = useGame((s) => s.formation);
   const cleared = useGame((s) => s.cleared);
+  const fought = useGame((s) => s.fought);
   const focusStage = useGame((s) => s.focusStage);
   const setFocusStage = useGame((s) => s.setFocusStage);
   const conquestBest = useGame((s) => s.conquestBest);
+  const conquestFailFloor = useGame((s) => s.conquestFailFloor);
   const practice = useGame((s) => s.practice);
   const conquestOpen = (cleared['4-3'] ?? 0) > 0;
 
@@ -65,7 +67,14 @@ export default function Formation() {
         <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster)} compact />
       </div>
 
-      <FormationEditor enemy={enemy} />
+      <FormationEditor
+        enemy={enemy}
+        counter={{
+          enemies: enemyUnits,
+          unlocked: key === 'practice' || (key === 'conquest' ? conquestFailFloor === conquestBest + 1 : (fought[key] ?? 0) > 0),
+          lockedNote: key === 'conquest' ? '이 층에서 1회 패배 후 개방' : key === 'practice' ? undefined : '첫 전투 후 개방',
+        }}
+      />
 
       {help && (
         <Modal onClose={() => setHelp(false)}>

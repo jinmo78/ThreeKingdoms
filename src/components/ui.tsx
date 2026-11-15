@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react';
+import { Moon, RefreshCw, Sun } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { applyTheme, currentTheme, type Theme } from '../theme';
 
@@ -67,6 +67,21 @@ export function Bar({ value, max, className, color = 'bg-red-500' }: { value: nu
   );
 }
 
+/** 설치한 앱에는 브라우저 새로고침이 없어서, 화면 안에서 다시 불러온다. */
+export function ReloadButton({ className }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      aria-label="새로고침"
+      title="새로고침"
+      onClick={() => window.location.reload()}
+      className={cn('rounded-lg p-2 text-stone-400 hover:bg-stone-800 hover:text-stone-100', className)}
+    >
+      <RefreshCw size={16} />
+    </button>
+  );
+}
+
 /** 밝은 화면이 기본. 어두운 화면은 이 버튼으로 바꾼다. */
 export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<Theme>(currentTheme);
@@ -122,7 +137,7 @@ function unlockPageScroll() {
   window.scrollTo(0, lockedScrollY);
 }
 
-export function Modal({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+export function Modal({ children, onClose, wide }: { children: ReactNode; onClose: () => void; wide?: boolean }) {
   useEffect(() => {
     lockPageScroll();
     return unlockPageScroll;
@@ -130,7 +145,10 @@ export function Modal({ children, onClose }: { children: ReactNode; onClose: () 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center overscroll-none bg-black/75 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div
-        className="animate-slide-in max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-stone-700 bg-stone-900 p-5 sm:rounded-2xl"
+        className={cn(
+          'animate-slide-in flex max-h-[92vh] w-full flex-col overscroll-contain rounded-t-2xl border border-stone-700 bg-stone-900 p-5 sm:rounded-2xl',
+          wide ? 'h-[92vh] max-w-4xl overflow-hidden' : 'max-w-lg overflow-y-auto',
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

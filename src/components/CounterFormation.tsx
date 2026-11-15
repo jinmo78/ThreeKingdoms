@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { GENERAL_MAP } from '../data/generals';
 import { TROOP } from '../data/meta';
 import type { CounterResult } from '../engine/counterFormation';
+import { COUNTER_GOLD } from '../engine/formationBook';
 import { shownRarity } from '../engine/unit';
 import { useGame } from '../store/gameStore';
 import type { EnemyUnit, Unit } from '../types';
@@ -11,48 +12,77 @@ import { SLOTS } from '../types';
 import { GeneralToken } from './General';
 import { Bar, Btn, cn, Modal } from './ui';
 
-type Phase = { kind: 'idle' } | { kind: 'running'; ratio: number; best: number } | { kind: 'done'; result: CounterResult };
+type Phase =
+  | { kind: 'idle' }
+  | { kind: 'running'; ratio: number; best: number }
+  | { kind: 'done'; result: CounterResult; refunded: boolean };
 
-export function CounterFormationButton({ enemies, unlocked, lockedNote, className }: {
-  enemies: EnemyUnit[]; unlocked: boolean; lockedNote?: string; className?: string;
+export function CounterFormationButton({ enemies, unlocked, lockedNote, className, size = 'md' }: {
+  enemies: EnemyUnit[]; unlocked: boolean; lockedNote?: string; className?: string; size?: 'sm' | 'md';
 }) {
   const cleared = unlocked;
+  const gold = useGame((s) => s.gold);
   const roster = useGame((s) => s.roster);
   const formation = useGame((s) => s.formation);
   const applyFormation = useGame((s) => s.applyFormation);
+  const adjustGold = useGame((s) => s.adjustGold);
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const workerRef = useRef<Worker | null>(null);
+  const paidRef = useRef(false);
+  const canPay = gold >= COUNTER_GOLD;
 
   useEffect(() => () => workerRef.current?.terminate(), []);
 
+  function refund() {
+    if (!paidRef.current) return;
+    paidRef.current = false;
+    adjustGold(COUNTER_GOLD);
+  }
+
   function run() {
+    if (!cleared || paidRef.current) return;
+    if (!adjustGold(-COUNTER_GOLD)) return;
+    paidRef.current = true;
     workerRef.current?.terminate();
     const w = new Worker(new URL('../workers/counter.worker.ts', import.meta.url), { type: 'module' });
     workerRef.current = w;
     setPhase({ kind: 'running', ratio: 0, best: 0 });
     w.onmessage = (e: MessageEvent) => {
+      if (!paidRef.current) return;
       if (e.data.type === 'progress') setPhase({ kind: 'running', ratio: e.data.ratio, best: e.data.best });
       if (e.data.type === 'done') {
-        setPhase({ kind: 'done', result: e.data.result as CounterResult });
+        const result = e.data.result as CounterResult;
+        const refunded = !result.improved;
+        if (refunded) refund();
+        setPhase({ kind: 'done', result, refunded });
         w.terminate();
         workerRef.current = null;
       }
+    };
+    w.onerror = () => {
+      refund();
+      setPhase({ kind: 'idle' });
+      w.terminate();
+      workerRef.current = null;
     };
     w.postMessage({ roster, formation, enemies, budgetMs: 3000 });
   }
 
   function close() {
+    const running = phase.kind === 'running';
     workerRef.current?.terminate();
     workerRef.current = null;
+    if (running) refund();
+    else paidRef.current = false;
     setPhase({ kind: 'idle' });
   }
 
   return (
     <>
-      <Btn variant="outline" className={className} disabled={!cleared} onClick={run}
-        title={cleared ? '이 스테이지 적군을 상대로 전투를 수천 번 시뮬레이션해 승률이 높은 편성을 찾습니다' : undefined}>
+      <Btn variant="outline" size={size} className={className} disabled={!cleared || !canPay} onClick={run}
+        title={cleared ? (canPay ? '이 상대를 수천 번 싸워 보고 승률이 높은 편성을 찾습니다. 더 나은 편성이 없으면 금화를 돌려줍니다.' : '금화가 부족합니다') : undefined}>
         {cleared ? <Brain size={15} /> : <Lock size={14} />}
-        적군 맞춤 편성
+        적군 맞춤 편성{cleared ? ` -${COUNTER_GOLD}` : ''}
         {!cleared && lockedNote && <span className="text-[10px] font-normal opacity-80">({lockedNote})</span>}
       </Btn>
 
@@ -66,13 +96,14 @@ export function CounterFormationButton({ enemies, unlocked, lockedNote, classNam
             <div className="space-y-3 py-4 text-center">
               <Loader2 size={32} className="mx-auto animate-spin text-amber-300" />
               <p className="text-sm text-stone-300">군사들이 전투를 시뮬레이션하는 중…</p>
+              <p className="text-[11px] text-stone-500">금화 {COUNTER_GOLD}을 사용합니다. 더 나은 편성이 없거나 여기서 닫으면 돌려드립니다.</p>
               <Bar value={phase.ratio} max={1} color="bg-amber-400" />
               <p className="text-xs text-stone-500">지금까지 찾은 최고 승률 {Math.round(phase.best * 100)}%</p>
             </div>
           )}
 
           {phase.kind === 'done' && (
-            <ResultView result={phase.result} onApply={() => { applyFormation(phase.result.formation); close(); }} onClose={close} />
+            <ResultView result={phase.result} refunded={phase.refunded} onApply={() => { applyFormation(phase.result.formation); close(); }} onClose={close} />
           )}
         </Modal>
       )}
@@ -80,7 +111,7 @@ export function CounterFormationButton({ enemies, unlocked, lockedNote, classNam
   );
 }
 
-function ResultView({ result, onApply, onClose }: { result: CounterResult; onApply: () => void; onClose: () => void }) {
+function ResultView({ result, refunded, onApply, onClose }: { result: CounterResult; refunded: boolean; onApply: () => void; onClose: () => void }) {
   const pct = (n: number) => `${Math.round(n * 100)}%`;
   return (
     <div className="space-y-4">
@@ -98,7 +129,7 @@ function ResultView({ result, onApply, onClose }: { result: CounterResult; onApp
       {result.improved ? (
         <>
           <p className="text-xs text-stone-400">
-            편성 {result.tried.toLocaleString()}가지를 각각 100번씩 싸워 보고, 새 전투 400번으로 다시 검증한 결과입니다.
+            금화 {COUNTER_GOLD}을 사용했습니다. 편성 {result.tried.toLocaleString()}가지를 각각 100번씩 싸워 보고, 새 전투 400번으로 다시 검증한 결과입니다.
           </p>
           <FormationPreview units={result.formation} />
           <div className="flex gap-2">
@@ -109,6 +140,7 @@ function ResultView({ result, onApply, onClose }: { result: CounterResult; onApp
       ) : (
         <>
           <p className="text-sm text-stone-300">현재 편성보다 확실히 나은 조합을 찾지 못했습니다. 지금 편성을 유지하세요.</p>
+          {refunded && <p className="text-xs text-amber-300">금화 {COUNTER_GOLD}을 돌려드렸습니다.</p>}
           <p className="text-xs text-stone-500">새 장수를 등용하거나 레벨을 올린 뒤 다시 시도해 보세요.</p>
           <Btn variant="ghost" className="w-full" onClick={onClose}>닫기</Btn>
         </>

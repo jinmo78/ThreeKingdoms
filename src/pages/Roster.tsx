@@ -12,9 +12,12 @@ import { shownRarity } from '../engine/unit';
 import { useGame } from '../store/gameStore';
 import type { GeneralDef, OwnedGeneral } from '../types';
 
+type OwnFilter = 'all' | 'owned' | 'missing';
+
 export default function Roster() {
   const roster = useGame((s) => s.roster);
   const [tab, setTab] = useState<'generals' | 'bonds'>('generals');
+  const [ownFilter, setOwnFilter] = useState<OwnFilter>('all');
   const [detail, setDetail] = useState<GeneralDef | null>(null);
   const [bondId, setBondId] = useState<string | null>(null);
   const [rules, setRules] = useState(false);
@@ -36,32 +39,50 @@ export default function Roster() {
         <p className="mt-1 hidden text-xs text-stone-300 sm:block">등용한 장수와 인연 조합을 확인하세요.</p>
       </PageHero>
 
-      {tab === 'generals' &&
-        FACTIONS.map((f) => {
-          const list = RECRUITABLE.filter((g) => g.faction === f);
-          return (
-            <section key={f}>
-              <h3 className={cn('mb-2 font-serif text-lg font-black', FACTION[f].text)}>
-                {FACTION[f].full} <span className="text-xs font-normal text-stone-500">{list.filter((g) => roster[g.id]).length}/{list.length}</span>
-              </h3>
-              <div className="grid grid-cols-4 gap-x-2 gap-y-3 sm:hidden">
-                {list.map((g) => {
-                  const rank = shownRarity(g.rarity, roster[g.id]?.promote);
-                  return (
-                    <button key={g.id} type="button" onClick={() => setDetail(g)} className="flex min-w-0 flex-col items-center gap-0.5">
-                      <GeneralToken def={g} rarity={rank} size="fill" className="w-full" dim={!roster[g.id]} />
-                      <RarityBadge rarity={rank} />
-                      <span className={cn('w-full truncate text-[11px] font-bold', roster[g.id] ? 'text-stone-200' : 'text-stone-600')}>{g.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="hidden gap-2 sm:grid sm:grid-cols-5 lg:grid-cols-7">
-                {list.map((g) => <GeneralCard key={g.id} def={g} owned={roster[g.id]} onClick={() => setDetail(g)} />)}
-              </div>
-            </section>
-          );
-        })}
+      {tab === 'generals' && (
+        <>
+          <div className="flex gap-1">
+            {([['all', '전체'], ['owned', '등용'], ['missing', '미등용']] as const).map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setOwnFilter(id)}
+                className={cn('rounded-full px-3 py-1 text-xs font-bold', ownFilter === id ? 'bg-stone-700 text-stone-100' : 'bg-stone-900 text-stone-500')}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {FACTIONS.map((f) => {
+            const all = RECRUITABLE.filter((g) => g.faction === f);
+            const list = all.filter((g) => ownFilter === 'all' || (ownFilter === 'owned' ? roster[g.id] : !roster[g.id]));
+            if (list.length === 0) return null;
+            return (
+              <section key={f}>
+                <h3 className={cn('mb-2 font-serif text-lg font-black', FACTION[f].text)}>
+                  {FACTION[f].full} <span className="text-xs font-normal text-stone-500">{all.filter((g) => roster[g.id]).length}/{all.length}</span>
+                </h3>
+                <div className="grid grid-cols-4 gap-2 sm:hidden">
+                  {list.map((g) => {
+                    const owned = roster[g.id];
+                    const rank = shownRarity(g.rarity, owned?.promote);
+                    return (
+                      <button key={g.id} type="button" onClick={() => setDetail(g)}
+                        className={cn('flex min-w-0 flex-col items-center gap-0.5 rounded-xl border p-1', owned ? 'border-stone-800 bg-stone-900' : 'border-stone-600 bg-stone-700')}>
+                        <GeneralToken def={g} rarity={rank} size="fill" className="w-full" />
+                        <RarityBadge rarity={rank} />
+                        <span className="w-full truncate text-[11px] font-bold text-stone-200">{g.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="hidden gap-2 sm:grid sm:grid-cols-5 lg:grid-cols-7">
+                  {list.map((g) => <GeneralCard key={g.id} def={g} owned={roster[g.id]} onClick={() => setDetail(g)} />)}
+                </div>
+              </section>
+            );
+          })}
+          {ownFilter !== 'all' && RECRUITABLE.every((g) => ownFilter === 'owned' ? !roster[g.id] : !!roster[g.id]) && (
+            <p className="text-center text-xs text-stone-500">{ownFilter === 'owned' ? '아직 등용한 장수가 없습니다.' : '등용하지 않은 장수가 없습니다.'}</p>
+          )}
+        </>
+      )}
 
       {tab === 'bonds' && (
         <>
@@ -132,8 +153,8 @@ function BondCard({ bond, roster, onPick }: {
       <div className="mt-2 flex flex-wrap gap-2">
         {members.map((g) => (
           <button key={g.id} type="button" onClick={() => onPick(g)} className="flex flex-col items-center gap-0.5">
-            <GeneralToken def={g} rarity={shownRarity(g.rarity, roster[g.id]?.promote)} size="sm" dim={!roster[g.id]} />
-            <span className={cn('text-[10px]', roster[g.id] ? 'text-stone-300' : 'text-stone-600')}>{g.name}</span>
+            <GeneralToken def={g} rarity={shownRarity(g.rarity, roster[g.id]?.promote)} size="sm" />
+            <span className={cn('rounded px-1 text-[10px]', roster[g.id] ? 'text-stone-300' : 'bg-stone-700 text-stone-200')}>{g.name}</span>
           </button>
         ))}
       </div>

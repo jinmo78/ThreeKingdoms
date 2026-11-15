@@ -1,10 +1,19 @@
 // 저장 본문. 브라우저(localStorage)와 Firestore가 같은 모양을 쓴다.
 import { GENERAL_MAP } from '../data/generals';
+import { LEGACY_POINT_GOLD, PRESET_LIMIT } from '../engine/formationBook';
+import { DAILY_PULLS } from '../engine/gacha';
 import { emptyUnit } from '../engine/profiles';
 import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
 import type { OwnedGeneral, Unit } from '../types';
+import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 8;
+
+export interface FormationPreset {
+  id: string;
+  name: string;
+  units: Unit[];
+}
 
 export interface SaveData {
   started: boolean;
@@ -12,6 +21,8 @@ export interface SaveData {
   roster: Record<string, OwnedGeneral>;
   formation: Unit[];
   cleared: Record<string, number>;
+  /** 스테이지를 싸운 횟수. 승패와 상관없이 오르며, 맞춤 편성 개방에 쓴다. */
+  fought: Record<string, number>;
   totalPulls: number;
   /** 천하 토벌전 최고 돌파 층 */
   conquestBest: number;
@@ -20,6 +31,7 @@ export interface SaveData {
   /** 등용 횟수를 센 날짜 (YYYY-MM-DD) */
   recruitDay: string;
   recruitUsed: number;
+  presets: FormationPreset[];
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
@@ -38,11 +50,13 @@ export function freshSave(): SaveData {
       emptyUnit(),
     ],
     cleared: {},
+    fought: {},
     totalPulls: 0,
     conquestBest: 0,
     conquestFailFloor: 0,
     recruitDay: '',
     recruitUsed: 0,
+    presets: [],
   };
 }
 
@@ -67,7 +81,7 @@ function sanitizeRoster(raw: unknown): Record<string, OwnedGeneral> {
   return roster;
 }
 
-function sanitizeFormation(raw: unknown, roster: Record<string, OwnedGeneral>): Unit[] {
+export function sanitizeFormation(raw: unknown, roster: Record<string, OwnedGeneral>): Unit[] {
   const seen = new Set<string>();
   const take = (id: unknown) => {
     if (typeof id !== 'string' || !roster[id] || seen.has(id)) return null;
@@ -90,15 +104,31 @@ function sanitizeFormation(raw: unknown, roster: Record<string, OwnedGeneral>): 
   return units;
 }
 
+function sanitizePresets(raw: unknown, roster: Record<string, OwnedGeneral>): FormationPreset[] {
+  if (!Array.isArray(raw)) return [];
+  const out: FormationPreset[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const preset = item as Partial<FormationPreset>;
+    if (typeof preset.id !== 'string' || !/^[\w-]{1,24}$/.test(preset.id)) continue;
+    if (out.some((p) => p.id === preset.id)) continue;
+    const name = typeof preset.name === 'string' ? preset.name.replace(/\s+/g, ' ').trim().slice(0, 12) : '';
+    if (!name) continue;
+    const units = sanitizeFormation(preset.units, roster);
+    if (!units.some((u) => SLOTS.some((s) => u[s]))) continue;
+    out.push({ id: preset.id, name, units });
+    if (out.length >= PRESET_LIMIT) break;
+  }
+  return out;
+}
+
 export function sanitizeSave(raw: unknown): SaveData {
   const src = (raw && typeof raw === 'object' ? raw : {}) as Partial<SaveData>;
   const roster = sanitizeRoster(src.roster);
-  const cleared: Record<string, number> = {};
-  if (src.cleared && typeof src.cleared === 'object') {
-    for (const [id, n] of Object.entries(src.cleared)) {
-      if (!/^[\w-]{1,16}$/.test(id)) continue;
-      cleared[id] = clampInt(n, 0, 9999, 0);
-    }
+  const cleared = sanitizeCounts(src.cleared);
+  const fought = sanitizeCounts(src.fought);
+  for (const [id, n] of Object.entries(cleared)) {
+    if (fought[id] == null) fought[id] = n;
   }
   const recruitDay = typeof src.recruitDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(src.recruitDay) ? src.recruitDay : '';
   return {
@@ -107,15 +137,28 @@ export function sanitizeSave(raw: unknown): SaveData {
     roster,
     formation: sanitizeFormation(src.formation, roster),
     cleared,
+    fought,
     totalPulls: clampInt(src.totalPulls, 0, 1_000_000_000, 0),
     conquestBest: clampInt(src.conquestBest, 0, 999, 0),
     conquestFailFloor: clampInt(src.conquestFailFloor, 0, 999, 0),
     recruitDay,
-    recruitUsed: clampInt(src.recruitUsed, 0, 10, 0),
+    recruitUsed: clampInt(src.recruitUsed, 0, DAILY_PULLS, 0),
+    presets: sanitizePresets(src.presets, roster),
   };
 }
 
-/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) */
+function sanitizeCounts(raw: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [id, n] of Object.entries(raw)) {
+    if (!/^[\w-]{1,16}$/.test(id)) continue;
+    const count = clampInt(n, 0, 9999, 0);
+    if (count > 0) out[id] = count;
+  }
+  return out;
+}
+
+/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) */
 export function migrateSave(persisted: unknown, version: number): SaveData {
   const src = (persisted && typeof persisted === 'object' ? { ...(persisted as Record<string, unknown>) } : {}) as Record<string, unknown>;
   if (version < 2 && Array.isArray(src.formation)) {
@@ -136,6 +179,24 @@ export function migrateSave(persisted: unknown, version: number): SaveData {
     if (typeof src.recruitDay !== 'string') src.recruitDay = '';
     if (typeof src.recruitUsed !== 'number') src.recruitUsed = 0;
   }
+  if (version < 5) {
+    if (typeof src.points !== 'number') src.points = 60;
+    if (!Array.isArray(src.presets)) src.presets = [];
+  }
+  if (version < 6) {
+    const leftover = typeof src.points === 'number' && Number.isFinite(src.points) ? Math.max(0, Math.floor(src.points)) : 0;
+    const gold = typeof src.gold === 'number' && Number.isFinite(src.gold) ? src.gold : 0;
+    src.gold = gold + leftover * LEGACY_POINT_GOLD;
+    delete src.points;
+  }
+  if (version < 8) {
+    const fought = src.fought && typeof src.fought === 'object' ? { ...(src.fought as Record<string, unknown>) } : {};
+    const cleared = src.cleared && typeof src.cleared === 'object' ? src.cleared as Record<string, unknown> : {};
+    for (const [id, n] of Object.entries(cleared)) {
+      if (typeof n === 'number' && n > 0 && fought[id] == null) fought[id] = n;
+    }
+    src.fought = fought;
+  }
   return sanitizeSave(src);
 }
 
@@ -146,11 +207,13 @@ export function pickSave(s: SaveData): SaveData {
     roster: s.roster,
     formation: s.formation,
     cleared: s.cleared,
+    fought: s.fought,
     totalPulls: s.totalPulls,
     conquestBest: s.conquestBest,
     conquestFailFloor: s.conquestFailFloor,
     recruitDay: s.recruitDay,
     recruitUsed: s.recruitUsed,
+    presets: s.presets,
   };
 }
 
@@ -163,7 +226,10 @@ export function saveSignature(s: SaveData): string {
   }
   const cleared: SaveData['cleared'] = {};
   for (const id of Object.keys(save.cleared).sort()) cleared[id] = save.cleared[id];
-  return JSON.stringify({ ...save, roster, cleared });
+  const fought: SaveData['fought'] = {};
+  for (const id of Object.keys(save.fought).sort()) fought[id] = save.fought[id];
+  const presets = [...save.presets].sort((a, b) => a.id.localeCompare(b.id));
+  return JSON.stringify({ ...save, roster, cleared, fought, presets });
 }
 
 /** 아직 출사표 전이거나, 시작 배치 그대로인 기록 */

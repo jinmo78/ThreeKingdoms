@@ -4,7 +4,7 @@ import { BannerEmblem } from '../components/BannerEmblem';
 import { CloudPanel, TitleButton } from '../components/CloudAccount';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { GeneralToken } from '../components/General';
-import { ThemeToggle } from '../components/ui';
+import { ReloadButton, ThemeToggle } from '../components/ui';
 import { useCloud } from '../cloud/account';
 import { GAME_SUBTITLE, GAME_TAGLINE, GAME_TITLE } from '../config';
 import { getGeneral } from '../data/generals';
@@ -28,7 +28,10 @@ export default function TitleScreen() {
     <div className="relative min-h-dvh overflow-hidden bg-[#140e0c]">
       {/* 원본이 세로 720px라 넓은 PC에서 통째로 늘리면 흐려진다. 옆은 흐린 배경, 가운데만 원본 폭. */}
       <img src={TITLE_ART} alt="" aria-hidden className="pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-40 blur-3xl sm:block" />
-      <ThemeToggle className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-10" />
+      <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-10 flex items-center gap-1">
+        <ReloadButton className="text-white/80 hover:bg-white/10 hover:text-white" />
+        <ThemeToggle className="text-white/80 hover:bg-white/10 hover:text-white" />
+      </div>
 
       <div className="relative mx-auto min-h-dvh w-full max-w-[720px] overflow-hidden">
       <img

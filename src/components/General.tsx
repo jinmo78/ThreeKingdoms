@@ -1,12 +1,14 @@
 // 장수 토큰 · 카드 · 시너지 배지 등 장수 관련 UI
 import { Flame, Link2, Sparkles, Star, Users } from 'lucide-react';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BOND_MAP } from '../data/bonds';
 import { EFFECT_LABEL, FACTION, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
 import { effectiveStats, expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
 import { useGame } from '../store/gameStore';
 import type { GeneralDef, OwnedGeneral, StatKey } from '../types';
-import { portraitImageUrl } from '../data/portraitImages';
+import { portraitFullImageUrl, portraitImageUrl } from '../data/portraitImages';
 import { Portrait } from './Portrait';
 import { Bar, cn } from './ui';
 
@@ -20,8 +22,8 @@ const SIZE = {
 };
 
 /** 장수 토큰: 상반신 초상(SVG) + 등급 테두리 + 병과 이모지 */
-export function GeneralToken({ def, size = 'md', dim, className, rarity }: {
-  def: GeneralDef; size?: keyof typeof SIZE; dim?: boolean; className?: string; rarity?: GeneralDef['rarity'];
+export function GeneralToken({ def, size = 'md', className, rarity }: {
+  def: GeneralDef; size?: keyof typeof SIZE; className?: string; rarity?: GeneralDef['rarity'];
 }) {
   const s = SIZE[size];
   const img = portraitImageUrl(def.id);
@@ -29,8 +31,8 @@ export function GeneralToken({ def, size = 'md', dim, className, rarity }: {
   return (
     <div className={cn('relative shrink-0', className)}>
       <div className={cn('overflow-hidden', s.box, RARITY[rank].border)}>
-        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className={cn('block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]', dim && 'scale-110 blur-[3px]')} />
-          : <Portrait def={def} className={cn('block h-full w-full', dim && 'scale-110 blur-[3px]')} />}
+        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className="block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]" />
+          : <Portrait def={def} className="block h-full w-full" />}
       </div>
       <span className={cn('absolute leading-none', s.troop)} aria-label={TROOP[def.troop].label}>{TROOP[def.troop].emoji}</span>
     </div>
@@ -73,22 +75,24 @@ export function GeneralCard({
 }) {
   const rank = shownRarity(def.rarity, owned?.promote);
   const r = RARITY[rank];
+  const sealed = owned === undefined && !highlight;
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'group relative flex w-full flex-col items-center gap-1.5 overflow-hidden rounded-2xl border bg-stone-900 p-3 text-center transition-transform hover:-translate-y-0.5',
-        r.border, highlight && r.glow, className,
+        'group relative flex w-full flex-col items-center gap-1.5 overflow-hidden rounded-2xl border p-3 text-center transition-transform hover:-translate-y-0.5',
+        sealed ? 'border-stone-600 bg-stone-700' : 'bg-stone-900',
+        !sealed && r.border, highlight && r.glow, className,
       )}
     >
       <div className="relative flex w-full items-center justify-between">
         <RarityBadge rarity={rank} />
         <FactionBadge faction={def.faction} />
       </div>
-      <GeneralToken def={def} rarity={rank} size="lg" dim={owned === undefined && !highlight} className="relative mt-1" />
+      <GeneralToken def={def} rarity={rank} size="lg" className="relative mt-1" />
       <div className="relative">
-        <div className={cn('font-serif text-lg font-black', owned || highlight ? 'text-stone-100' : 'text-stone-500')}>{def.name}</div>
+        <div className={cn('font-serif text-lg font-black', owned || highlight ? 'text-stone-100' : 'text-stone-200')}>{def.name}</div>
         <div className="text-[11px] text-stone-500">{def.title}</div>
       </div>
       <div className="relative flex h-4 items-center gap-1 text-[11px] text-stone-400">
@@ -165,11 +169,24 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
       ? [{ rarity: 'SR' as const, promote: 0, label: '태생' }, { rarity: 'SSR' as const, promote: 1, label: '승급' }]
       : [{ rarity: 'SSR' as const, promote: 0, label: '태생' }];
   const keys: StatKey[] = ['war', 'int', 'lead'];
+  const fullImg = portraitFullImageUrl(def.id);
+  const [showFull, setShowFull] = useState(false);
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <GeneralToken def={def} rarity={rank} size="lg" />
-        <div className="min-w-0">
+      <div className="flex items-start gap-3">
+        {fullImg ? (
+          <button
+            type="button"
+            onClick={() => setShowFull(true)}
+            className="shrink-0 rounded-2xl text-left transition hover:brightness-110 active:scale-[0.98]"
+            aria-label={`${def.name} 전신 보기`}
+          >
+            <GeneralToken def={def} size="lg" rarity={rank} />
+          </button>
+        ) : (
+          <GeneralToken def={def} size="lg" rarity={rank} />
+        )}
+        <div className="min-w-0 pt-1">
           <div className="flex items-center gap-1.5">
             <RarityBadge rarity={rank} />
             <FactionBadge faction={def.faction} />
@@ -177,8 +194,34 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
           </div>
           <div className="mt-1 font-serif text-2xl font-black">{def.name}</div>
           <div className="text-xs text-stone-500">{def.title}</div>
+          {fullImg && <div className="mt-1 text-[10px] text-stone-500">초상을 누르면 전신을 볼 수 있습니다.</div>}
         </div>
       </div>
+
+      {showFull && fullImg && createPortal(
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/92 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${def.name} 전신`}
+          onClick={() => setShowFull(false)}
+        >
+          <img
+            src={fullImg}
+            alt={`${def.name} 전신`}
+            className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-lg bg-stone-800/90 px-3 py-1.5 text-sm text-stone-100"
+            onClick={() => setShowFull(false)}
+          >
+            닫기
+          </button>
+        </div>,
+        document.body,
+      )}
 
       {owned && (
         <div className="rounded-xl bg-stone-950/60 p-3 text-xs">

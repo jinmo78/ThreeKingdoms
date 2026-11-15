@@ -8,6 +8,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { STAGE_MAP } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
+import { PRESET_LIMIT, formationGold, presetLoadCost } from '../engine/formationBook';
 import { DAILY_PULLS, DUPLICATE_REFUND, PULL_COST, rollGenerals, todayKey } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
 import type { ArmyTheme } from '../engine/aiArmy';
@@ -19,12 +20,17 @@ export { emptyUnit, enemyProfiles, playerProfiles, unitProfile } from '../engine
 import type { EnemyUnit, GeneralDef, OwnedGeneral, Slot, Unit } from '../types';
 import { GENERAL_MAP } from '../data/generals';
 import { SLOTS } from '../types';
-import { freshSave, migrateSave, pickSave, SAVE_VERSION, type SaveData } from './saveData';
+import { freshSave, migrateSave, pickSave, sanitizeFormation, SAVE_VERSION, type SaveData } from './saveData';
 
 export type { SaveData } from './saveData';
 export { SAVE_VERSION } from './saveData';
 
 export type View = 'campaign' | 'formation' | 'recruit' | 'roster' | 'challenge' | 'battle';
+
+const PLAY_VIEWS: View[] = ['campaign', 'formation', 'recruit', 'roster', 'challenge'];
+function isPlayView(v: unknown): v is View {
+  return typeof v === 'string' && (PLAY_VIEWS as string[]).includes(v);
+}
 
 export interface RecruitResult {
   def: GeneralDef;
@@ -88,6 +94,13 @@ interface GameState extends SaveData {
   promote: (id: string) => boolean;
   /** 편성 전체 교체 (적군 맞춤 편성 적용) */
   applyFormation: (units: Unit[]) => void;
+  /** 금화를 더하거나 뺀다. 잔액이 0 미만이면 바꾸지 않는다. */
+  adjustGold: (delta: number) => boolean;
+  /** 현재 편성을 금화로 저장. 비용은 배치 장수 등급 합 */
+  savePreset: (name: string) => 'ok' | 'name' | 'full' | 'empty' | 'gold';
+  /** 저장한 편성을 덮어쓴다. 금화는 저장 비용의 절반 */
+  loadPreset: (id: string) => 'ok' | 'missing' | 'empty' | 'gold';
+  deletePreset: (id: string) => void;
   /** 편성 화면 상성 힌트의 상대 — 스테이지 id | 'conquest' | 'practice' (저장 안 함) */
   focusStage: string | null;
   setFocusStage: (id: string) => void;
@@ -133,11 +146,13 @@ export const useGame = create<GameState>()(
       roster: {},
       formation: [emptyUnit(), emptyUnit(), emptyUnit()],
       cleared: {},
+      fought: {},
       totalPulls: 0,
       conquestBest: 0,
       conquestFailFloor: 0,
       recruitDay: '',
       recruitUsed: 0,
+      presets: [],
       view: 'campaign',
       battle: null,
       entered: false,
@@ -209,11 +224,44 @@ export const useGame = create<GameState>()(
         return true;
       },
       applyFormation: (units) => set({ formation: units.map((u) => ({ ...emptyUnit(), ...u })) }),
+      adjustGold: (delta) => {
+        const gold = get().gold + delta;
+        if (!Number.isFinite(gold) || gold < 0) return false;
+        set({ gold });
+        return true;
+      },
+      savePreset: (name) => {
+        const state = get();
+        const trimmed = name.replace(/\s+/g, ' ').trim().slice(0, 12);
+        if (!trimmed) return 'name';
+        if (state.presets.length >= PRESET_LIMIT) return 'full';
+        const cost = formationGold(state.formation, state.roster);
+        if (cost <= 0) return 'empty';
+        if (state.gold < cost) return 'gold';
+        const id = `p${Date.now().toString(36)}${Math.floor(Math.random() * 36).toString(36)}`;
+        set({
+          gold: state.gold - cost,
+          presets: [...state.presets, { id, name: trimmed, units: state.formation.map((u) => ({ ...u })) }],
+        });
+        return 'ok';
+      },
+      loadPreset: (id) => {
+        const state = get();
+        const preset = state.presets.find((p) => p.id === id);
+        if (!preset) return 'missing';
+        const units = sanitizeFormation(preset.units, state.roster);
+        const cost = presetLoadCost(units, state.roster);
+        if (cost <= 0) return 'empty';
+        if (state.gold < cost) return 'gold';
+        set({ gold: state.gold - cost, formation: units });
+        return 'ok';
+      },
+      deletePreset: (id) => set({ presets: get().presets.filter((p) => p.id !== id) }),
       focusStage: null,
       setFocusStage: (focusStage) => set({ focusStage }),
 
       startBattle: (stageId) => {
-        const { formation, roster, cleared, gold } = get();
+        const { formation, roster, cleared, fought, gold } = get();
         const stage = STAGE_MAP[stageId];
         const mine = playerProfiles(formation, roster);
         if (!stage || mine.length === 0) return false;
@@ -221,21 +269,26 @@ export const useGame = create<GameState>()(
         const result = simulateBattle(mine, enemyUnitsToProfiles(stage.enemies), randomSeed());
 
         // 보상은 전투 계산 즉시 확정 (새로고침으로 결과를 바꿀 수 없게)
-        const firstClear = result.win && !cleared[stageId];
-        const rewardGold = result.win
-          ? stage.reward.gold + (firstClear ? stage.firstClearGold : 0)
+        // 금화·경험치는 첫 클리어에만. 이미 깬 스테이지는 승패와 관계없이 없다.
+        const already = (cleared[stageId] ?? 0) > 0;
+        const firstClear = result.win && !already;
+        const rewardGold = already ? 0 : result.win
+          ? stage.reward.gold + stage.firstClearGold
           : Math.round(stage.reward.gold * 0.2);
-        const rewardExp = result.win ? stage.reward.exp : Math.round(stage.reward.exp * 0.3);
-
-        const { roster: nextRoster, levelUps } = grantExp(roster, formation, rewardExp);
+        const rewardExp = already ? 0 : result.win ? stage.reward.exp : Math.round(stage.reward.exp * 0.3);
+        const granted = rewardExp > 0
+          ? grantExp(roster, formation, rewardExp)
+          : { roster, levelUps: [] as BattleReward['levelUps'] };
 
         set({
           gold: gold + rewardGold,
-          roster: nextRoster,
+          roster: granted.roster,
           cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
+          fought: { ...fought, [stageId]: (fought[stageId] ?? 0) + 1 },
           battle: {
             mode: 'stage', title: stage.title, subtitle: stage.id, stageId, enemies: stage.enemies,
-            result, reward: { gold: rewardGold, exp: rewardExp, firstClear, levelUps },
+            result,
+            reward: already ? null : { gold: rewardGold, exp: rewardExp, firstClear, levelUps: granted.levelUps },
           },
           view: 'battle',
           focusStage: stageId,
@@ -290,10 +343,29 @@ export const useGame = create<GameState>()(
     {
       name: 'oath-banner-save',
       version: SAVE_VERSION,
-      // v1(주장·부장·참모 3칸) → v2(6칸) → v3(품계 승급) → v4(하루 등용 횟수)
-      migrate: (persisted, version) => migrateSave(persisted, version),
+      // v1(주장·부장·참모 3칸) → v2(6칸) → v3(품계 승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수)
+      migrate: (persisted, version) => {
+        const save = migrateSave(persisted, version);
+        const src = (persisted && typeof persisted === 'object' ? persisted : {}) as { entered?: unknown; view?: unknown };
+        const view = isPlayView(src.view) ? src.view : 'campaign';
+        // 예전 저장에는 입장 기록이 없다. 이미 시작한 기록은 새로고침해도 게임 화면에 남긴다.
+        const entered = src.entered === true || (src.entered == null && save.started);
+        return { ...save, entered, view };
+      },
       storage: createJSONStorage(() => localStorage),
-      partialize: (s): SaveData => pickSave(s),
+      merge: (persisted, current) => {
+        const state = { ...current, ...(persisted as object) } as GameState;
+        const fought = { ...(state.fought ?? {}) };
+        for (const [id, n] of Object.entries(state.cleared ?? {})) {
+          if (n > 0 && fought[id] == null) fought[id] = n;
+        }
+        return { ...state, fought };
+      },
+      partialize: (s) => ({
+        ...pickSave(s),
+        entered: s.entered,
+        view: s.view === 'battle' ? (s.battle?.mode === 'stage' ? 'campaign' : 'challenge') : s.view,
+      }),
     },
   ),
 );
