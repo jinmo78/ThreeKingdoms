@@ -7,6 +7,7 @@
 // 3) 탐색에 쓰지 않은 시드로 현재 편성과 다시 비교해, 실제로 나아졌을 때만 제안
 // ============================================================
 import { GENERAL_MAP } from '../data/generals';
+import type { GearBag } from './gear';
 import type { EnemyUnit, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 import { autoFormation } from './autoFormation';
@@ -20,6 +21,7 @@ export interface CounterInput {
   roster: Record<string, OwnedGeneral>;
   formation: Unit[];
   enemies: EnemyUnit[];
+  gear?: GearBag;
   budgetMs?: number;
 }
 
@@ -43,8 +45,8 @@ type Ids = (string | null)[][];
 const toIds = (f: Unit[]): Ids => [0, 1, 2].map((i) => SLOTS.map((s) => f[i]?.[s] ?? null));
 const toUnits = (ids: Ids): Unit[] => ids.map((u) => Object.fromEntries(SLOTS.map((s, i) => [s, u[i]])) as Unit);
 
-function winRate(ids: Ids, roster: Record<string, OwnedGeneral>, enemy: UnitProfile[], seeds: number[]): number {
-  const mine = playerProfiles(toUnits(ids), roster);
+function winRate(ids: Ids, roster: Record<string, OwnedGeneral>, enemy: UnitProfile[], seeds: number[], gear: GearBag = {}): number {
+  const mine = playerProfiles(toUnits(ids), roster, gear);
   if (mine.length === 0) return 0;
   let w = 0;
   for (const s of seeds) if (simulateBattle(mine, enemy, s).win) w++;
@@ -52,7 +54,7 @@ function winRate(ids: Ids, roster: Record<string, OwnedGeneral>, enemy: UnitProf
 }
 
 export function counterFormation(input: CounterInput, onProgress?: (ratio: number, best: number) => void): CounterResult {
-  const { roster, budgetMs = 3000 } = input;
+  const { roster, budgetMs = 3000, gear = {} } = input;
   const enemy = enemyUnitsToProfiles(input.enemies);
   const advice = troopAdvice(enemy.map(briefOf));
   const all = Object.keys(roster);
@@ -65,10 +67,10 @@ export function counterFormation(input: CounterInput, onProgress?: (ratio: numbe
   const start = now();
 
   const current = toIds(input.formation);
-  const auto = toIds(autoFormation(roster));
+  const auto = toIds(autoFormation(roster, 3, gear));
   let best = current;
-  let bestWr = winRate(current, roster, enemy, SEARCH_SEEDS);
-  const autoWr = winRate(auto, roster, enemy, SEARCH_SEEDS);
+  let bestWr = winRate(current, roster, enemy, SEARCH_SEEDS, gear);
+  const autoWr = winRate(auto, roster, enemy, SEARCH_SEEDS, gear);
   if (autoWr > bestWr) {
     best = auto;
     bestWr = autoWr;
@@ -99,7 +101,7 @@ export function counterFormation(input: CounterInput, onProgress?: (ratio: numbe
     if (cand.every((u) => !u[0]) || cand.some((u) => !u[0] && u.some(Boolean))) continue;
 
     tried++;
-    const w = winRate(cand, roster, enemy, SEARCH_SEEDS);
+    const w = winRate(cand, roster, enemy, SEARCH_SEEDS, gear);
     if (w > bestWr) {
       best = cand;
       bestWr = w;
@@ -107,8 +109,8 @@ export function counterFormation(input: CounterInput, onProgress?: (ratio: numbe
     if (tried % 10 === 0) onProgress?.(Math.min(1, (now() - start) / budgetMs), bestWr);
   }
 
-  const before = winRate(current, roster, enemy, FINAL_SEEDS);
-  const after = winRate(best, roster, enemy, FINAL_SEEDS);
+  const before = winRate(current, roster, enemy, FINAL_SEEDS, gear);
+  const after = winRate(best, roster, enemy, FINAL_SEEDS, gear);
   const improved = after > before + 0.02;
   return { formation: toUnits(improved ? best : current), before, after: improved ? after : before, improved, tried };
 }

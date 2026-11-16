@@ -5,7 +5,9 @@ import { createPortal } from 'react-dom';
 import { BOND_MAP } from '../data/bonds';
 import { EFFECT_LABEL, FACTION, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
+import { gearStats } from '../engine/gear';
 import { effectiveStats, expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
+import { EquippedGear } from './GearPanel';
 import { useGame } from '../store/gameStore';
 import type { GeneralDef, OwnedGeneral, StatKey } from '../types';
 import { portraitFullImageUrl, portraitImageUrl } from '../data/portraitImages';
@@ -161,7 +163,9 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
   const rank = shownRarity(def.rarity, owned?.promote);
   const target = owned && !promoted ? promoteTarget(def.rarity) : null;
   const cost = target ? PROMOTE_COST[target] : 0;
+  const gearBag = useGame((s) => s.gear);
   const stats = effectiveStats(def, level, owned?.stars ?? 0, owned?.promote ?? 0);
+  const bonus = owned ? gearStats(owned, gearBag) : { war: 0, int: 0, lead: 0 };
   const ready = !!owned && owned.level >= MAX_LEVEL && owned.stars >= MAX_STARS;
   const ladder = def.rarity === 'R'
     ? [{ rarity: 'R' as const, promote: 0, label: '태생' }, { rarity: 'SR' as const, promote: 1, label: '승급' }]
@@ -234,6 +238,8 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
         </div>
       )}
 
+      {owned && <EquippedGear generalId={def.id} />}
+
       <div>
         <div className="text-xs font-bold text-stone-400">품계</div>
         <p className="mt-1 text-[11px] text-stone-500">
@@ -285,8 +291,8 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
         {keys.map((k) => (
           <div key={k} className="flex items-center gap-3 text-xs">
             <span className="w-8 text-stone-400">{STAT_LABEL[k]}</span>
-            <Bar value={stats[k]} max={180} className="flex-1" color={k === 'war' ? 'bg-red-500' : k === 'int' ? 'bg-sky-500' : 'bg-amber-500'} />
-            <span className="tabular w-8 text-right font-bold">{stats[k]}</span>
+            <Bar value={stats[k] + bonus[k]} max={180} className="flex-1" color={k === 'war' ? 'bg-red-500' : k === 'int' ? 'bg-sky-500' : 'bg-amber-500'} />
+            <span className="tabular w-8 text-right font-bold">{stats[k] + bonus[k]}</span>
           </div>
         ))}
       </div>

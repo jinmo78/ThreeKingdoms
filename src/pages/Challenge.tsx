@@ -55,6 +55,7 @@ export default function Challenge() {
 function Practice() {
   const formation = useGame((s) => s.formation);
   const roster = useGame((s) => s.roster);
+  const gear = useGame((s) => s.gear);
   const practice = useGame((s) => s.practice);
   const setPractice = useGame((s) => s.setPractice);
   const startPractice = useGame((s) => s.startPractice);
@@ -63,7 +64,7 @@ function Practice() {
   const addRecord = useGame((s) => s.addPracticeRecord);
   const [measuring, setMeasuring] = useState(false);
 
-  const mine = useMemo(() => playerProfiles(formation, roster), [formation, roster]);
+  const mine = useMemo(() => playerProfiles(formation, roster, gear), [formation, roster, gear]);
   // 상대 레벨 = 출진 장수 평균 레벨 + 강도
   const avgLevel = useMemo(() => deployedAvgLevel(formation, roster), [formation, roster]);
   const opp = useMemo(
@@ -187,11 +188,12 @@ function Conquest() {
   const failFloor = useGame((s) => s.conquestFailFloor);
   const formation = useGame((s) => s.formation);
   const roster = useGame((s) => s.roster);
+  const gear = useGame((s) => s.gear);
   const startConquest = useGame((s) => s.startConquest);
 
   const floor = useMemo(() => conquestFloor(best + 1), [best]);
   const enemyProf = useMemo(() => enemyUnitsToProfiles(floor.enemies), [floor]);
-  const mine = useMemo(() => playerProfiles(formation, roster), [formation, roster]);
+  const mine = useMemo(() => playerProfiles(formation, roster, gear), [formation, roster, gear]);
   const upcoming = useMemo(() => [2, 3, 4, 5, 6].map((d) => {
     const f = best + d;
     const boss = f % 5 === 0;

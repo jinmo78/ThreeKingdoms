@@ -252,8 +252,20 @@ function ResultOverlay({
 
         {reward ? (
           <div className="mt-4 space-y-1.5 rounded-xl bg-stone-950/70 p-3 text-sm">
-            <div className="flex justify-between"><span className="text-stone-400">금화</span><span className="flex items-center gap-1 font-bold text-amber-300"><Coins size={14} />+{reward.gold}{reward.firstClear && <span className="text-[10px] text-amber-200">(첫 클리어 포함)</span>}</span></div>
-            <div className="flex justify-between"><span className="text-stone-400">출진 장수 경험치</span><span className="font-bold">+{reward.exp}</span></div>
+            {(reward.gold > 0 || reward.exp > 0) ? (
+              <>
+                <div className="flex justify-between"><span className="text-stone-400">금화</span><span className="flex items-center gap-1 font-bold text-amber-300"><Coins size={14} />+{reward.gold}{reward.firstClear && <span className="text-[10px] text-amber-200">(첫 클리어 포함)</span>}</span></div>
+                <div className="flex justify-between"><span className="text-stone-400">출진 장수 경험치</span><span className="font-bold">+{reward.exp}</span></div>
+              </>
+            ) : (
+              <p className="text-xs text-stone-400">금화·경험치는 첫 클리어에만 나옵니다.</p>
+            )}
+            {reward.gear && (
+              <div className="flex justify-between border-t border-stone-800 pt-1.5">
+                <span className="text-stone-400">장비</span>
+                <span className="font-bold text-amber-200">{reward.gear.name} {reward.gear.isNew ? '획득' : '파편 +1'}</span>
+              </div>
+            )}
             {reward.levelUps.length > 0 && (
               <div className="flex flex-wrap justify-center gap-1.5 border-t border-stone-800 pt-2">
                 {reward.levelUps.map((l) => {
@@ -271,7 +283,7 @@ function ResultOverlay({
         ) : (
           <p className="mt-4 rounded-xl bg-stone-950/70 p-3 text-xs text-stone-400">
             {mode === 'stage'
-              ? '이미 클리어한 전투라 금화·경험치는 없습니다.'
+              ? '이미 클리어한 전투라 금화·경험치는 없습니다. 이기면 가끔 장비 파편이 나옵니다.'
               : '모의전이라 보상과 경험치는 없습니다. 편성을 바꿔 가며 다시 시험해 보세요.'}
           </p>
         )}

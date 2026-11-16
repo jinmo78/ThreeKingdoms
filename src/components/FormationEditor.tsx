@@ -37,6 +37,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
   unitGridClass?: string;
 }) {
   const roster = useGame((s) => s.roster);
+  const gear = useGame((s) => s.gear);
   const formation = useGame((s) => s.formation);
   const assign = useGame((s) => s.assign);
   const clearUnit = useGame((s) => s.clearUnit);
@@ -121,7 +122,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
       <div className={cn('grid gap-3', unitGridClass)}>
         {formation.map((u, ui) => {
           if (!u) return null;
-          const p = unitProfile(u, roster);
+          const p = unitProfile(u, roster, gear);
           const syn = p?.synergy ?? calcSynergy(unitDefs(u));
           return (
             <section key={ui} className={cn('rounded-2xl border-2 p-3 transition-shadow', UNIT_TINT[ui].card,
@@ -469,7 +470,8 @@ function UnitInfo({ index }: { index: number }) {
   const formation = useGame((s) => s.formation);
   const roster = useGame((s) => s.roster);
   const u = formation[index];
-  const p = unitProfile(u, roster);
+  const gear = useGame((s) => s.gear);
+  const p = unitProfile(u, roster, gear);
   const syn = p?.synergy ?? calcSynergy(unitDefs(u));
   return (
     <>

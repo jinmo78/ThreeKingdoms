@@ -47,6 +47,19 @@ export interface GeneralDef {
   recruitable?: boolean;
 }
 
+/** 장비 칸. 무기=무력, 갑주=통솔, 서책=지력 */
+export type GearSlot = 'weapon' | 'armor' | 'tome';
+
+export interface OwnedGear {
+  level: number;
+  /** 강화 단계 0~5 */
+  enhance: number;
+  /** 태생 등급에서 올린 횟수. R은 2번(SSR)까지 */
+  promote: number;
+  /** 레벨·강화·등급에 쓰는 파편 */
+  shards: number;
+}
+
 export interface OwnedGeneral {
   level: number;
   exp: number;
@@ -54,6 +67,8 @@ export interface OwnedGeneral {
   stars: number;
   /** 품계 승급 횟수. 태생 등급에서 한 단계만 (R→SR, SR→SSR) */
   promote?: number;
+  /** 장착한 장비 id */
+  gear?: Partial<Record<GearSlot, string>>;
 }
 
 /**

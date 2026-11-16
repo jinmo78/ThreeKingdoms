@@ -12,6 +12,7 @@ import { playerProfiles, useGame } from '../store/gameStore';
 
 export default function Formation() {
   const roster = useGame((s) => s.roster);
+  const gear = useGame((s) => s.gear);
   const formation = useGame((s) => s.formation);
   const cleared = useGame((s) => s.cleared);
   const fought = useGame((s) => s.fought);
@@ -64,7 +65,7 @@ export default function Formation() {
             </optgroup>
           </select>
         </label>
-        <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster)} compact />
+        <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster, gear)} compact />
       </div>
 
       <FormationEditor

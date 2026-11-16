@@ -23,6 +23,7 @@ export function CounterFormationButton({ enemies, unlocked, lockedNote, classNam
   const cleared = unlocked;
   const gold = useGame((s) => s.gold);
   const roster = useGame((s) => s.roster);
+  const gear = useGame((s) => s.gear);
   const formation = useGame((s) => s.formation);
   const applyFormation = useGame((s) => s.applyFormation);
   const adjustGold = useGame((s) => s.adjustGold);
@@ -65,7 +66,7 @@ export function CounterFormationButton({ enemies, unlocked, lockedNote, classNam
       w.terminate();
       workerRef.current = null;
     };
-    w.postMessage({ roster, formation, enemies, budgetMs: 3000 });
+    w.postMessage({ roster, formation, enemies, gear, budgetMs: 3000 });
   }
 
   function close() {

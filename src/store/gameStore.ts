@@ -5,7 +5,8 @@
 // ============================================================
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { STAGE_MAP } from '../data/stages';
+import { GEAR_MAP, conquestGearId, stageGearId } from '../data/gear';
+import { STAGE_MAP, STAGES } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
 import { PRESET_LIMIT, formationGold } from '../engine/formationBook';
@@ -14,6 +15,10 @@ import { DUPLICATE_REFUND, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
 import type { ArmyTheme } from '../engine/aiArmy';
 import { conquestFloor } from '../engine/conquest';
+import {
+  GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL, GEAR_PROMOTE_SHARDS,
+  equipOn, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, grantGear,
+} from '../engine/gear';
 import { emptyUnit, enemyUnitsToProfiles, playerProfiles } from '../engine/profiles';
 import { expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget } from '../engine/unit';
 
@@ -48,6 +53,8 @@ export interface BattleReward {
   exp: number;
   firstClear: boolean;
   levelUps: { id: string; from: number; to: number }[];
+  /** 이번 전투에서 나온 장비. 이미 가진 것이면 파편 */
+  gear?: { name: string; isNew: boolean };
 }
 
 /** stage: 원정 · practice: 모의전(보상 없음) · conquest: 천하 토벌전 */
@@ -100,6 +107,11 @@ interface GameState extends SaveData {
   autoForm: () => void;
   /** 태생 등급에서 품계를 한 단계 올린다. 금화가 부족하면 false */
   promote: (id: string) => boolean;
+  /** 장비를 장수에게 끼우거나, generalId가 없으면 보관한다 */
+  equipGear: (generalId: string | null, gearId: string) => void;
+  gearLevelUp: (id: string) => 'ok' | 'missing' | 'max' | 'shard' | 'gold';
+  gearEnhance: (id: string) => 'ok' | 'missing' | 'max' | 'shard' | 'gold';
+  gearPromote: (id: string) => 'ok' | 'missing' | 'max' | 'need' | 'shard' | 'gold';
   /** 편성 전체 교체 (적군 맞춤 편성 적용) */
   applyFormation: (units: Unit[]) => void;
   /** 금화를 더하거나 뺀다. 잔액이 0 미만이면 바꾸지 않는다. */
@@ -146,6 +158,18 @@ function grantExp(roster: Record<string, OwnedGeneral>, formation: Unit[], amoun
   return { roster: next, levelUps };
 }
 
+/** 승리 시 장비. 없으면 바로 지급하고, 있으면 첫 클리어는 파편, 재도전은 40%. */
+function stageDrop(gear: SaveData['gear'], stageId: string, win: boolean, firstClear: boolean) {
+  if (!win) return { gear, drop: null as { name: string; isNew: boolean } | null };
+  const index = STAGES.findIndex((s) => s.id === stageId);
+  const stage = STAGES[index];
+  const id = stage ? stageGearId(stage.chapter, index) : null;
+  if (!id) return { gear, drop: null };
+  if (gear[id] && !firstClear && Math.random() >= 0.4) return { gear, drop: null };
+  const granted = grantGear(gear, id);
+  return { gear: granted.bag, drop: granted.drop };
+}
+
 export const useGame = create<GameState>()(
   persist(
     (set, get) => ({
@@ -163,6 +187,7 @@ export const useGame = create<GameState>()(
       attendDay: '',
       attendStreak: 0,
       presets: [],
+      gear: {},
       view: 'campaign',
       battle: null,
       entered: false,
@@ -252,7 +277,7 @@ export const useGame = create<GameState>()(
         set({ formation });
       },
 
-      autoForm: () => set({ formation: autoFormation(get().roster) }),
+      autoForm: () => set({ formation: autoFormation(get().roster, 3, get().gear) }),
       promote: (id) => {
         const { gold, roster } = get();
         const owned = roster[id];
@@ -265,6 +290,51 @@ export const useGame = create<GameState>()(
         if (gold < cost) return false;
         set({ gold: gold - cost, roster: { ...roster, [id]: { ...owned, promote: 1 } } });
         return true;
+      },
+      equipGear: (generalId, gearId) => {
+        const { roster, gear } = get();
+        if (!gear[gearId] || (generalId != null && !roster[generalId])) return;
+        set({ roster: equipOn(roster, generalId, gearId) });
+      },
+      gearLevelUp: (id) => {
+        const { gold, gear } = get();
+        const owned = gear[id];
+        if (!owned || !GEAR_MAP[id]) return 'missing';
+        if (owned.level >= GEAR_MAX_LEVEL) return 'max';
+        if (owned.shards < 1) return 'shard';
+        const cost = gearLevelCost(owned.level);
+        if (gold < cost) return 'gold';
+        set({ gold: gold - cost, gear: { ...gear, [id]: { ...owned, level: owned.level + 1, shards: owned.shards - 1 } } });
+        return 'ok';
+      },
+      gearEnhance: (id) => {
+        const { gold, gear } = get();
+        const owned = gear[id];
+        if (!owned || !GEAR_MAP[id]) return 'missing';
+        if (owned.enhance >= GEAR_MAX_ENHANCE) return 'max';
+        if (owned.shards < 2) return 'shard';
+        const cost = gearEnhanceCost(owned.enhance);
+        if (gold < cost) return 'gold';
+        set({ gold: gold - cost, gear: { ...gear, [id]: { ...owned, enhance: owned.enhance + 1, shards: owned.shards - 2 } } });
+        return 'ok';
+      },
+      gearPromote: (id) => {
+        const { gold, gear } = get();
+        const owned = gear[id];
+        const def = GEAR_MAP[id];
+        if (!owned || !def) return 'missing';
+        if (gearPromoteLeft(def, owned.promote) <= 0) return 'max';
+        if (owned.level < GEAR_MAX_LEVEL || owned.enhance < GEAR_MAX_ENHANCE) return 'need';
+        if (owned.shards < GEAR_PROMOTE_SHARDS) return 'shard';
+        const next = gearRarity(def, owned.promote + 1);
+        if (next !== 'SR' && next !== 'SSR') return 'max';
+        const cost = gearPromoteCost(next);
+        if (gold < cost) return 'gold';
+        set({
+          gold: gold - cost,
+          gear: { ...gear, [id]: { ...owned, promote: owned.promote + 1, shards: owned.shards - GEAR_PROMOTE_SHARDS } },
+        });
+        return 'ok';
       },
       applyFormation: (units) => set({ formation: units.map((u) => ({ ...emptyUnit(), ...u })) }),
       adjustGold: (delta) => {
@@ -302,15 +372,15 @@ export const useGame = create<GameState>()(
       setFocusStage: (focusStage) => set({ focusStage }),
 
       startBattle: (stageId) => {
-        const { formation, roster, cleared, fought, gold } = get();
+        const { formation, roster, cleared, fought, gold, gear } = get();
         const stage = STAGE_MAP[stageId];
-        const mine = playerProfiles(formation, roster);
+        const mine = playerProfiles(formation, roster, gear);
         if (!stage || mine.length === 0) return false;
 
         const result = simulateBattle(mine, enemyUnitsToProfiles(stage.enemies), randomSeed());
 
         // 보상은 전투 계산 즉시 확정 (새로고침으로 결과를 바꿀 수 없게)
-        // 금화·경험치는 첫 클리어에만. 이미 깬 스테이지는 승패와 관계없이 없다.
+        // 금화·경험치는 첫 클리어에만. 장비는 승리하면 따로 나온다.
         const already = (cleared[stageId] ?? 0) > 0;
         const firstClear = result.win && !already;
         const rewardGold = already ? 0 : result.win
@@ -320,16 +390,21 @@ export const useGame = create<GameState>()(
         const granted = rewardExp > 0
           ? grantExp(roster, formation, rewardExp)
           : { roster, levelUps: [] as BattleReward['levelUps'] };
+        const dropped = stageDrop(gear, stageId, result.win, firstClear);
+        const reward = !rewardGold && !rewardExp && !dropped.drop
+          ? null
+          : { gold: rewardGold, exp: rewardExp, firstClear, levelUps: granted.levelUps, gear: dropped.drop ?? undefined };
 
         set({
           gold: gold + rewardGold,
           roster: granted.roster,
+          gear: dropped.gear,
           cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
           fought: { ...fought, [stageId]: (fought[stageId] ?? 0) + 1 },
           battle: {
             mode: 'stage', title: stage.title, subtitle: stage.id, stageId, enemies: stage.enemies,
             result,
-            reward: already ? null : { gold: rewardGold, exp: rewardExp, firstClear, levelUps: granted.levelUps },
+            reward,
           },
           view: 'battle',
           focusStage: stageId,
@@ -338,8 +413,8 @@ export const useGame = create<GameState>()(
       },
 
       startPractice: (enemies, title) => {
-        const { formation, roster } = get();
-        const mine = playerProfiles(formation, roster);
+        const { formation, roster, gear } = get();
+        const mine = playerProfiles(formation, roster, gear);
         if (mine.length === 0) return false;
         const result = simulateBattle(mine, enemyUnitsToProfiles(enemies), randomSeed());
         set({ battle: { mode: 'practice', title, subtitle: '모의전 · 보상 없음', enemies, result, reward: null }, view: 'battle', focusStage: 'practice' });
@@ -347,24 +422,27 @@ export const useGame = create<GameState>()(
       },
 
       startConquest: () => {
-        const { formation, roster, gold, conquestBest, cleared } = get();
+        const { formation, roster, gold, conquestBest, cleared, gear } = get();
         if (!cleared['4-3']) return false;
-        const mine = playerProfiles(formation, roster);
+        const mine = playerProfiles(formation, roster, gear);
         if (mine.length === 0) return false;
         const f = conquestFloor(conquestBest + 1);
         const result = simulateBattle(mine, enemyUnitsToProfiles(f.enemies), randomSeed());
         const rewardGold = result.win ? f.reward.gold : Math.round(f.reward.gold * 0.1);
         const rewardExp = result.win ? f.reward.exp : Math.round(f.reward.exp * 0.3);
         const { roster: nextRoster, levelUps } = grantExp(roster, formation, rewardExp);
+        const grantedGear = result.win ? grantGear(gear, conquestGearId(f.floor)) : null;
         set({
           gold: gold + rewardGold,
           roster: nextRoster,
+          gear: grantedGear?.bag ?? gear,
           conquestBest: result.win ? f.floor : conquestBest,
           conquestFailFloor: result.win ? get().conquestFailFloor : f.floor,
           focusStage: 'conquest',
           battle: {
             mode: 'conquest', title: `천하 토벌전 ${f.floor}층`, subtitle: f.boss ? '정예 혼성군' : '', floor: f.floor,
-            enemies: f.enemies, result, reward: { gold: rewardGold, exp: rewardExp, firstClear: result.win, levelUps },
+            enemies: f.enemies, result,
+            reward: { gold: rewardGold, exp: rewardExp, firstClear: result.win, levelUps, gear: grantedGear?.drop ?? undefined },
           },
           view: 'battle',
         });

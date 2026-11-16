@@ -1,12 +1,14 @@
 // 저장 본문. 브라우저(localStorage)와 Firestore가 같은 모양을 쓴다.
+import { GEAR_MAP } from '../data/gear';
 import { GENERAL_MAP } from '../data/generals';
+import { GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL } from '../engine/gear';
 import { LEGACY_POINT_GOLD, PRESET_LIMIT } from '../engine/formationBook';
 import { emptyUnit } from '../engine/profiles';
 import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
-import type { OwnedGeneral, Unit } from '../types';
+import type { GearSlot, OwnedGear, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export interface FormationPreset {
   id: string;
@@ -36,6 +38,8 @@ export interface SaveData {
   /** 연속 출석 일수 */
   attendStreak: number;
   presets: FormationPreset[];
+  /** 보유 장비. 장착 위치는 장수 gear에 둔다. */
+  gear: Record<string, OwnedGear>;
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
@@ -63,6 +67,7 @@ export function freshSave(): SaveData {
     attendDay: '',
     attendStreak: 0,
     presets: [],
+    gear: {},
   };
 }
 
@@ -71,17 +76,51 @@ function clampInt(n: unknown, min: number, max: number, fallback: number) {
   return Math.min(max, Math.max(min, v));
 }
 
-function sanitizeRoster(raw: unknown): Record<string, OwnedGeneral> {
+const GEAR_SLOTS: GearSlot[] = ['weapon', 'armor', 'tome'];
+
+function maxGearPromote(rarity: string) {
+  return rarity === 'R' ? 2 : rarity === 'SR' ? 1 : 0;
+}
+
+function sanitizeGear(raw: unknown): Record<string, OwnedGear> {
+  if (!raw || typeof raw !== 'object') return {};
+  const gear: Record<string, OwnedGear> = {};
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    const def = GEAR_MAP[id];
+    if (!def || !value || typeof value !== 'object') continue;
+    const g = value as Partial<OwnedGear>;
+    gear[id] = {
+      level: clampInt(g.level, 1, GEAR_MAX_LEVEL, 1),
+      enhance: clampInt(g.enhance, 0, GEAR_MAX_ENHANCE, 0),
+      promote: clampInt(g.promote, 0, maxGearPromote(def.rarity), 0),
+      shards: clampInt(g.shards, 0, 9999, 0),
+    };
+  }
+  return gear;
+}
+
+function sanitizeRoster(raw: unknown, gear: Record<string, OwnedGear>): Record<string, OwnedGeneral> {
   if (!raw || typeof raw !== 'object') return {};
   const roster: Record<string, OwnedGeneral> = {};
+  const used = new Set<string>();
   for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
     if (!GENERAL_MAP[id] || !value || typeof value !== 'object') continue;
-    const g = value as Partial<OwnedGeneral>;
+    const g = value as Partial<OwnedGeneral> & { gear?: unknown };
+    const slots: Partial<Record<GearSlot, string>> = {};
+    if (g.gear && typeof g.gear === 'object') {
+      for (const slot of GEAR_SLOTS) {
+        const gid = (g.gear as Record<string, unknown>)[slot];
+        if (typeof gid !== 'string' || !gear[gid] || GEAR_MAP[gid]?.slot !== slot || used.has(gid)) continue;
+        used.add(gid);
+        slots[slot] = gid;
+      }
+    }
     roster[id] = {
       level: clampInt(g.level, 1, MAX_LEVEL, 1),
       exp: clampInt(g.exp, 0, 1_000_000, 0),
       stars: clampInt(g.stars, 0, MAX_STARS, 0),
       promote: g.promote ? 1 : 0,
+      ...(Object.keys(slots).length ? { gear: slots } : {}),
     };
   }
   return roster;
@@ -130,7 +169,8 @@ function sanitizePresets(raw: unknown, roster: Record<string, OwnedGeneral>): Fo
 
 export function sanitizeSave(raw: unknown): SaveData {
   const src = (raw && typeof raw === 'object' ? raw : {}) as Partial<SaveData>;
-  const roster = sanitizeRoster(src.roster);
+  const gear = sanitizeGear(src.gear);
+  const roster = sanitizeRoster(src.roster, gear);
   const cleared = sanitizeCounts(src.cleared);
   const fought = sanitizeCounts(src.fought);
   for (const [id, n] of Object.entries(cleared)) {
@@ -152,6 +192,7 @@ export function sanitizeSave(raw: unknown): SaveData {
     attendDay: day(src.attendDay),
     attendStreak: clampInt(src.attendStreak, 0, 9999, 0),
     presets: sanitizePresets(src.presets, roster),
+    gear,
   };
 }
 
@@ -166,7 +207,7 @@ function sanitizeCounts(raw: unknown): Record<string, number> {
   return out;
 }
 
-/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) */
+/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) → v10(장비) */
 export function migrateSave(persisted: unknown, version: number): SaveData {
   const src = (persisted && typeof persisted === 'object' ? { ...(persisted as Record<string, unknown>) } : {}) as Record<string, unknown>;
   if (version < 2 && Array.isArray(src.formation)) {
@@ -213,6 +254,7 @@ export function migrateSave(persisted: unknown, version: number): SaveData {
     delete src.recruitDay;
     delete src.recruitUsed;
   }
+  if (version < 10 && (src.gear == null || typeof src.gear !== 'object')) src.gear = {};
   return sanitizeSave(src);
 }
 
@@ -232,6 +274,7 @@ export function pickSave(s: SaveData): SaveData {
     attendDay: s.attendDay,
     attendStreak: s.attendStreak,
     presets: s.presets,
+    gear: s.gear,
   };
 }
 
@@ -240,14 +283,19 @@ export function saveSignature(s: SaveData): string {
   const roster: SaveData['roster'] = {};
   for (const id of Object.keys(save.roster).sort()) {
     const g = save.roster[id];
-    roster[id] = { level: g.level, exp: g.exp, stars: g.stars, promote: g.promote ?? 0 };
+    roster[id] = {
+      level: g.level, exp: g.exp, stars: g.stars, promote: g.promote ?? 0,
+      ...(g.gear ? { gear: g.gear } : {}),
+    };
   }
   const cleared: SaveData['cleared'] = {};
   for (const id of Object.keys(save.cleared).sort()) cleared[id] = save.cleared[id];
   const fought: SaveData['fought'] = {};
   for (const id of Object.keys(save.fought).sort()) fought[id] = save.fought[id];
   const presets = [...save.presets].sort((a, b) => a.id.localeCompare(b.id));
-  return JSON.stringify({ ...save, roster, cleared, fought, presets });
+  const gear: SaveData['gear'] = {};
+  for (const id of Object.keys(save.gear).sort()) gear[id] = save.gear[id];
+  return JSON.stringify({ ...save, roster, cleared, fought, presets, gear });
 }
 
 /** 아직 출사표 전이거나, 시작 배치 그대로인 기록 */

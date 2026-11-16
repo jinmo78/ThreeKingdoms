@@ -1,6 +1,7 @@
 // 장수록(도감) + 인연 목록
-import { BookOpen, Link2 } from 'lucide-react';
+import { BookOpen, Link2, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { GearBag } from '../components/GearPanel';
 import { GeneralCard, GeneralDetail, GeneralToken, RarityBadge } from '../components/General';
 import { PageHero } from '../components/PageHero';
 import { Btn, cn, Modal } from '../components/ui';
@@ -16,7 +17,7 @@ type OwnFilter = 'all' | 'owned' | 'missing';
 
 export default function Roster() {
   const roster = useGame((s) => s.roster);
-  const [tab, setTab] = useState<'generals' | 'bonds'>('generals');
+  const [tab, setTab] = useState<'generals' | 'gear' | 'bonds'>('generals');
   const [ownFilter, setOwnFilter] = useState<OwnFilter>('all');
   const [detail, setDetail] = useState<GeneralDef | null>(null);
   const [bondId, setBondId] = useState<string | null>(null);
@@ -32,11 +33,12 @@ export default function Roster() {
         aside={
           <div className="flex shrink-0 gap-1 rounded-xl bg-stone-950/80 p-1">
             <TabBtn active={tab === 'generals'} onClick={() => setTab('generals')}><BookOpen size={14} /> 장수</TabBtn>
+            <TabBtn active={tab === 'gear'} onClick={() => setTab('gear')}><Shield size={14} /> 장비</TabBtn>
             <TabBtn active={tab === 'bonds'} onClick={() => setTab('bonds')}><Link2 size={14} /> 인연</TabBtn>
           </div>
         }
       >
-        <p className="mt-1 hidden text-xs text-stone-300 sm:block">등용한 장수와 인연 조합을 확인하세요.</p>
+        <p className="mt-1 hidden text-xs text-stone-300 sm:block">등용한 장수, 장비, 인연 조합을 확인하세요.</p>
       </PageHero>
 
       {tab === 'generals' && (
@@ -83,6 +85,8 @@ export default function Roster() {
           )}
         </>
       )}
+
+      {tab === 'gear' && <GearBag />}
 
       {tab === 'bonds' && (
         <>

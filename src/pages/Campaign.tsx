@@ -13,6 +13,7 @@ export default function Campaign() {
   const fought = useGame((s) => s.fought);
   const formation = useGame((s) => s.formation);
   const roster = useGame((s) => s.roster);
+  const gear = useGame((s) => s.gear);
   const startBattle = useGame((s) => s.startBattle);
   const setView = useGame((s) => s.setView);
   const focusStage = useGame((s) => s.focusStage);
@@ -29,7 +30,7 @@ export default function Campaign() {
   };
   const stage = STAGE_MAP[selected] ?? firstOpen;
 
-  const mine = useMemo(() => playerProfiles(formation, roster), [formation, roster]);
+  const mine = useMemo(() => playerProfiles(formation, roster, gear), [formation, roster, gear]);
   const enemies = useMemo(() => enemyProfiles(stage.id), [stage.id]);
   const myPower = mine.reduce((s, p) => s + p.power, 0);
   const enemyPower = enemies.reduce((s, p) => s + p.power, 0);

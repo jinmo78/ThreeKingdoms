@@ -3,25 +3,26 @@ import { GENERAL_MAP } from '../data/generals';
 import { STAGE_MAP } from '../data/stages';
 import type { EnemyUnit, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
+import { withGear, type GearBag } from './gear';
 import { buildProfile, makeMember, type UnitProfile } from './unit';
 
 export const emptyUnit = (): Unit => ({ commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null });
 
-export function unitProfile(u: Unit, roster: Record<string, OwnedGeneral>): UnitProfile | null {
+export function unitProfile(u: Unit, roster: Record<string, OwnedGeneral>, gear: GearBag = {}): UnitProfile | null {
   if (!u) return null;
   return buildProfile(
     SLOTS.map((slot) => {
       const id = u[slot];
       const owned = id ? roster[id] : undefined;
       const def = id ? GENERAL_MAP[id] : undefined;
-      return id && owned && def ? makeMember(def, owned.level, owned.stars, owned.promote ?? 0) : null;
+      return id && owned && def ? withGear(makeMember(def, owned.level, owned.stars, owned.promote ?? 0), owned, gear) : null;
     }),
   );
 }
 
 /** 편성된 부대 → 전투 프로필 (주장 없는 부대는 제외) */
-export function playerProfiles(formation: Unit[], roster: Record<string, OwnedGeneral>): UnitProfile[] {
-  return formation.map((u) => unitProfile(u, roster)).filter((p): p is UnitProfile => !!p);
+export function playerProfiles(formation: Unit[], roster: Record<string, OwnedGeneral>, gear: GearBag = {}): UnitProfile[] {
+  return formation.map((u) => unitProfile(u, roster, gear)).filter((p): p is UnitProfile => !!p);
 }
 
 /** 출진 장수(주장이 있는 부대의 장수) 평균 레벨 — 모의전 상대 레벨 기준 */

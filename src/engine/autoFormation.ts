@@ -10,6 +10,7 @@
 import { GENERAL_MAP } from '../data/generals';
 import type { OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
+import { withGear, type GearBag } from './gear';
 import { buildProfile, makeMember, type UnitMember } from './unit';
 
 const COMMANDER_CANDIDATES = 8;
@@ -21,11 +22,11 @@ export function unitScore(members: (UnitMember | null)[]): number {
   return p.power * (1 + p.synergy.chainRate * 0.5) * (1 + p.skillRate * 0.3);
 }
 
-export function autoFormation(roster: Record<string, OwnedGeneral>, unitCount = 3): Unit[] {
+export function autoFormation(roster: Record<string, OwnedGeneral>, unitCount = 3, gear: GearBag = {}): Unit[] {
   const pool = new Map<string, UnitMember>();
   for (const [id, o] of Object.entries(roster)) {
     const def = GENERAL_MAP[id];
-    if (def) pool.set(id, makeMember(def, o.level, o.stars, o.promote ?? 0));
+    if (def) pool.set(id, withGear(makeMember(def, o.level, o.stars, o.promote ?? 0), o, gear));
   }
 
   const used = new Set<string>();
