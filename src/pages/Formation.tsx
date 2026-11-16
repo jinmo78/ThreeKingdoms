@@ -85,7 +85,7 @@ export default function Formation() {
             <li>참모 — 연쇄 3단. 발동률이 오릅니다.</li>
             <li>보좌 2명 — 전법은 없고, 능력 일부와 시너지 인원에 포함됩니다.</li>
           </ul>
-          <p className="mt-3 text-xs text-stone-400">칸을 고른 뒤 아래 목록에서 장수를 누르면 배치됩니다.</p>
+          <p className="mt-3 text-xs text-stone-400">빈 칸의 +를 눌러 장수를 고릅니다. 넓은 화면에서는 아래 목록에서도 배치할 수 있습니다.</p>
           <Btn variant="ghost" className="mt-4 w-full" onClick={() => setHelp(false)}>닫기</Btn>
         </Modal>
       )}

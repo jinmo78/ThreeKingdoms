@@ -1,5 +1,6 @@
 // 부대 편성 편집기 — 편성 화면 · 천하 토벌전 · 모의전에서 공용
-// 칸을 고른 뒤 장수 목록에서 탭하면 배치. 배치하면 새로 켜지는 시너지와 주장 상성을 목록에 미리 표시
+// 넓은 화면: 칸을 고른 뒤 아래 목록에서 배치. 모바일: 빈 칸 + → 팝업에서 배치
+// 목록에는 새로 켜지는 시너지와 주장 상성을 미리 표시
 import { Coins, Plus, Save, Sparkles, Trash2, Wand2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { GENERAL_MAP } from '../data/generals';
@@ -45,6 +46,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
   const [filter, setFilter] = useState<Faction | 'all'>('all');
   const [detail, setDetail] = useState<DetailState | null>(null);
   const [info, setInfo] = useState<number | null>(null);
+  const [picker, setPicker] = useState(false);
   const enemyTroops = enemy?.map((e) => e.troop) ?? [];
 
   // 배치 위치 역참조: 장수 id → "1부대 주장"
@@ -88,12 +90,18 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
 
   function place(id: string) {
     assign(target.unit, target.slot, id);
+    setPicker(false);
     // 같은 부대의 다음 빈 칸으로 자동 이동
     const nextUnit = { ...formation[target.unit] };
     for (const s of SLOTS) if (nextUnit[s] === id) nextUnit[s] = null;
     nextUnit[target.slot] = id;
     const empty = SLOTS.find((s) => !nextUnit[s]);
     if (empty) setTarget({ unit: target.unit, slot: empty });
+  }
+
+  function openSlot(unit: number, slot: Slot) {
+    setTarget({ unit, slot });
+    if (window.matchMedia('(max-width: 639px)').matches) setPicker(true);
   }
 
   return (
@@ -139,7 +147,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                   return (
                     <div key={slot} className={cn('relative flex flex-col items-center gap-1 rounded-xl border-2 border-dashed p-2',
                       active ? 'border-red-500 bg-red-950/40' : badCommander ? 'border-solid border-red-500/50 bg-stone-950/60' : def ? 'border-transparent bg-stone-950/60' : 'border-stone-700')}>
-                      <button type="button" onClick={() => setTarget({ unit: ui, slot })}
+                      <button type="button" onClick={() => (def ? setTarget({ unit: ui, slot }) : openSlot(ui, slot))}
                         className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>
                         {SLOT_LABEL[slot].label}{active ? ' · 선택' : ''}
                       </button>
@@ -154,7 +162,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                           {badCommander && <span className="text-[9px] font-bold text-red-300">⚠ 상성 열세</span>}
                         </button>
                       ) : (
-                        <button type="button" onClick={() => setTarget({ unit: ui, slot })} className="flex w-full flex-col items-center gap-1">
+                        <button type="button" onClick={() => openSlot(ui, slot)} className="flex w-full flex-col items-center gap-1">
                           <div className="flex aspect-square w-full max-w-[84px] items-center justify-center rounded-xl bg-stone-800/60 text-stone-600"><Plus size={20} /></div>
                           <span className="text-[10px] text-stone-600">{SLOT_LABEL[slot].hint}</span>
                         </button>
@@ -183,7 +191,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         })}
       </div>
 
-      <section className="rounded-2xl border border-stone-800 bg-stone-900/60 p-3">
+      <section className="hidden rounded-2xl border border-stone-800 bg-stone-900/60 p-3 sm:block">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold">
             <span className={UNIT_TINT[target.unit].title}>제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}</span>에 배치할 장수
@@ -238,6 +246,64 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         </div>
         {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">해당 세력의 장수가 없습니다.</p>}
       </section>
+
+      {picker && (
+        <Modal wide onClose={() => setPicker(false)}>
+          <div className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <h3 className="font-serif text-lg font-black">
+              <span className={UNIT_TINT[target.unit].title}>제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}</span>
+              <span className="mt-0.5 block text-sm font-normal text-stone-400">넣을 장수를 고르세요</span>
+            </h3>
+            <button type="button" onClick={() => setPicker(false)} className="rounded-lg p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-100" aria-label="닫기"><X size={18} /></button>
+          </div>
+          <div className="mb-3 flex flex-wrap gap-1">
+            {(['all', ...FACTIONS] as const).map((f) => (
+              <button key={f} type="button" onClick={() => setFilter(f)}
+                className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-400')}>
+                {f === 'all' ? '전체' : FACTION[f].label}
+              </button>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
+            {owned.map(({ def, owned: o }) => {
+              const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
+              const rank = shownRarity(def.rarity, o.promote);
+              const where = placed[def.id];
+              const gains = preview[def.id];
+              const cmdGrade = enemy && target.slot === 'commander' ? matchupGrade(matchupVs(def.troop, enemyTroops)) : null;
+              return (
+                <button key={def.id} type="button" onClick={() => place(def.id)}
+                  className={cn('flex w-full items-center gap-2.5 rounded-xl border p-2 text-left',
+                    gains ? 'border-amber-400/40 bg-amber-400/5' : 'border-stone-800 bg-stone-950/40')}>
+                  <GeneralToken def={def} rarity={rank} size="sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-1">
+                      <span className="font-bold">{def.name}</span>
+                      <RarityBadge rarity={rank} />
+                      <span className="text-[11px] text-stone-500">Lv.{o.level}</span>
+                      <Stars n={o.stars} />
+                    </span>
+                    <span className="tabular mt-0.5 block text-[11px] text-stone-400">
+                      {STAT_LABEL.war} {st.war} · {STAT_LABEL.int} {st.int} · {STAT_LABEL.lead} {st.lead}
+                    </span>
+                    {(where || gains || (cmdGrade && cmdGrade !== 'even')) && (
+                      <span className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
+                        {where && <span className={cn('rounded px-1.5 py-px', UNIT_TINT[where.unit].chip)}>{where.label}</span>}
+                        {cmdGrade === 'good' && <span className="font-bold text-emerald-300">{TROOP[def.troop].emoji} 상성 유리</span>}
+                        {cmdGrade === 'bad' && <span className="font-bold text-red-300">{TROOP[def.troop].emoji} 상성 불리</span>}
+                        {gains && <span className="text-amber-300">{gains.join(' · ')}</span>}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+            {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">해당 세력의 장수가 없습니다.</p>}
+          </div>
+          </div>
+        </Modal>
+      )}
 
       {info !== null && (
         <Modal onClose={() => setInfo(null)}>
