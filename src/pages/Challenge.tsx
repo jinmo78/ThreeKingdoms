@@ -1,4 +1,4 @@
-// 도전 — 모의전(연습 전투) · 천하 토벌전(끝없는 도전)
+// 도전 — 천하 토벌전(끝없는 도전) · 모의전(연습 전투)
 import { BarChart3, ChevronRight, Coins, Crown, Dices, Eye, Lock, Mountain, Swords, Target } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
@@ -26,7 +26,7 @@ const DIFFS: { value: PracticeDifficulty; label: string }[] = [
 const MEASURE_SEEDS = Array.from({ length: 100 }, (_, i) => 31 + i * 7919);
 
 export default function Challenge() {
-  const [tab, setTab] = useState<'practice' | 'conquest'>('practice');
+  const [tab, setTab] = useState<'practice' | 'conquest'>('conquest');
   const conquestOpen = useGame((s) => (s.cleared['4-3'] ?? 0) > 0);
 
   return (
@@ -37,14 +37,14 @@ export default function Challenge() {
         vivid
         aside={
           <div className="flex shrink-0 gap-1 rounded-xl bg-stone-950/80 p-1">
-            <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>
             <TabBtn active={tab === 'conquest'} onClick={() => setTab('conquest')}>
               {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 토벌전
             </TabBtn>
+            <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>
           </div>
         }
       >
-        <p className="mt-1 hidden text-xs text-stone-300 sm:block">AI 군단을 상대로 편성을 시험하거나, 끝없는 토벌전에 도전하세요.</p>
+        <p className="mt-1 hidden text-xs text-stone-300 sm:block">끝없는 토벌전에 도전하거나, 모의전으로 편성을 시험하세요.</p>
       </PageHero>
       {tab === 'practice' ? <Practice /> : <Conquest />}
     </div>

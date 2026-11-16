@@ -5,7 +5,7 @@ import { Coins, Plus, Save, Sparkles, Trash2, Wand2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { GENERAL_MAP } from '../data/generals';
 import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP, UNIT_TINT } from '../data/meta';
-import { FORMATION_GOLD, PRESET_LIMIT, formationGold, presetLoadCost, unitGold } from '../engine/formationBook';
+import { FORMATION_GOLD, PRESET_LIMIT, formationGold, unitGold } from '../engine/formationBook';
 import { matchupGrade, matchupVs } from '../engine/matchup';
 import { emptyUnit, unitProfile } from '../engine/profiles';
 import { calcSynergy } from '../engine/synergy';
@@ -516,7 +516,7 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
         <span className="flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-bold text-amber-300"><Coins size={12} /> {gold.toLocaleString('ko-KR')}</span>
       </div>
       <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
-        저장은 배치한 장수 등급만큼, 불러오기는 그 절반의 금화를 씁니다. R {FORMATION_GOLD.R} · SR {FORMATION_GOLD.SR} · SSR {FORMATION_GOLD.SSR}.
+        저장은 배치한 장수 등급만큼 금화를 씁니다. 불러오기는 무료입니다. R {FORMATION_GOLD.R} · SR {FORMATION_GOLD.SR} · SSR {FORMATION_GOLD.SSR}.
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <input
@@ -534,7 +534,7 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
       <ul className="mt-3 space-y-2">
         {presets.map((preset) => {
           const units = sanitizeFormation(preset.units, roster);
-          const loadCost = presetLoadCost(units, roster);
+          const canLoad = units.some((u) => SLOTS.some((s) => u[s]));
           const names = units.map((u) => (u.commander ? GENERAL_MAP[u.commander]?.name ?? '공석' : '공석')).join(' · ');
           return (
             <li key={preset.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-800 bg-stone-950/40 px-2.5 py-2">
@@ -545,17 +545,17 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
                 </div>
                 <div className="truncate text-[11px] text-stone-500">{names}</div>
               </div>
-              <Btn size="sm" variant="outline" disabled={loadCost <= 0 || gold < loadCost}
+              <Btn size="sm" variant="outline" disabled={!canLoad}
                 onClick={() => {
                   const result = loadPreset(preset.id);
                   if (result === 'ok') {
                     onLoaded();
-                    setNote(`「${preset.name}」을 불러왔습니다. 금화 -${loadCost}`);
+                    setNote(`「${preset.name}」을 불러왔습니다.`);
                     return;
                   }
-                  setNote(result === 'gold' ? '금화가 부족합니다.' : '불러올 장수가 없습니다.');
+                  setNote('불러올 장수가 없습니다.');
                 }}>
-                불러오기{loadCost > 0 ? ` -${loadCost}` : ''}
+                불러오기
               </Btn>
               {confirmId === preset.id ? (
                 <Btn size="sm" variant="ghost" onClick={() => { deletePreset(preset.id); setConfirmId(null); setNote(`「${preset.name}」을 지웠습니다.`); }}>지우기</Btn>

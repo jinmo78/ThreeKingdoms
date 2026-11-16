@@ -8,7 +8,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { STAGE_MAP } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
-import { PRESET_LIMIT, formationGold, presetLoadCost } from '../engine/formationBook';
+import { PRESET_LIMIT, formationGold } from '../engine/formationBook';
 import { attendancePreview, recruitCost, todayKey, withDailyFreeGrant } from '../engine/attendance';
 import { DUPLICATE_REFUND, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
@@ -106,8 +106,8 @@ interface GameState extends SaveData {
   adjustGold: (delta: number) => boolean;
   /** 현재 편성을 금화로 저장. 비용은 배치 장수 등급 합 */
   savePreset: (name: string) => 'ok' | 'name' | 'full' | 'empty' | 'gold';
-  /** 저장한 편성을 덮어쓴다. 금화는 저장 비용의 절반 */
-  loadPreset: (id: string) => 'ok' | 'missing' | 'empty' | 'gold';
+  /** 저장한 편성을 무료로 덮어쓴다 */
+  loadPreset: (id: string) => 'ok' | 'missing' | 'empty';
   deletePreset: (id: string) => void;
   /** 편성 화면 상성 힌트의 상대 — 스테이지 id | 'conquest' | 'practice' (저장 안 함) */
   focusStage: string | null;
@@ -293,10 +293,8 @@ export const useGame = create<GameState>()(
         const preset = state.presets.find((p) => p.id === id);
         if (!preset) return 'missing';
         const units = sanitizeFormation(preset.units, state.roster);
-        const cost = presetLoadCost(units, state.roster);
-        if (cost <= 0) return 'empty';
-        if (state.gold < cost) return 'gold';
-        set({ gold: state.gold - cost, formation: units });
+        if (!units.some((u) => SLOTS.some((s) => u[s]))) return 'empty';
+        set({ formation: units });
         return 'ok';
       },
       deletePreset: (id) => set({ presets: get().presets.filter((p) => p.id !== id) }),

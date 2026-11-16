@@ -5,6 +5,10 @@ export const CHAPTERS: Chapter[] = [
   { id: 2, title: '반동탁 연합', year: '190년', desc: '낙양을 장악한 폭군을 토벌하기 위해 제후들이 모였다.' },
   { id: 3, title: '관도대전', year: '200년', desc: '하북의 대군이 남하한다. 소수로 대군을 꺾어라.' },
   { id: 4, title: '적벽대전', year: '208년', desc: '장강을 뒤덮은 대선단. 바람과 불이 승부를 가른다.' },
+  { id: 5, title: '합비 공방전', year: '215년', desc: '소수 정예가 대군을 막아선 강가의 성.' },
+  { id: 6, title: '한중·번성', year: '219년', desc: '한중을 넘고, 번성의 수비를 무너뜨려라.' },
+  { id: 7, title: '이릉대전', year: '222년', desc: '숲에 숨은 화공이 대군의 진영을 노린다.' },
+  { id: 8, title: '북벌과 검각', year: '263년', desc: '중원의 책사와 촉을 무너뜨린 마지막 원정군.' },
 ];
 
 /** 순서: 주장, 부장, 부장, 참모, 보좌, 보좌 (_ = 빈 칸) */
@@ -55,6 +59,50 @@ export const STAGES: Stage[] = [
   { id: '4-3', chapter: 4, title: '적벽', desc: '조조 본진. 종친과 오자양장, 왕좌의 재사들이 총출동했다.',
     enemies: [u(22, 'caocao', 'xuchu', 'zhangliao', 'xunyu', 'caoren', 'caohong'), u(21, 'xiahoudun', 'xiahouyuan', 'xuhuang', 'chengyu', 'wei_elite', 'wei_elite'), u(21, 'zhanghe', 'yujin', 'yuejin', 'xunyou', 'wei_navy', 'wei_navy')],
     reward: { gold: 120, exp: 540 }, firstClearGold: 400 },
+
+  // 5장 합비 공방전
+  { id: '5-1', chapter: 5, title: '소요진', desc: '장료가 정예 기병으로 진영을 급습한다.',
+    enemies: [u(24, 'zhangliao', 'yuejin', 'lidian', 'chengyu', 'wei_elite'), u(23, 'wei_elite', 'caohong', 'wei_elite', 'xunyou')],
+    reward: { gold: 110, exp: 580 }, firstClearGold: 140 },
+  { id: '5-2', chapter: 5, title: '유수구', desc: '강가에 늘어선 위의 수군과 보병을 돌파하라.',
+    enemies: [u(25, 'xuhuang', 'yujin', 'wei_elite', 'xunyou', 'wei_navy'), u(24, 'wei_navy', 'wei_elite', 'wei_elite', 'chengyu', 'wei_navy'), u(24, 'caohong', 'wei_elite', 'lidian', _)],
+    reward: { gold: 115, exp: 620 }, firstClearGold: 160 },
+  { id: '5-3', chapter: 5, title: '합비', desc: '오자양장이 모인 합비 본대. 장료의 급습을 버텨라.',
+    enemies: [u(26, 'zhangliao', 'xuhuang', 'yuejin', 'xunyou', 'yujin', 'wei_elite'), u(25, 'caoren', 'lidian', 'wei_elite', 'chengyu', 'wei_elite', 'wei_navy'), u(25, 'wei_elite', 'caohong', 'wei_navy', 'guojia', 'wei_elite', 'wei_navy')],
+    reward: { gold: 130, exp: 680 }, firstClearGold: 200 },
+
+  // 6장 한중·번성
+  { id: '6-1', chapter: 6, title: '정군산', desc: '하후연의 기병이 산길을 지킨다.',
+    enemies: [u(28, 'xiahouyuan', 'zhanghe', 'wei_elite', 'chengyu', 'wei_elite'), u(27, 'wei_elite', 'caohong', 'wei_elite', 'xunyou')],
+    reward: { gold: 125, exp: 720 }, firstClearGold: 170 },
+  { id: '6-2', chapter: 6, title: '한수', desc: '조조가 직접 한중으로 내려왔다.',
+    enemies: [u(30, 'caocao', 'xiahouyuan', 'xuhuang', 'xunyu', 'caohong', 'wei_elite'), u(29, 'zhanghe', 'wei_elite', 'wei_elite', 'chengyu', 'wei_elite'), u(28, 'wei_elite', 'yuejin', 'wei_elite', 'xunyou', 'wei_navy')],
+    reward: { gold: 130, exp: 760 }, firstClearGold: 190 },
+  { id: '6-3', chapter: 6, title: '번성', desc: '조인·방덕·서황이 성을 겹겹이 지킨다.',
+    enemies: [u(32, 'caoren', 'pangde', 'yujin', 'xuhuang', 'wei_elite', 'wei_elite'), u(31, 'zhanghe', 'wei_elite', 'yuejin', 'xunyou', 'wei_elite', 'wei_navy'), u(30, 'caohong', 'wei_elite', 'wei_elite', 'chengyu', 'wei_elite')],
+    reward: { gold: 145, exp: 820 }, firstClearGold: 240 },
+
+  // 7장 이릉대전
+  { id: '7-1', chapter: 7, title: '효정', desc: '강동의 선봉이 숲길에서 길을 막는다.',
+    enemies: [u(34, 'lingtong', 'handang', 'dingfeng', 'zhugejin', 'xusheng'), u(33, 'chengpu', 'huanggai', 'zhoutai', 'lusu')],
+    reward: { gold: 140, exp: 860 }, firstClearGold: 200 },
+  { id: '7-2', chapter: 7, title: '마안산', desc: '감녕의 야습과 노장들의 진영을 헤쳐라.',
+    enemies: [u(35, 'ganning', 'lingtong', 'handang', 'lusu', 'xusheng', 'dingfeng'), u(34, 'chengpu', 'zhoutai', 'huanggai', 'zhangzhao', 'taishici'), u(34, 'sunshangxiang', 'xiaoqiao', 'daqiao', 'zhugejin')],
+    reward: { gold: 145, exp: 900 }, firstClearGold: 220 },
+  { id: '7-3', chapter: 7, title: '이릉', desc: '육손의 화공. 사대도독과 강동 호걸이 한꺼번에 나온다.',
+    enemies: [u(36, 'luxun', 'lumeng', 'ganning', 'lusu', 'chengpu', 'handang'), u(35, 'sunquan', 'zhoutai', 'lingtong', 'zhangzhao', 'taishici', 'xusheng'), u(35, 'dingfeng', 'huanggai', 'sunshangxiang', 'zhugejin', 'xiaoqiao', 'daqiao')],
+    reward: { gold: 160, exp: 960 }, firstClearGold: 260 },
+
+  // 8장 북벌과 검각
+  { id: '8-1', chapter: 8, title: '가정', desc: '사마의가 때를 기다리며 산길을 틀어막았다.',
+    enemies: [u(37, 'simayi', 'zhanghe', 'wei_elite', 'xunyou', 'wei_elite'), u(36, 'xuhuang', 'yuejin', 'wei_elite', 'chengyu', 'wei_elite')],
+    reward: { gold: 155, exp: 1000 }, firstClearGold: 220 },
+  { id: '8-2', chapter: 8, title: '음평', desc: '등애가 아무도 없는 산길을 넘어 뒤를 친다.',
+    enemies: [u(38, 'dengai', 'zhonghui', 'wei_elite', 'xunyou', 'wei_elite', 'wei_navy'), u(37, 'wei_elite', 'zhanghe', 'wei_elite', 'chengyu', 'wei_elite'), u(37, 'xuhuang', 'caohong', 'yuejin', 'caopi')],
+    reward: { gold: 165, exp: 1080 }, firstClearGold: 260 },
+  { id: '8-3', chapter: 8, title: '검각', desc: '등애·종회·사마의가 모인 마지막 관문.',
+    enemies: [u(40, 'dengai', 'zhonghui', 'zhanghe', 'simayi', 'xuhuang', 'wei_elite'), u(39, 'caopi', 'yuejin', 'wei_elite', 'xunyu', 'wei_elite', 'wei_navy'), u(39, 'caohong', 'wei_elite', 'lidian', 'xunyou', 'wei_elite', 'wei_navy')],
+    reward: { gold: 190, exp: 1200 }, firstClearGold: 400 },
 ];
 
 export const STAGE_MAP: Record<string, Stage> = Object.fromEntries(STAGES.map((s) => [s.id, s]));

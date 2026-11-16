@@ -1,4 +1,4 @@
-// 편성 저장·불러오기가 쓰는 금화. 배치한 장수의 등급을 더한다.
+// 편성 저장이 쓰는 금화. 배치한 장수의 등급을 더한다. 불러오기는 무료.
 import { GENERAL_MAP } from '../data/generals';
 import type { Rarity, Unit } from '../types';
 import { SLOTS } from '../types';
@@ -30,11 +30,4 @@ export function unitGold(unit: Unit, roster: RosterPromote) {
 
 export function formationGold(units: Unit[], roster: RosterPromote) {
   return units.reduce((sum, unit) => sum + unitGold(unit, roster), 0);
-}
-
-/** 불러오기는 저장의 절반 */
-export function presetLoadCost(units: Unit[], roster: RosterPromote) {
-  const n = formationGold(units, roster);
-  if (n <= 0) return 0;
-  return Math.ceil(n / 2);
 }
