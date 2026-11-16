@@ -40,6 +40,7 @@
   --color-violet-200: #5b21b6;
   --color-violet-300: #6d28d9;
   --color-rose-300: #be123c;
+  --color-orange-200: #9a3412;
   --color-orange-300: #c2410c;
 }
 
@@ -72,6 +73,7 @@ html.dark {
   --color-violet-200: oklch(89.4% 0.057 293.283);
   --color-violet-300: oklch(81.1% 0.111 293.571);
   --color-rose-300: oklch(81% 0.117 11.638);
+  --color-orange-200: oklch(90.1% 0.076 70.697);
   --color-orange-300: oklch(83.7% 0.128 66.29);
 }
 
