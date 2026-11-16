@@ -111,6 +111,8 @@ export default function Campaign() {
               {STAGES.filter((s) => s.chapter === ch.id).map((s) => {
                 const unlocked = isUnlocked(s.id, cleared);
                 const done = (cleared[s.id] ?? 0) > 0;
+                const lv = Math.max(...s.enemies.map((e) => e.level));
+                const stars = Math.max(...s.enemies.map((e) => e.stars ?? 0));
                 return (
                   <button
                     key={s.id}
@@ -129,7 +131,7 @@ export default function Campaign() {
                     </div>
                     <div className="min-w-0">
                       <div className="truncate text-sm font-bold">{s.title}</div>
-                      <div className="text-[11px] text-stone-500">적 {s.enemies.length}부대 · Lv.{Math.max(...s.enemies.map((e) => e.level))}</div>
+                      <div className="text-[11px] text-stone-500">적 {s.enemies.length}부대 · Lv.{lv}{stars > 0 && ` · ★${stars}`}</div>
                     </div>
                   </button>
                 );
