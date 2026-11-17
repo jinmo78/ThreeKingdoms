@@ -64,12 +64,17 @@ const CHAIN_MULT = [1, 0.75, 0.85, 1.0];
 const CHAIN_INDEX = CHAIN_SLOTS.map((s) => SLOTS.indexOf(s));
 const MATCHUP_MULT = { adv: 1.25, dis: 0.8, even: 1 } as const;
 
-export function simulateBattle(player: UnitProfile[], enemy: UnitProfile[], seed: number): BattleResult {
+/** startHp: 부대별 시작 병력 비율 [아군[], 적군[]] — 부상 부대·공격받은 수비대. 없으면 전원 100% */
+export function simulateBattle(
+  player: UnitProfile[], enemy: UnitProfile[], seed: number, startHp?: [number[], number[]],
+): BattleResult {
   const rng = mulberry32(seed);
   const rand = (a: number, b: number) => a + (b - a) * rng();
 
   const fighters: Fighter[][] = [player, enemy].map((list, side) =>
-    list.map((p, idx) => ({ side: side as Side, idx, p, hp: p.hp, gauge: rng() * 30, routed: false })),
+    list.map((p, idx) => ({
+      side: side as Side, idx, p, hp: Math.round(p.hp * (startHp?.[side]?.[idx] ?? 1)), gauge: rng() * 30, routed: false,
+    })),
   );
   const events: BattleEvent[] = [];
   const stats = { skills: 0, chains: 0, maxChain: 0 };

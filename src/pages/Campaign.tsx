@@ -4,14 +4,17 @@ import { Lock, Swords } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
+import { SiegePanel } from '../components/SiegePanel';
 import { cn } from '../components/ui';
 import { GENERAL_MAP } from '../data/generals';
 import { GEAR_MAP, stageGearId } from '../data/gear';
 import { TROOP } from '../data/meta';
 import { CHAPTERS, isUnlocked, STAGE_MAP, stageIndex, STAGES } from '../data/stages';
 import { matchupGrade, matchupVs } from '../engine/matchup';
+import { enemyUnitsToProfiles } from '../engine/profiles';
+import { GARRISON_RECOVER_MS, MIN_SORTIE, SQUAD_RECOVER_MS, garrisonKey, ratioOf, squadKey } from '../engine/siege';
 import type { UnitProfile } from '../engine/unit';
-import { enemyProfiles, playerProfiles, useGame } from '../store/gameStore';
+import { enemyProfiles, unitProfile, useGame } from '../store/gameStore';
 import type { EnemyUnit, GearSlot, Troop } from '../types';
 
 type GearFilter = 'all' | GearSlot;
@@ -683,6 +686,7 @@ export default function Campaign() {
   const formation = useGame((s) => s.formation);
   const roster = useGame((s) => s.roster);
   const gear = useGame((s) => s.gear);
+  const wounds = useGame((s) => s.wounds);
   const startBattle = useGame((s) => s.startBattle);
   const setView = useGame((s) => s.setView);
   const focusStage = useGame((s) => s.focusStage);
@@ -701,8 +705,32 @@ export default function Campaign() {
   };
   const stage = STAGE_MAP[selected] ?? firstOpen;
 
-  const mine = useMemo(() => playerProfiles(formation, roster, gear), [formation, roster, gear]);
-  const enemies = useMemo(() => enemyProfiles(stage.id), [stage.id]);
+  // 부상 회복은 시간으로 계산하므로 몇 초마다 다시 읽는다
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 4000);
+    return () => clearInterval(t);
+  }, []);
+
+  /** 출정 부대(편성 번호 · 병력 비율)와 지금 고른 부대. picked가 null이면 출정 가능한 부대 전부 */
+  const squads = useMemo(() => formation.flatMap((u, idx) => {
+    const p = u.commander ? unitProfile(u, roster, gear) : null;
+    return p ? [{ idx, p, r: ratioOf(wounds, squadKey(u.commander!), now, SQUAD_RECOVER_MS) }] : [];
+  }), [formation, roster, gear, wounds, now]);
+  const [picked, setPicked] = useState<number[] | null>(null);
+  const picks = useMemo(
+    () => new Set(squads.filter((s) => s.r >= MIN_SORTIE && (!picked || picked.includes(s.idx))).map((s) => s.idx)),
+    [squads, picked],
+  );
+  const togglePick = (idx: number) => setPicked(picks.has(idx) ? [...picks].filter((i) => i !== idx) : [...picks, idx]);
+  const mine = useMemo(() => squads.filter((s) => picks.has(s.idx)).map((s) => s.p), [squads, picks]);
+
+  /** 성 수비대: 점령한 성은 새 수비대, 아니면 지난 공격에서 남은 병력 */
+  const captured = (cleared[stage.id] ?? 0) > 0;
+  const garrison = useMemo(() => stage.enemies
+    .map((e, i) => ({ p: enemyUnitsToProfiles([e])[0], r: captured ? 1 : ratioOf(wounds, garrisonKey(stage.id, i), now, GARRISON_RECOVER_MS) }))
+    .filter((g) => g.p && g.r > 0.001), [stage, captured, wounds, now]);
+  const enemies = useMemo(() => (garrison.length ? garrison.map((g) => g.p) : enemyProfiles(stage.id)), [garrison, stage.id]);
   const powers = useMemo(() => {
     const out: Record<string, number> = {};
     for (const s of STAGES) out[s.id] = enemyProfiles(s.id).reduce((n, p) => n + p.power, 0);
@@ -771,12 +799,15 @@ export default function Campaign() {
         mine={mine}
         dropId={dropId}
         dropName={drop?.name}
-        canFight={mine.length > 0}
+        noSquads={squads.length === 0}
+        canFight={picks.size > 0}
         fought={(fought[stage.id] ?? 0) > 0}
         stageEnemies={stage.enemies}
-        onFight={() => { setFocusStage(stage.id); startBattle(stage.id); }}
+        onFight={() => { setFocusStage(stage.id); startBattle(stage.id, [...picks]); }}
         onFormation={() => setView('formation')}
-      />
+      >
+        <SiegePanel squads={squads} garrison={garrison} picks={picks} onToggle={togglePick} />
+      </Briefing>
     </div>
   );
 }
@@ -811,13 +842,13 @@ function Roller() {
 
 /** 군령 두루마리: 모바일은 하단 시트, 넓은 화면은 지도 옆에 붙는다. */
 function Briefing({
-  stageId, title, desc, done, enemies, mine, dropId, dropName, canFight, fought, stageEnemies, onFight, onFormation,
+  stageId, title, desc, done, enemies, mine, dropId, dropName, noSquads, canFight, fought, stageEnemies, onFight, onFormation, children,
 }: {
   stageId: string; title: string; desc: string; done: boolean;
   enemies: UnitProfile[]; mine: UnitProfile[];
-  dropId: string | null; dropName?: string; canFight: boolean; fought: boolean;
+  dropId: string | null; dropName?: string; noSquads: boolean; canFight: boolean; fought: boolean;
   stageEnemies: EnemyUnit[];
-  onFight: () => void; onFormation: () => void;
+  onFight: () => void; onFormation: () => void; children?: ReactNode;
 }) {
   const lead = enemies[0];
   const commander = stageEnemies[0]?.members[0];
@@ -863,9 +894,13 @@ function Briefing({
             </div>
           )}
 
+          {children}
+
           <div className="mt-3.5 mb-1">
-            {canFight ? (
-              <button type="button" className="btn-war" onClick={onFight}><Swords size={18} /> 출진하기</button>
+            {!noSquads ? (
+              <button type="button" className="btn-war disabled:opacity-50" disabled={!canFight} onClick={onFight}>
+                <Swords size={18} /> {canFight ? "공성 개시" : "출정 부대를 고르세요"}
+              </button>
             ) : (
               <button type="button" className="btn-war btn-war-alt" onClick={onFormation}>편성하러 가기</button>
             )}

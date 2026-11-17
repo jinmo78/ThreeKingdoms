@@ -117,6 +117,7 @@ export default function BattlePage() {
           {done && <ResultOverlay
             win={result.win}
             reward={reward}
+            siege={battle.siege}
             mode={mode}
             maxChain={result.stats.maxChain}
             chains={result.stats.chains}
@@ -325,10 +326,11 @@ function SideRow({
 }
 
 function ResultOverlay({
-  win, reward, mode, maxChain, chains, onRetry, onNext, nextTitle, onFormation, onCampaign, backLabel,
+  win, reward, siege, mode, maxChain, chains, onRetry, onNext, nextTitle, onFormation, onCampaign, backLabel,
 }: {
   win: boolean;
   reward: BattleReward | null;
+  siege?: { captured: boolean; left: number; total: number };
   mode: 'stage' | 'practice' | 'conquest';
   maxChain: number; chains: number;
   onRetry: () => void; onNext?: () => void; nextTitle?: string; onFormation: () => void; onCampaign: () => void; backLabel: string;
@@ -340,6 +342,14 @@ function ResultOverlay({
         {win ? <Trophy size={40} className="mx-auto text-amber-300" /> : <RotateCcw size={36} className="mx-auto text-stone-400" />}
         <div className={cn('mt-2 font-serif text-3xl font-black', win ? 'text-amber-200' : 'text-stone-300')}>{win ? '승 리' : '패 배'}</div>
         <div className="mt-1 text-xs text-stone-500">연쇄 발동 {chains}회 · 최대 {maxChain}단 연쇄{maxChain >= 3 && ' 🔥'}</div>
+
+        {siege && (
+          <p className={cn('mt-3 rounded-lg px-3 py-2 text-xs font-bold', siege.captured ? 'bg-amber-500/15 text-amber-200' : 'bg-stone-950/70 text-stone-300')}>
+            {siege.captured
+              ? '🏯 성을 점령했다!'
+              : `성은 아직 버티고 있다. 수비대 ${siege.left}/${siege.total}부대 남음 — 공격받은 수비대는 시간이 지나면 회복되고, 아군 부대도 약 3분이면 병력이 찬다.`}
+          </p>
+        )}
 
         {reward ? (
           <div className="mt-4 space-y-1.5 rounded-xl bg-stone-950/70 p-3 text-sm">

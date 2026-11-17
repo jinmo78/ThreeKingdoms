@@ -41,6 +41,12 @@
 - 원정·토벌 금화 보상은 2026-11-15에 약 절반으로 축소. 체감이 가혹하면 재조정
 - SAVE_VERSION 9: `freePulls`, `freeGrantDay`, `attendDay`, `attendStreak`
 
+## 공성 (패도식 개편 1단계, 2026-11-17)
+- 원정 스테이지 = 성. 부대 1~3개를 골라 나눠 출정 (`SiegePanel`, `startBattle(stageId, picks)`)
+- 부상: 출정 부대(주장 id 기준 `u:<id>`)와 공격받은 수비대(`c:<스테이지>:<번호>`)의 남은 병력 비율을 `wounds`에 저장 (SAVE_VERSION 12)
+- 회복은 타이머 없이 저장 시각으로 계산 (`src/engine/siege.ts`): 부대 3분, 수비대 15분, 병력 10% 미만은 출정 불가
+- 로드맵: 2 행군 타이머 → 3 전술(수공·화공·기습) → 4 내정 → 5 AI 군주 · 비동기 대전
+
 ## 밸런스 점검 방법
 수치를 바꿀 때는 감으로 하지 말고 시뮬레이션으로 확인:
 `src/engine`의 `simulateBattle`, `autoFormation`, `rollGenerals`(시드 고정)를 import하는 임시 스크립트를

@@ -19,7 +19,10 @@ import {
   GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL, GEAR_PROMOTE_SHARDS,
   equipOn, gearCount, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, grantGear, unequipOne,
 } from '../engine/gear';
-import { emptyUnit, enemyUnitsToProfiles, playerProfiles } from '../engine/profiles';
+import { emptyUnit, enemyUnitsToProfiles, playerProfiles, unitProfile } from '../engine/profiles';
+import {
+  GARRISON_RECOVER_MS, MIN_SORTIE, SQUAD_RECOVER_MS, clearGarrison, garrisonKey, pruneWounds, ratioOf, squadKey, withRatio,
+} from '../engine/siege';
 import { expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget } from '../engine/unit';
 
 export { emptyUnit, enemyProfiles, playerProfiles, unitProfile } from '../engine/profiles';
@@ -70,6 +73,8 @@ export interface ActiveBattle {
   result: BattleResult;
   /** 모의전은 null */
   reward: BattleReward | null;
+  /** 원정: 공성 결과 — 점령 여부와 남은 수비대 */
+  siege?: { captured: boolean; left: number; total: number };
 }
 
 export type PracticeDifficulty = -3 | 0 | 3 | 6;
@@ -126,7 +131,8 @@ interface GameState extends SaveData {
   /** 편성 화면 상성 힌트의 상대 — 스테이지 id | 'conquest' | 'practice' (저장 안 함) */
   focusStage: string | null;
   setFocusStage: (id: string) => void;
-  startBattle: (stageId: string) => boolean;
+  /** picks: 출정시킬 편성 번호(0~2). 없으면 출정 가능한 부대 전부 */
+  startBattle: (stageId: string, picks?: number[]) => boolean;
   /** 모의전 관전 (보상 없음) */
   startPractice: (enemies: EnemyUnit[], title: string) => boolean;
   /** 천하 토벌전 다음 층 도전 */
@@ -190,6 +196,7 @@ export const useGame = create<GameState>()(
       attendStreak: 0,
       presets: [],
       gear: {},
+      wounds: {},
       view: 'campaign',
       battle: null,
       entered: false,
@@ -377,24 +384,50 @@ export const useGame = create<GameState>()(
       focusStage: null,
       setFocusStage: (focusStage) => set({ focusStage }),
 
-      startBattle: (stageId) => {
-        const { formation, roster, cleared, fought, gold, gear } = get();
+      startBattle: (stageId, picks) => {
+        const { formation, roster, cleared, fought, gold, gear, wounds } = get();
         const stage = STAGE_MAP[stageId];
-        const mine = playerProfiles(formation, roster, gear);
-        if (!stage || mine.length === 0) return false;
+        if (!stage) return false;
+        const now = Date.now();
 
-        const result = simulateBattle(mine, enemyUnitsToProfiles(stage.enemies), randomSeed());
+        // 출정 부대: 지정한(없으면 전부) 편성 중 병력이 남은 부대
+        const squads = formation
+          .map((u, i) => ({ i, u, p: u.commander && (!picks || picks.includes(i)) ? unitProfile(u, roster, gear) : null }))
+          .map((s) => ({ ...s, r: s.u.commander ? ratioOf(wounds, squadKey(s.u.commander), now, SQUAD_RECOVER_MS) : 0 }))
+          .filter((s): s is typeof s & { p: NonNullable<typeof s.p> } => !!s.p && s.r >= MIN_SORTIE);
+        if (squads.length === 0) return false;
+
+        // 수비대: 점령한 성은 새 수비대, 아직이면 지난 공격에서 남은 병력
+        const already = (cleared[stageId] ?? 0) > 0;
+        let defenders = stage.enemies
+          .map((e, i) => ({ i, p: enemyUnitsToProfiles([e])[0], r: already ? 1 : ratioOf(wounds, garrisonKey(stageId, i), now, GARRISON_RECOVER_MS) }))
+          .filter((d) => d.p && d.r > 0.001);
+        if (defenders.length === 0) defenders = stage.enemies.map((e, i) => ({ i, p: enemyUnitsToProfiles([e])[0], r: 1 })).filter((d) => d.p);
+
+        const result = simulateBattle(
+          squads.map((s) => s.p), defenders.map((d) => d.p), randomSeed(),
+          [squads.map((s) => s.r), defenders.map((d) => d.r)],
+        );
+
+        // 전투 뒤 남은 병력을 기록 (승리하면 성이 함락돼 수비대 기록은 사라진다)
+        const left = result.events[result.events.length - 1].hp;
+        let nextWounds = wounds;
+        squads.forEach((s, k) => { nextWounds = withRatio(nextWounds, squadKey(s.u.commander!), left[0][k] / s.p.hp, now); });
+        if (result.win) nextWounds = clearGarrison(nextWounds, stageId);
+        else if (!already) defenders.forEach((d, k) => { nextWounds = withRatio(nextWounds, garrisonKey(stageId, d.i), left[1][k] / d.p.hp, now); });
+        nextWounds = pruneWounds(nextWounds, now);
+        const standing = result.win ? 0 : left[1].filter((h) => h > 0).length;
 
         // 보상은 전투 계산 즉시 확정 (새로고침으로 결과를 바꿀 수 없게)
         // 금화·경험치는 첫 클리어에만. 장비는 승리하면 따로 나온다.
-        const already = (cleared[stageId] ?? 0) > 0;
+        const sent = squads.map((s) => s.u);
         const firstClear = result.win && !already;
         const rewardGold = already ? 0 : result.win
           ? stage.reward.gold + stage.firstClearGold
           : Math.round(stage.reward.gold * 0.2);
         const rewardExp = already ? 0 : result.win ? stage.reward.exp : Math.round(stage.reward.exp * 0.3);
         const granted = rewardExp > 0
-          ? grantExp(roster, formation, rewardExp)
+          ? grantExp(roster, sent, rewardExp)
           : { roster, levelUps: [] as BattleReward['levelUps'] };
         const dropped = stageDrop(gear, stageId, result.win, firstClear);
         const reward = !rewardGold && !rewardExp && !dropped.drop
@@ -405,19 +438,20 @@ export const useGame = create<GameState>()(
           gold: gold + rewardGold,
           roster: granted.roster,
           gear: dropped.gear,
+          wounds: nextWounds,
           cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
           fought: { ...fought, [stageId]: (fought[stageId] ?? 0) + 1 },
           battle: {
             mode: 'stage', title: stage.title, subtitle: stage.id, stageId, enemies: stage.enemies,
             result,
             reward,
+            siege: { captured: result.win, left: standing, total: stage.enemies.length },
           },
           view: 'battle',
           focusStage: stageId,
         });
         return true;
       },
-
       startPractice: (enemies, title) => {
         const { formation, roster, gear } = get();
         const mine = playerProfiles(formation, roster, gear);
