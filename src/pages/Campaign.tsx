@@ -1,7 +1,7 @@
 // 원정 지도. 진행·드롭·출진 함수는 그대로 두고 고르는 화면만 고지도로 보여 준다.
 // 그림(한지 질감·산수·성루·두루마리)은 SVG와 index.css(.war-*, .gate, .silk 등)로만 그린다.
 import { Lock, Swords } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
 import { cn } from '../components/ui';
@@ -56,7 +56,11 @@ const SEGMENTS = SPOTS.slice(0, -1).map((a, i) => {
   return `M${a.x} ${a.y}C${a.x} ${a.y + k} ${b.x} ${b.y - k} ${b.x} ${b.y}`;
 });
 
-/* ───────── 수묵 산수 배경 (시드 고정이라 항상 같은 그림) ───────── */
+/* ───────── 지형: 겹산 · 대하 · 수풀 · 주(州) 이름 (시드 고정이라 항상 같은 그림) ───────── */
+type Pt = [number, number];
+const f1 = (n: number) => Math.round(n * 10) / 10;
+const lineTo = (pts: Pt[]) => pts.map((p) => `${f1(p[0])} ${f1(p[1])}`).join('L');
+
 function mulberry32(seed: number) {
   let a = seed;
   return () => {
@@ -67,53 +71,271 @@ function mulberry32(seed: number) {
   };
 }
 
-function ridgePath(rand: () => number, base: number, amp: number) {
-  const pts: [number, number][] = [];
-  for (let x = -220, n = 0; x <= 620; x += 46, n++) {
-    const side = Math.min(1, Math.abs(x - 200) / 250); // 가운데(길)는 낮게, 가장자리는 높게
-    const peak = (n % 2 === 0 ? 0.55 + 0.45 * rand() : 0.12 + 0.2 * rand()) * amp * (0.28 + 0.72 * side);
-    pts.push([x, base - peak]);
+/** 봉우리 하나: 좌측 면(옅은 황토) · 우측 면(짙은 고동) · 능선 · 준법(주름) 선. 원점은 산자락 중앙. */
+function peakEl(rand: () => number, key: number, cx: number, base: number, w: number, h: number): ReactNode {
+  const ax = cx + (rand() - 0.5) * w * 0.14;
+  const ay = base - h;
+  const mx = ax + w * 0.06; // 능선이 산자락에 닿는 점
+  const edge = (x0: number): Pt[] => {
+    const out: Pt[] = [[x0, base]];
+    for (let i = 1; i <= 4; i++) {
+      const t = i / 5;
+      out.push([x0 + (ax - x0) * Math.pow(t, 0.72) + (rand() - 0.5) * w * 0.07 * (1 - t), base - h * t]);
+    }
+    out.push([ax, ay]);
+    return out;
+  };
+  const le = edge(cx - w / 2);
+  const re = edge(cx + w / 2);
+  const ridge: Pt[] = [[ax, ay]];
+  for (let i = 1; i <= 4; i++) {
+    const t = i / 4.2;
+    ridge.push([ax + (mx - ax) * t + (rand() - 0.5) * w * 0.2 * (1 - t * 0.3), ay + h * t]);
   }
-  let d = `M${pts[0][0]} ${pts[0][1].toFixed(1)}`;
-  for (let i = 1; i < pts.length - 1; i++) {
-    const mx = (pts[i][0] + pts[i + 1][0]) / 2;
-    const my = (pts[i][1] + pts[i + 1][1]) / 2;
-    d += `Q${pts[i][0]} ${pts[i][1].toFixed(1)} ${mx} ${my.toFixed(1)}`;
-  }
-  const last = pts[pts.length - 1];
-  return `${d}L${last[0]} ${last[1].toFixed(1)}L${last[0]} ${base + 150}L${pts[0][0]} ${base + 150}Z`;
+  ridge.push([mx, base]);
+  const hatch = ridge.slice(1, 5)
+    .map(([x, y]) => `M${f1(x)} ${f1(y)}l${f1(w * (0.12 + 0.12 * rand()))} ${f1(h * (0.1 + 0.08 * rand()))}`)
+    .join('');
+  return (
+    <g key={key}>
+      <path d={`M${lineTo([...le, ...ridge.slice(1)])}Z`} fill="url(#cm-mt-l)" />
+      <path d={`M${lineTo([...re].reverse().concat([...ridge].reverse()))}Z`} fill="url(#cm-mt-r)" />
+      <g fill="none" strokeLinejoin="round" strokeLinecap="round" style={{ stroke: 'var(--mt-line)' }}>
+        <path d={`M${lineTo(le)}`} strokeWidth=".7" opacity=".6" />
+        <path d={`M${lineTo(re)}`} strokeWidth=".7" opacity=".6" />
+        <path d={`M${lineTo(ridge)}`} strokeWidth="1" opacity=".85" />
+        <path d={hatch} strokeWidth=".6" opacity=".4" />
+      </g>
+    </g>
+  );
 }
 
-function riverPath(phase: number, amp: number) {
-  const pts: [number, number][] = [];
-  for (let y = -40, k = 0; y <= MAP_H + 60; y += 270, k++) pts.push([200 + amp * Math.sin(k * 1.15 + phase), y]);
-  let d = `M${pts[0][0].toFixed(1)} ${pts[0][1]}`;
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    const ym = (y0 + y1) / 2;
-    d += `C${x0.toFixed(1)} ${ym} ${x1.toFixed(1)} ${ym} ${x1.toFixed(1)} ${y1}`;
-  }
-  return d;
-}
+/** 산맥 클러스터 5종(a 연봉 · b 협곡의 높은 벽 · c 낮은 구릉 · d 쌍봉 · e 검각 같은 뾰족한 봉우리) × 변형 2 */
+const KINDS = {
+  a: { n: 5, W: 120, H: 85, ratio: 1.1 },
+  b: { n: 4, W: 80, H: 125, ratio: 0.62 },
+  c: { n: 5, W: 140, H: 42, ratio: 1.8 },
+  d: { n: 3, W: 80, H: 70, ratio: 1.0 },
+  e: { n: 6, W: 120, H: 110, ratio: 0.7 },
+} as const;
+type Kind = keyof typeof KINDS;
 
-const ART = (() => {
-  const rand = mulberry32(1914);
-  const bands: { d: string; op: number }[][] = [];
-  const mists: { cx: number; cy: number; rx: number; ry: number }[] = [];
-  for (let base = 150, n = 0; base < MAP_H; base += 330, n++) {
-    bands.push([
-      { d: ridgePath(rand, base - 30, 150), op: 0.14 },
-      { d: ridgePath(rand, base + 20, 115), op: 0.24 },
-      { d: ridgePath(rand, base + 70, 80), op: 0.36 },
-    ]);
-    mists.push({ cx: 90 + rand() * 220, cy: base + 80 + rand() * 40, rx: 190 + rand() * 90, ry: 26 + rand() * 12 });
-    if (n % 2 === 0) mists.push({ cx: 60 + rand() * 280, cy: base + 215, rx: 150, ry: 20 });
-  }
-  return { bands, mists, rivers: [riverPath(1, 120), riverPath(3.6, 85)] };
+const CLUSTERS: ReactNode[] = (() => {
+  const rand = mulberry32(220);
+  let key = 0;
+  const out: ReactNode[] = [];
+  (Object.keys(KINDS) as Kind[]).forEach((k) => {
+    for (let v = 0; v < 2; v++) {
+      const { n, W, H, ratio } = KINDS[k];
+      const ps = Array.from({ length: n }, (_, i) => {
+        const pos = (i + 0.5) / n - 0.5;
+        const h = Math.min(H * 1.05, H * (0.45 + 0.55 * (1 - Math.abs(pos) * 1.1)) * (0.8 + 0.3 * rand()));
+        const back = i % 2 === 0; // 번갈아 뒤(멀리, 흐리게) · 앞
+        return { cx: (pos + (rand() - 0.5) * 0.12) * W, h, w: h * ratio * (0.9 + 0.3 * rand()), back, base: back ? -(9 + rand() * 6) : 0 };
+      });
+      const back = ps.filter((p) => p.back);
+      const front = ps.filter((p) => !p.back).sort((a, b) => a.h - b.h);
+      out.push(
+        <g key={`${k}${v}`} id={`cm-mt-${k}${v}`}>
+          <g opacity=".55">{back.map((p) => peakEl(rand, key++, p.cx, p.base, p.w, p.h * 1.05))}</g>
+          {front.map((p) => peakEl(rand, key++, p.cx, p.base, p.w, p.h))}
+        </g>,
+      );
+    }
+  });
+  return out;
 })();
 
-/** 성루·지도 공용 정의. 노드 24개가 <use> 로 한 번만 그린 성루를 가져다 쓴다. */
+/** 점들을 부드럽게 잇는 Catmull-Rom 곡선 */
+function catmull(p: Pt[], per: number): Pt[] {
+  const q = [p[0], ...p, p[p.length - 1]];
+  const out: Pt[] = [];
+  for (let i = 1; i < q.length - 2; i++) {
+    const [p0, p1, p2, p3] = [q[i - 1], q[i], q[i + 1], q[i + 2]];
+    for (let s = 0; s < per; s++) {
+      const t = s / per;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const c = (k: 0 | 1) => 0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3);
+      out.push([c(0), c(1)]);
+    }
+  }
+  out.push(p[p.length - 1]);
+  return out;
+}
+
+interface River {
+  d: string; edgeL: string; edgeR: string; inL: string; inR: string;
+  ripples: { x: number; y: number; a: number; s: number }[];
+  label: { t: string; x: number; y: number; a: number } | null;
+  pts: Pt[]; half: number;
+}
+
+/** 중심선을 따라 폭이 변하는 큰 강. 폭 = w0 × (0.72 ± 변화). */
+function makeRiver(ctrl: Pt[], w0: number, phase: number, rand: () => number, label?: { t: string; x: number }): River {
+  const c = catmull(ctrl, 14);
+  const n = c.length;
+  const L: Pt[] = [];
+  const R: Pt[] = [];
+  const IL: Pt[] = [];
+  const IR: Pt[] = [];
+  const tan: Pt[] = [];
+  c.forEach((p, i) => {
+    const a = c[Math.max(0, i - 1)];
+    const b = c[Math.min(n - 1, i + 1)];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const tx = (b[0] - a[0]) / len;
+    const ty = (b[1] - a[1]) / len;
+    tan.push([tx, ty]);
+    const t = i / (n - 1);
+    const w = (w0 * (0.72 + 0.26 * Math.sin(t * 8 + phase) + 0.14 * Math.sin(t * 21 + phase * 1.7))) / 2;
+    L.push([p[0] - ty * w, p[1] + tx * w]);
+    R.push([p[0] + ty * w, p[1] - tx * w]);
+    IL.push([p[0] - ty * w * 0.74, p[1] + tx * w * 0.74]);
+    IR.push([p[0] + ty * w * 0.74, p[1] - tx * w * 0.74]);
+  });
+  const ripples: River['ripples'] = [];
+  for (let i = 3; i < n; i += 4) {
+    if (rand() < 0.2) continue;
+    const o = (rand() * 2 - 1) * 0.55;
+    ripples.push({
+      x: c[i][0] + (L[i][0] - c[i][0]) * o,
+      y: c[i][1] + (L[i][1] - c[i][1]) * o,
+      a: (Math.atan2(tan[i][1], tan[i][0]) * 180) / Math.PI,
+      s: 0.8 + rand() * 0.7,
+    });
+  }
+  let lab: River['label'] = null;
+  if (label) {
+    let bi = 0;
+    c.forEach((p, i) => { if (Math.abs(p[0] - label.x) < Math.abs(c[bi][0] - label.x)) bi = i; });
+    lab = { t: label.t, x: c[bi][0], y: c[bi][1], a: (Math.atan2(tan[bi][1], tan[bi][0]) * 180) / Math.PI };
+  }
+  return {
+    d: `M${lineTo(L)}L${lineTo([...R].reverse())}Z`,
+    edgeL: `M${lineTo(L)}`, edgeR: `M${lineTo(R)}`, inL: `M${lineTo(IL)}`, inR: `M${lineTo(IR)}`,
+    ripples, label: lab, pts: c.filter((_, i) => i % 3 === 0), half: w0 * 0.56,
+  };
+}
+
+/* 장(章)마다 지형이 달라진다: 1 기주 평야 · 2 사수관/호뢰관 협곡 · 3 관도 황하 · 4 적벽 장강
+   · 5 합비 강가 · 6 한중 산지 · 7 이릉 숲 · 8 검각 험산 */
+const THEME: Record<number, { kinds: Kind[]; n: number; s: [number, number]; trees: number }> = {
+  1: { kinds: ['c', 'd', 'c'], n: 8, s: [0.8, 1.1], trees: 16 },
+  2: { kinds: ['b', 'e', 'b', 'a'], n: 13, s: [0.95, 1.35], trees: 12 },
+  3: { kinds: ['c', 'd'], n: 6, s: [0.7, 1], trees: 10 },
+  4: { kinds: ['d', 'a', 'c'], n: 7, s: [0.8, 1.15], trees: 10 },
+  5: { kinds: ['c', 'a'], n: 7, s: [0.8, 1.05], trees: 14 },
+  6: { kinds: ['a', 'b', 'e'], n: 11, s: [0.95, 1.3], trees: 12 },
+  7: { kinds: ['a', 'd', 'b'], n: 10, s: [0.9, 1.25], trees: 26 },
+  8: { kinds: ['e', 'b', 'e'], n: 13, s: [1, 1.4], trees: 8 },
+};
+const STATE_NAMES: Record<number, string[]> = {
+  1: ['冀州', '幽州'], 2: ['司隸'], 3: ['兗州', '豫州'], 4: ['荊州'], 5: ['揚州'], 6: ['漢中'], 7: ['益州'], 8: ['雍州'],
+};
+
+const ZONES = HEADS.map((h, i) => ({
+  id: h.id,
+  y0: h.y - HEAD / 2,
+  y1: i + 1 < HEADS.length ? HEADS[i + 1].y - HEAD / 2 : MAP_H,
+}));
+
+/** 진군로를 촘촘히 찍은 점들. 산·나무가 길 위에 앉지 않게 거르는 데 쓴다. */
+const ROAD_PTS: Pt[] = [];
+SPOTS.slice(0, -1).forEach((a, i) => {
+  const b = SPOTS[i + 1];
+  const k = (b.y - a.y) * 0.55;
+  for (let s = 0; s < 16; s++) {
+    const t = s / 16;
+    const u = 1 - t;
+    ROAD_PTS.push([
+      a.x * (u * u * u + 3 * u * u * t) + b.x * (3 * u * t * t + t * t * t),
+      a.y * u * u * u + (a.y + k) * 3 * u * u * t + (b.y - k) * 3 * u * t * t + b.y * t * t * t,
+    ]);
+  }
+});
+const near = (pts: Pt[], x: number, y: number, d: number) => pts.some((p) => Math.hypot(p[0] - x, p[1] - y) < d);
+
+/** (x,y)에 반경 r 짜리 지형을 놓아도 길 · 성 · 장 현판 · 강과 겹치지 않는가 */
+function isFree(x: number, y: number, r: number, rivers: River[]) {
+  if (Math.hypot(x - 54, y - (MAP_H - 46)) < 52 + r) return false; // 방위표 자리
+  if (near(ROAD_PTS, x, y, r * 0.4 + 24) || near(ROAD_PTS, x, y - r * 0.8, r * 0.4 + 24)) return false;
+  if (SPOTS.some((s) => Math.hypot(s.x - x, s.y + 24 - (y - r * 0.3)) < r * 0.5 + 62)) return false;
+  if (HEADS.some((h) => Math.abs(h.y - (y - r * 0.3)) < 30 + r * 0.4 && Math.abs(x - 200) < 100 + r)) return false;
+  return !rivers.some((rv) => near(rv.pts, x, y, rv.half + 8 + r * 0.15));
+}
+function place(rand: () => number, z: { y0: number; y1: number }, r: number, rivers: River[], tries = 40): Pt | null {
+  for (let t = 0; t < tries; t++) {
+    const x = -70 + rand() * 540;
+    const y = z.y0 + 60 + rand() * (z.y1 - z.y0 - 40);
+    if (isFree(x, y, r, rivers)) return [x, y];
+  }
+  return null;
+}
+
+const TERRAIN = (() => {
+  const rand = mulberry32(1914);
+  const zy = (c: number) => ZONES.find((z) => z.id === c)?.y0 ?? 0;
+  /** 지도 가장자리를 따라 굽이치는 지류 */
+  const margin = (c: number, side: -1 | 1, w: number, phase: number) => {
+    const ctrl: Pt[] = [];
+    for (let k = 0; k < 6; k++) ctrl.push([side < 0 ? 28 + 32 * Math.sin(k * 1.7 + phase) : 372 - 32 * Math.sin(k * 1.7 + phase), zy(c) + k * 90 - 10]);
+    return makeRiver(ctrl, w, phase, rand);
+  };
+  // 대하는 성·명패 사이 틈으로 지나가도록 왼쪽은 낮게, 오른쪽은 높게 흐른다.
+  const rivers: River[] = [
+    margin(1, -1, 11, 1),
+    margin(2, 1, 9, 2.4),
+    makeRiver([[-260, 225], [-80, 228], [60, 222], [150, 218], [240, 190], [330, 165], [470, 160], [660, 172]].map(([x, y]) => [x, y + zy(3)] as Pt), 36, 0.6, rand, { t: '黃河', x: 30 }),
+    makeRiver([[-260, 340], [-60, 345], [100, 338], [200, 320], [300, 292], [400, 282], [520, 280], [660, 290]].map(([x, y]) => [x, y + zy(4)] as Pt), 42, 2.2, rand, { t: '長江', x: 350 }),
+    margin(5, -1, 15, 3.1),
+    margin(6, 1, 18, 4.2),
+    makeRiver([[-200, 225], [-20, 222], [110, 215], [210, 200], [300, 178], [420, 170], [600, 175]].map(([x, y]) => [x, y + zy(7)] as Pt), 30, 5.1, rand),
+    margin(8, 1, 9, 5.7),
+  ];
+
+  type Item = { id: string; x: number; y: number; s: number };
+  const zones = ZONES.map((z) => {
+    const th = THEME[z.id] ?? THEME[1];
+    const mts: Item[] = [];
+    const trees: Item[] = [];
+    const mists: { x: number; y: number; rx: number; ry: number }[] = [];
+    const tree = (x: number, y: number): Item => ({ id: rand() < 0.75 ? 'cm-pine' : 'cm-bush', x, y, s: 0.8 + rand() * 0.5 });
+    for (let i = 0; i < th.n; i++) {
+      const kind = th.kinds[Math.floor(rand() * th.kinds.length)];
+      const s = th.s[0] + rand() * (th.s[1] - th.s[0]);
+      const { W } = KINDS[kind];
+      const p = place(rand, z, (W * s) / 2, rivers);
+      if (!p) continue;
+      mts.push({ id: `cm-mt-${kind}${rand() < 0.5 ? 0 : 1}`, x: p[0], y: p[1], s });
+      mists.push({ x: p[0], y: p[1], rx: W * s * 0.7, ry: 9 * s });
+      for (let j = 2 + Math.floor(rand() * 3); j > 0; j--) {
+        const tx = p[0] + (rand() - 0.5) * W * s * 1.4;
+        const ty = p[1] + 2 + rand() * 12 * s;
+        if (isFree(tx, ty, 10, rivers)) trees.push(tree(tx, ty));
+      }
+    }
+    for (let i = 0; i < th.trees; i++) {
+      const p = place(rand, z, 12, rivers, 12);
+      if (p) trees.push(tree(p[0], p[1]));
+    }
+    mts.sort((a, b) => a.y - b.y);
+    trees.sort((a, b) => a.y - b.y);
+    return { id: z.id, mts, trees, mists };
+  });
+
+  // 지도 여백의 주(州) 이름: 번갈아 먹 글씨 · 주홍 인장
+  const marks: { t: string; x: number; y: number; seal: boolean; rot: number }[] = [];
+  ZONES.forEach((z) => {
+    (STATE_NAMES[z.id] ?? []).forEach((t, i) => {
+      const p = place(rand, z, 46, rivers, 80);
+      if (p) marks.push({ t, x: p[0], y: p[1] - 20, seal: (i + z.id) % 2 === 1, rot: -8 + rand() * 12 });
+    });
+  });
+  return { rivers, zones, marks };
+})();
+
+/** 성루·지형 공용 정의. 성루 24개, 산·나무·물결이 <use> 로 한 번만 그린 그림을 가져다 쓴다. */
 function MapDefs() {
   return (
     <defs>
@@ -129,20 +351,60 @@ function MapDefs() {
         <stop offset="0" stopColor="#566a65" />
         <stop offset="1" stopColor="#202b29" />
       </linearGradient>
-      <linearGradient id="cm-ridge" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="currentColor" stopOpacity="0.95" />
-        <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-      </linearGradient>
       <radialGradient id="cm-mist">
         <stop offset="0" stopColor="#fff8e6" stopOpacity="0.75" />
         <stop offset="1" stopColor="#fff8e6" stopOpacity="0" />
       </radialGradient>
-      {/* 먹이 번진 가장자리 */}
-      <filter id="cm-ink" x="-5%" y="-25%" width="110%" height="150%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="3" result="n" />
-        <feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G" />
-        <feGaussianBlur stdDeviation="0.9" />
+      {/* 산: 좌측 면은 옅은 황토, 우측 면은 짙은 고동(#4A3B2C). 산자락으로 갈수록 안개에 묻힌다. */}
+      <linearGradient id="cm-mt-l" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" style={{ stopColor: 'var(--mt-l)' }} />
+        <stop offset="1" style={{ stopColor: 'var(--mt-l)' }} stopOpacity="0.4" />
+      </linearGradient>
+      <linearGradient id="cm-mt-r" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" style={{ stopColor: 'var(--mt-r)' }} />
+        <stop offset="1" style={{ stopColor: 'var(--mt-r)' }} stopOpacity="0.55" />
+      </linearGradient>
+      {/* 강: 낡은 쪽빛 ~ 청회색 */}
+      <linearGradient id="cm-water" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#627A82" />
+        <stop offset="1" stopColor="#455A64" />
+      </linearGradient>
+      {/* 성 · 길 주변을 밝혀 지형 위에서도 또렷하게 */}
+      <radialGradient id="cm-clearg">
+        <stop offset="0" style={{ stopColor: 'var(--map-a)' }} stopOpacity="0.8" />
+        <stop offset="1" style={{ stopColor: 'var(--map-a)' }} stopOpacity="0" />
+      </radialGradient>
+      <circle id="cm-clear" r="66" fill="url(#cm-clearg)" />
+      {/* 먹이 번진 산 · 수풀 · 강의 거친 물가 */}
+      <filter id="cm-ink" x="-5%" y="-8%" width="110%" height="116%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="3" result="n" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G" />
+        <feGaussianBlur stdDeviation="0.45" />
       </filter>
+      <filter id="cm-bleed" x="-5%" y="-8%" width="110%" height="116%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="8" result="n" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" />
+        <feGaussianBlur stdDeviation="0.7" />
+      </filter>
+      <filter id="cm-river" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.02 0.03" numOctaves="2" seed="5" result="n" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" />
+        <feGaussianBlur stdDeviation="0.5" />
+      </filter>
+
+      {CLUSTERS}
+      <g id="cm-pine" style={{ fill: 'var(--tree)' }}>
+        <rect x="-0.8" y="-3" width="1.6" height="5" />
+        <path d="M0 -17L-5 -9H5Z" />
+        <path d="M0 -13L-6.5 -4.5H6.5Z" />
+        <path d="M0 -9L-8 -0.5H8Z" />
+      </g>
+      <g id="cm-bush" style={{ fill: 'var(--tree)' }}>
+        <ellipse cx="-3" cy="-2" rx="4" ry="3" />
+        <ellipse cx="2" cy="-3" rx="5" ry="3.5" />
+        <ellipse cx="6" cy="-1.5" rx="3.5" ry="2.5" />
+      </g>
+      <path id="cm-ripple" d="M-7 0q1.75 -2.2 3.5 0t3.5 0t3.5 0t3.5 0" fill="none" stroke="#efe3c2" strokeWidth=".9" strokeLinecap="round" opacity=".6" />
 
       {/* 동양식 성루: 석축 + 문 + 2층 누각(붉은 기둥, 치켜 올린 기와지붕) + 깃대 */}
       <symbol id="cm-tower" viewBox="0 0 48 50">
@@ -166,24 +428,82 @@ function MapDefs() {
   );
 }
 
-/** 지도 뒤쪽: 겹겹의 산맥 · 안개 · 강줄기 */
+/** 지도 뒤쪽: 대하(황하·장강) · 겹산 · 수풀 · 주 이름 · 방위표. 마지막에 길·성 주변을 밝혀 대비를 맞춘다. */
 function Backdrop() {
   return (
     <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" viewBox={`0 0 ${VW} ${MAP_H}`} aria-hidden>
       <MapDefs />
-      {ART.rivers.map((d, i) => (
-        <g key={i} fill="none" strokeLinecap="round" style={{ stroke: 'var(--river)' }}>
-          <path d={d} strokeWidth={i === 0 ? 24 : 15} opacity=".14" />
-          <path d={d} strokeWidth={i === 0 ? 13 : 8} opacity=".26" />
-          <path d={d} strokeWidth="1.6" strokeDasharray="30 14 8 18" style={{ stroke: '#fff8e6' }} opacity=".45" />
+
+      {TERRAIN.rivers.map((r, i) => (
+        <g key={i}>
+          <g filter="url(#cm-river)">
+            <path d={r.d} fill="none" stroke="#e8dcb8" strokeWidth="5" strokeLinejoin="round" opacity=".5" />
+            <path d={r.d} fill="url(#cm-water)" stroke="#455A64" strokeWidth=".8" strokeLinejoin="round" />
+            <g fill="none" strokeLinecap="round">
+              <path d={r.inL} stroke="#a9c0c6" strokeWidth=".9" strokeDasharray="14 5 4 6" opacity=".55" />
+              <path d={r.inR} stroke="#a9c0c6" strokeWidth=".9" strokeDasharray="6 4 12 5" opacity=".55" />
+              <path d={r.edgeL} stroke="#efe3c2" strokeWidth="1.2" opacity=".7" />
+              <path d={r.edgeR} stroke="#efe3c2" strokeWidth="1.2" opacity=".7" />
+            </g>
+          </g>
+          {r.ripples.map((p, j) => (
+            <use key={j} href="#cm-ripple" transform={`translate(${f1(p.x)} ${f1(p.y)}) rotate(${f1(p.a)}) scale(${f1(p.s)})`} />
+          ))}
+          {r.label && (
+            <text transform={`translate(${f1(r.label.x)} ${f1(r.label.y)}) rotate(${f1(r.label.a)})`} textAnchor="middle" dy="4"
+              fontSize="12" fontWeight="900" letterSpacing="6" fill="#efe3c2" opacity=".75" style={{ fontFamily: 'var(--font-serif)' }}>
+              {r.label.t}
+            </text>
+          )}
         </g>
       ))}
-      {ART.bands.map((band, i) => (
-        <g key={i} filter="url(#cm-ink)">
-          {band.map((r, j) => <path key={j} d={r.d} fill="url(#cm-ridge)" opacity={r.op} />)}
+
+      {TERRAIN.marks.map((m, i) => (
+        <g key={i} transform={`translate(${f1(m.x)} ${f1(m.y)}) rotate(${f1(m.rot)})`} style={{ fontFamily: 'var(--font-serif)' }}>
+          {m.seal ? (
+            <>
+              <rect x="-17" y="-38" width="34" height="76" rx="3" fill="none" stroke="#B8382E" strokeWidth="2.2" opacity=".3" />
+              <text y="-8" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8382E" opacity=".3">{m.t[0]}</text>
+              <text y="26" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8382E" opacity=".3">{m.t[1]}</text>
+            </>
+          ) : (
+            <text textAnchor="middle" fontSize="40" fontWeight="900" letterSpacing="8" fill="currentColor" opacity=".13">{m.t}</text>
+          )}
         </g>
       ))}
-      {ART.mists.map((m, i) => <ellipse key={i} cx={m.cx} cy={m.cy} rx={m.rx} ry={m.ry} fill="url(#cm-mist)" />)}
+
+      {TERRAIN.zones.map((z) => (
+        <g key={z.id}>
+          <g filter="url(#cm-ink)" opacity=".92">
+            {z.mts.map((m, i) => <use key={i} href={`#${m.id}`} transform={`translate(${f1(m.x)} ${f1(m.y)}) scale(${f1(m.s)})`} />)}
+          </g>
+          {z.mists.map((m, i) => <ellipse key={i} cx={f1(m.x)} cy={f1(m.y) - 1} rx={f1(m.rx)} ry={f1(m.ry)} fill="url(#cm-mist)" opacity=".7" />)}
+          <g filter="url(#cm-bleed)">
+            {z.trees.map((t, i) => <use key={i} href={`#${t.id}`} transform={`translate(${f1(t.x)} ${f1(t.y)}) scale(${f1(t.s)})`} />)}
+          </g>
+        </g>
+      ))}
+
+      {/* 길과 성 주변을 한지색으로 밝혀 산·강 위에서도 노드와 점선이 또렷하게 */}
+      <g fill="none" strokeLinecap="round" style={{ stroke: 'var(--map-a)' }}>
+        {SEGMENTS.map((d, i) => <path key={`w${i}`} d={d} strokeWidth="38" opacity=".2" />)}
+        {SEGMENTS.map((d, i) => <path key={`n${i}`} d={d} strokeWidth="22" opacity=".3" />)}
+      </g>
+      {SPOTS.map((s, i) => <use key={i} href="#cm-clear" x={s.x} y={s.y + 16} />)}
+
+      {/* 방위표 */}
+      <g transform={`translate(54 ${MAP_H - 46})`} opacity=".85">
+        <circle r="42" fill="url(#cm-clearg)" />
+        <circle r="30" fill="none" stroke="#8a6230" strokeWidth="1" />
+        <circle r="25" fill="none" stroke="#8a6230" strokeWidth=".6" strokeDasharray="2 2.4" />
+        <path d="M0 -20L3.5 -3.5L20 0L3.5 3.5L0 20L-3.5 3.5L-20 0L-3.5 -3.5Z" transform="rotate(45)" fill="#8a6230" opacity=".35" />
+        <path d="M0 -29L4.5 -4.5L29 0L4.5 4.5L0 29L-4.5 4.5L-29 0L-4.5 -4.5Z" fill="#8a6230" opacity=".55" />
+        <path d="M0 -29L4.5 -4.5L-4.5 -4.5Z" fill="#b8382e" />
+        <circle r="2.4" fill="#c5a059" />
+        {([['北', 0, -34], ['南', 0, 43], ['東', 37, 4], ['西', -37, 4]] as const).map(([t, x, y]) => (
+          <text key={t} x={x} y={y} textAnchor="middle" fontSize="9" fontWeight="900" fill="#8a6230" style={{ fontFamily: 'var(--font-serif)' }}>{t}</text>
+        ))}
+      </g>
     </svg>
   );
 }
