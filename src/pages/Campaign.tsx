@@ -760,7 +760,9 @@ export default function Campaign() {
 
   useEffect(() => {
     // 처음 열 때는 지금 고른 성(없으면 다음 목표)이 화면 가운데 오게 한다
-    (document.querySelector<HTMLElement>('.gate[data-sel="true"]') ?? frontierRef.current)?.scrollIntoView({ block: 'center' });
+    // scrollIntoView는 overflow:hidden인 지도 틀까지 안쪽으로 밀어 맨 위 성(1-1)이 잘리므로, 창만 직접 스크롤한다
+    const el = document.querySelector<HTMLElement>('.gate[data-sel="true"]') ?? frontierRef.current;
+    if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2) });
   }, []);
 
   const clearedCount = STAGES.filter((s) => cleared[s.id]).length;
@@ -798,7 +800,7 @@ export default function Campaign() {
           </div>
         </div>
 
-        <div className="frame war-map overflow-hidden">
+        <div className="frame war-map overflow-clip">
           <Corners size={36} />
           <Compass />
           <div className="relative mx-auto w-full max-w-[34rem]" style={{ aspectRatio: `${VW} / ${MAP_H}` }}>
