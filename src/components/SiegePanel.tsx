@@ -3,6 +3,9 @@ import { GENERAL_MAP } from '../data/generals';
 import { TROOP } from '../data/meta';
 import { STAGE_MAP } from '../data/stages';
 import { MIN_SORTIE, type March } from '../engine/siege';
+import {
+  TACTICS, TACTIC_LIST, TERRAINS, WEATHERS, reinforceChance, tacticEffect, terrainOf, weatherAt, type Tactic,
+} from '../engine/tactics';
 import type { UnitProfile } from '../engine/unit';
 import { cn } from './ui';
 
@@ -52,6 +55,55 @@ export function MarchList({ marches, now }: { marches: March[]; now: number }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+const FIT_MARK = { good: '◎', ok: '○', bad: '△' } as const;
+const FIT_COLOR = { good: 'text-[#276347]', ok: 'text-[#8a6230]', bad: 'text-[#B8382E]' } as const;
+
+/** 계략 고르기: 이 성의 지형과 지금 날씨에 맞는 전술을 고른다 */
+export function TacticPicker({ stageId, stageIdx, now, gold, tactic, onPick }: {
+  stageId: string; stageIdx: number; now: number; gold: number; tactic: Tactic; onPick: (t: Tactic) => void;
+}) {
+  const terrain = terrainOf(stageId);
+  const weather = weatherAt(now);
+  const chance = reinforceChance(stageIdx);
+  const fx = tacticEffect(tactic, terrain, weather);
+  return (
+    <div className="mt-3 text-xs">
+      <div className="mb-1 flex items-baseline justify-between">
+        <b className="font-serif text-[13px]">計略 전술</b>
+        <span className="opacity-70">{TERRAINS[terrain].emoji} {TERRAINS[terrain].name} · {WEATHERS[weather].emoji} {WEATHERS[weather].name}</span>
+      </div>
+      <div className="grid grid-cols-4 gap-1">
+        {TACTIC_LIST.map((t) => {
+          const e = tacticEffect(t, terrain, weather);
+          const afford = gold >= TACTICS[t].cost;
+          const on = tactic === t;
+          return (
+            <button
+              key={t}
+              type="button"
+              disabled={!afford}
+              aria-pressed={on}
+              onClick={() => onPick(t)}
+              className={cn('rounded-md px-1 py-1.5 text-center ring-1 transition',
+                on ? 'bg-[#8e2a22]/15 ring-[#8e2a22]/60' : 'bg-[#8a6230]/10 ring-[#8a6230]/30', !afford && 'opacity-40')}
+            >
+              <div className="text-base leading-none">{TACTICS[t].emoji}</div>
+              <div className="mt-0.5 font-bold">{TACTICS[t].name}</div>
+              <div className="tabular text-[10px] opacity-70">{TACTICS[t].cost ? `${TACTICS[t].cost}금` : '무료'}
+                {t !== 'none' && <b className={cn('ml-0.5', FIT_COLOR[e.fit])}>{FIT_MARK[e.fit]}</b>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[10px] opacity-70">
+        {tactic === 'none' ? TACTICS.none.desc : fx.note}
+        {tactic !== 'ambush' && <> · 인근 지원군 가능성 {Math.round(chance * 100)}% (기습이면 차단)</>}
+      </p>
     </div>
   );
 }

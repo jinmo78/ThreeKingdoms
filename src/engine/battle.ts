@@ -67,13 +67,15 @@ const MATCHUP_MULT = { adv: 1.25, dis: 0.8, even: 1 } as const;
 /** startHp: 부대별 시작 병력 비율 [아군[], 적군[]] — 부상 부대·공격받은 수비대. 없으면 전원 100% */
 export function simulateBattle(
   player: UnitProfile[], enemy: UnitProfile[], seed: number, startHp?: [number[], number[]],
+  /** gauge: 시작 행동 게이지 보너스 [아군, 적군] · note: 전투 개시 기록에 덧붙일 문구 (전술·지원군) */
+  extra?: { gauge?: [number, number]; note?: string },
 ): BattleResult {
   const rng = mulberry32(seed);
   const rand = (a: number, b: number) => a + (b - a) * rng();
 
   const fighters: Fighter[][] = [player, enemy].map((list, side) =>
     list.map((p, idx) => ({
-      side: side as Side, idx, p, hp: Math.round(p.hp * (startHp?.[side]?.[idx] ?? 1)), gauge: rng() * 30, routed: false,
+      side: side as Side, idx, p, hp: Math.round(p.hp * (startHp?.[side]?.[idx] ?? 1)), gauge: rng() * 30 + (extra?.gauge?.[side] ?? 0), routed: false,
     })),
   );
   const events: BattleEvent[] = [];
@@ -181,7 +183,7 @@ export function simulateBattle(
     }
   }
 
-  push({ kind: 'start', hits: [], text: `전투 개시! 아군 ${player.length}개 부대 vs 적군 ${enemy.length}개 부대` });
+  push({ kind: 'start', hits: [], text: `전투 개시! 아군 ${player.length}개 부대 vs 적군 ${enemy.length}개 부대${extra?.note ? ` — ${extra.note}` : ''}` });
 
   let actions = 0;
   while (actions < MAX_ACTIONS && alive(0).length > 0 && alive(1).length > 0) {

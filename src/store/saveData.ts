@@ -7,6 +7,7 @@ import { emptyUnit } from '../engine/profiles';
 import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
 import { MAX_MARCHES, pruneWounds, type March, type Wounds } from '../engine/siege';
 import { STAGE_MAP } from '../data/stages';
+import { TACTIC_LIST } from '../engine/tactics';
 import type { GearSlot, OwnedGear, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
@@ -222,7 +223,7 @@ function sanitizeMarches(raw: unknown, roster: Record<string, OwnedGeneral>): Ma
     const units = sanitizeFormation(m.units, roster).filter((u) => u.commander);
     if (units.length === 0) continue;
     seen.add(m.id);
-    out.push({ id: m.id, stageId: m.stageId, units, from: m.from, eta: m.eta });
+    out.push({ id: m.id, stageId: m.stageId, units, tactic: TACTIC_LIST.includes(m.tactic as never) ? m.tactic! : 'none', from: m.from, eta: m.eta });
     if (out.length >= MAX_MARCHES) break;
   }
   return out;

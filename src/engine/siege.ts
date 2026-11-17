@@ -7,6 +7,7 @@
 // ============================================================
 
 import type { Unit } from '../types';
+import type { Tactic } from './tactics';
 
 /** 행군 중인 부대. 도착 시각(eta)이 지나면 전투가 풀린다. */
 export interface March {
@@ -14,6 +15,8 @@ export interface March {
   stageId: string;
   /** 출발 시점의 부대 편성 (이후 편성을 바꿔도 영향 없음) */
   units: Unit[];
+  /** 출발할 때 고른 전술 (비용은 출발 때 냈다) */
+  tactic: Tactic;
   from: number;
   eta: number;
 }

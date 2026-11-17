@@ -13,7 +13,8 @@ import { PRESET_LIMIT, formationGold } from '../engine/formationBook';
 import { attendancePreview, recruitCost, todayKey, withDailyFreeGrant } from '../engine/attendance';
 import { DUPLICATE_REFUND, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
-import type { ArmyTheme } from '../engine/aiArmy';
+import { generateArmy, type ArmyTheme } from '../engine/aiArmy';
+import { TACTICS, reinforceChance, tacticEffect, terrainOf, unitRoll, weatherAt, type Tactic } from '../engine/tactics';
 import { conquestFloor } from '../engine/conquest';
 import {
   GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL, GEAR_PROMOTE_SHARDS,
@@ -21,7 +22,7 @@ import {
 } from '../engine/gear';
 import { emptyUnit, enemyUnitsToProfiles, playerProfiles, unitProfile } from '../engine/profiles';
 import {
-  GARRISON_RECOVER_MS, MAX_MARCHES, MIN_SORTIE, SQUAD_RECOVER_MS, clearGarrison, garrisonKey, marchMs, pruneWounds, ratioOf, squadKey, withRatio,
+  GARRISON_RECOVER_MS, MAX_MARCHES, MIN_SORTIE, type March, SQUAD_RECOVER_MS, clearGarrison, garrisonKey, marchMs, pruneWounds, ratioOf, squadKey, withRatio,
 } from '../engine/siege';
 import { expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget } from '../engine/unit';
 
@@ -132,7 +133,8 @@ interface GameState extends SaveData {
   focusStage: string | null;
   setFocusStage: (id: string) => void;
   /** 출정: 도착 시각이 되면 전투가 풀린다. picks는 편성 번호(0~2), 없으면 출정 가능한 부대 전부 */
-  startMarch: (stageId: string, picks?: number[]) => boolean;
+  /** tactic: 수공·화공·기습 (금화가 든다) */
+  startMarch: (stageId: string, picks?: number[], tactic?: Tactic) => boolean;
   /** 도착한 부대가 있으면 전투를 계산해 전투 화면을 연다 */
   resolveMarches: () => boolean;
   /** 모의전 관전 (보상 없음) */
@@ -181,7 +183,8 @@ function stageDrop(gear: SaveData['gear'], stageId: string, win: boolean, firstC
 }
 
 /** 도착한 부대의 공성전을 계산해 상태 변화분을 돌려준다. 출정할 부대가 없으면 null */
-function siegeBattle(s: GameState, stageId: string, units: Unit[], now: number): Partial<GameState> | null {
+function siegeBattle(s: GameState, march: March, now: number): Partial<GameState> | null {
+  const { stageId, units } = march;
   const { roster, cleared, fought, gold, gear, wounds } = s;
   const stage = STAGE_MAP[stageId];
   if (!stage) return null;
@@ -198,9 +201,23 @@ function siegeBattle(s: GameState, stageId: string, units: Unit[], now: number):
     .filter((d) => d.p && d.r > 0.001);
   if (defenders.length === 0) defenders = stage.enemies.map((e, i) => ({ i, p: enemyUnitsToProfiles([e])[0], r: 1 })).filter((d) => d.p);
 
+  // 전술: 수공·화공은 전투 전에 수비대 병력을 깎고, 기습은 선공을 잡고 지원군을 막는다
+  const fx = tacticEffect(march.tactic, terrainOf(stageId), weatherAt(march.from));
+  defenders = defenders.map((d) => ({ ...d, r: Math.max(0.03, d.r - fx.dmg) }));
+  // 지원군: 인근 성의 부대가 합류 (행군마다 고정된 결과)
+  const reinforced = !fx.noReinforce && unitRoll(march.id) < reinforceChance(stageIndex(stageId));
+  if (reinforced) {
+    const avg = stage.enemies.reduce((n, e) => n + e.level, 0) / stage.enemies.length;
+    const seed = Math.floor(unitRoll(`${march.id}s`) * 4294967296);
+    const p = enemyUnitsToProfiles(generateArmy('mixed', Math.max(1, Math.round(avg) - 2), seed).slice(0, 1))[0];
+    if (p) defenders = [...defenders, { i: -1, p, r: 1 }];
+  }
+  const note = [fx.note, reinforced ? '⚠ 인근 성의 지원군이 합류했다!' : ''].filter(Boolean).join(' · ');
+
   const result = simulateBattle(
     squads.map((q) => q.p), defenders.map((d) => d.p), randomSeed(),
     [squads.map((q) => q.r), defenders.map((d) => d.r)],
+    { gauge: [fx.gauge, 0], note },
   );
 
   // 전투 뒤 남은 병력을 기록 (승리하면 성이 함락돼 수비대 기록은 사라진다)
@@ -208,9 +225,9 @@ function siegeBattle(s: GameState, stageId: string, units: Unit[], now: number):
   let nextWounds = wounds;
   squads.forEach((q, k) => { nextWounds = withRatio(nextWounds, squadKey(q.u.commander!), left[0][k] / q.p.hp, now); });
   if (result.win) nextWounds = clearGarrison(nextWounds, stageId);
-  else if (!already) defenders.forEach((d, k) => { nextWounds = withRatio(nextWounds, garrisonKey(stageId, d.i), left[1][k] / d.p.hp, now); });
+  else if (!already) defenders.forEach((d, k) => { if (d.i >= 0) nextWounds = withRatio(nextWounds, garrisonKey(stageId, d.i), left[1][k] / d.p.hp, now); });
   nextWounds = pruneWounds(nextWounds, now);
-  const standing = result.win ? 0 : left[1].filter((h) => h > 0).length;
+  const standing = result.win ? 0 : left[1].filter((h, k) => h > 0 && defenders[k].i >= 0).length;
 
   // 보상은 전투 계산 즉시 확정 (새로고침으로 결과를 바꿀 수 없게)
   // 금화·경험치는 첫 클리어에만. 장비는 승리하면 따로 나온다.
@@ -235,7 +252,8 @@ function siegeBattle(s: GameState, stageId: string, units: Unit[], now: number):
     cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
     fought: { ...fought, [stageId]: (fought[stageId] ?? 0) + 1 },
     battle: {
-      mode: 'stage', title: stage.title, subtitle: stage.id, stageId, enemies: stage.enemies,
+      mode: 'stage', title: stage.title, stageId,
+      subtitle: [stage.id, march.tactic !== 'none' ? `${TACTICS[march.tactic].emoji} ${TACTICS[march.tactic].name}` : '', reinforced ? '⚠ 지원군' : ''].filter(Boolean).join(' · '), enemies: stage.enemies,
       result,
       reward,
       siege: { captured: result.win, left: standing, total: stage.enemies.length },
@@ -452,10 +470,11 @@ export const useGame = create<GameState>()(
       focusStage: null,
       setFocusStage: (focusStage) => set({ focusStage }),
 
-      startMarch: (stageId, picks) => {
-        const { formation, roster, cleared, gear, wounds, marches } = get();
+      startMarch: (stageId, picks, tactic = 'none') => {
+        const { formation, roster, cleared, gear, wounds, marches, gold } = get();
         const stage = STAGE_MAP[stageId];
         if (!stage || !isUnlocked(stageId, cleared) || marches.length >= MAX_MARCHES) return false;
+        if (gold < TACTICS[tactic].cost) return false;
         const now = Date.now();
         const busy = new Set(marches.flatMap((m) => m.units.map((u) => u.commander)));
         const units = formation
@@ -465,7 +484,11 @@ export const useGame = create<GameState>()(
           .map((u) => ({ ...u }));
         if (units.length === 0) return false;
         const eta = now + marchMs(stageIndex(stageId));
-        set({ marches: [...marches, { id: `${now}-${stageId}`, stageId, units, from: now, eta }], focusStage: stageId });
+        set({
+          gold: gold - TACTICS[tactic].cost,
+          marches: [...marches, { id: `${now}-${stageId}`, stageId, units, tactic, from: now, eta }],
+          focusStage: stageId,
+        });
         return true;
       },
 
@@ -475,7 +498,7 @@ export const useGame = create<GameState>()(
         const now = Date.now();
         const due = s.marches.filter((m) => m.eta <= now).sort((a, b) => a.eta - b.eta)[0];
         if (!due) return false;
-        const patch = siegeBattle(s, due.stageId, due.units, now);
+        const patch = siegeBattle(s, due, now);
         set({ ...(patch ?? {}), marches: s.marches.filter((m) => m.id !== due.id) });
         return !!patch;
       },

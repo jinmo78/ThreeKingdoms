@@ -4,7 +4,7 @@ import { Lock, Swords } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
-import { MarchList, SiegePanel } from '../components/SiegePanel';
+import { MarchList, SiegePanel, TacticPicker } from '../components/SiegePanel';
 import { cn } from '../components/ui';
 import { GENERAL_MAP } from '../data/generals';
 import { GEAR_MAP, stageGearId } from '../data/gear';
@@ -12,6 +12,7 @@ import { TROOP } from '../data/meta';
 import { CHAPTERS, isUnlocked, STAGE_MAP, stageIndex, STAGES } from '../data/stages';
 import { matchupGrade, matchupVs } from '../engine/matchup';
 import { enemyUnitsToProfiles } from '../engine/profiles';
+import { TACTICS, type Tactic } from '../engine/tactics';
 import { GARRISON_RECOVER_MS, MIN_SORTIE, SQUAD_RECOVER_MS, garrisonKey, marchMs, ratioOf, squadKey } from '../engine/siege';
 import type { UnitProfile } from '../engine/unit';
 import { enemyProfiles, unitProfile, useGame } from '../store/gameStore';
@@ -690,6 +691,8 @@ export default function Campaign() {
   const startMarch = useGame((s) => s.startMarch);
   const resolveMarches = useGame((s) => s.resolveMarches);
   const marches = useGame((s) => s.marches);
+  const gold = useGame((s) => s.gold);
+  const [tactic, setTactic] = useState<Tactic>('none');
   const setView = useGame((s) => s.setView);
   const focusStage = useGame((s) => s.focusStage);
   const setFocusStage = useGame((s) => s.setFocusStage);
@@ -737,6 +740,8 @@ export default function Campaign() {
 
   /** 성 수비대: 점령한 성은 새 수비대, 아니면 지난 공격에서 남은 병력 */
   const captured = (cleared[stage.id] ?? 0) > 0;
+  const fightLabel = picks.size === 0 ? '출정 부대를 고르세요' : gold < TACTICS[tactic].cost ? '금화가 부족합니다'
+    : `출정 (행군 ${Math.round(marchMs(stageIndex(stage.id)) / 1000)}초${tactic !== 'none' ? ' · ' + TACTICS[tactic].name : ''})`;
   const garrison = useMemo(() => stage.enemies
     .map((e, i) => ({ p: enemyUnitsToProfiles([e])[0], r: captured ? 1 : ratioOf(wounds, garrisonKey(stage.id, i), now, GARRISON_RECOVER_MS) }))
     .filter((g) => g.p && g.r > 0.001), [stage, captured, wounds, now]);
@@ -810,14 +815,15 @@ export default function Campaign() {
         dropId={dropId}
         dropName={drop?.name}
         noSquads={squads.length === 0}
-        canFight={picks.size > 0}
-        marchSec={Math.round(marchMs(stageIndex(stage.id)) / 1000)}
+        canFight={picks.size > 0 && gold >= TACTICS[tactic].cost}
+        fightLabel={fightLabel}
         fought={(fought[stage.id] ?? 0) > 0}
         stageEnemies={stage.enemies}
-        onFight={() => { setFocusStage(stage.id); startMarch(stage.id, [...picks]); }}
+        onFight={() => { setFocusStage(stage.id); startMarch(stage.id, [...picks], tactic); }}
         onFormation={() => setView('formation')}
       >
         <MarchList marches={marches} now={now} />
+        <TacticPicker stageId={stage.id} stageIdx={stageIndex(stage.id)} now={now} gold={gold} tactic={tactic} onPick={setTactic} />
         <SiegePanel squads={squads} garrison={garrison} picks={picks} onToggle={togglePick} />
       </Briefing>
     </div>
@@ -854,11 +860,11 @@ function Roller() {
 
 /** 군령 두루마리: 모바일은 하단 시트, 넓은 화면은 지도 옆에 붙는다. */
 function Briefing({
-  stageId, title, desc, done, enemies, mine, dropId, dropName, noSquads, canFight, marchSec, fought, stageEnemies, onFight, onFormation, children,
+  stageId, title, desc, done, enemies, mine, dropId, dropName, noSquads, canFight, fightLabel, fought, stageEnemies, onFight, onFormation, children,
 }: {
   stageId: string; title: string; desc: string; done: boolean;
   enemies: UnitProfile[]; mine: UnitProfile[];
-  dropId: string | null; dropName?: string; noSquads: boolean; canFight: boolean; marchSec: number; fought: boolean;
+  dropId: string | null; dropName?: string; noSquads: boolean; canFight: boolean; fightLabel: string; fought: boolean;
   stageEnemies: EnemyUnit[];
   onFight: () => void; onFormation: () => void; children?: ReactNode;
 }) {
@@ -911,7 +917,7 @@ function Briefing({
           <div className="mt-3.5 mb-1">
             {!noSquads ? (
               <button type="button" className="btn-war disabled:opacity-50" disabled={!canFight} onClick={onFight}>
-                <Swords size={18} /> {canFight ? `출정 (행군 ${marchSec}초)` : "출정 부대를 고르세요"}
+                <Swords size={18} /> {fightLabel}
               </button>
             ) : (
               <button type="button" className="btn-war btn-war-alt" onClick={onFormation}>편성하러 가기</button>
