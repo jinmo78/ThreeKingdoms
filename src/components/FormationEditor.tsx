@@ -2,7 +2,7 @@
 // 넓은 화면: 칸을 고른 뒤 아래 목록에서 배치. 모바일: 빈 칸 + → 팝업에서 배치
 // 목록에는 새로 켜지는 시너지와 주장 상성을 미리 표시
 import { Coins, Plus, Save, Sparkles, Trash2, Wand2, X } from 'lucide-react';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState } from 'react';
 import { BOND_MAP } from '../data/bonds';
 import { GENERAL_MAP } from '../data/generals';
 import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP, UNIT_TINT } from '../data/meta';
@@ -19,7 +19,7 @@ import { GearBag } from './GearPanel';
 import { CounterFormationButton } from './CounterFormation';
 import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from './General';
 import { MatchupBadge } from './Matchup';
-import { Btn, cn, Modal, NameSearch } from './ui';
+import { Btn, cn, HSlide, Modal, NameSearch } from './ui';
 
 type Target = { unit: number; slot: Slot };
 type DetailState = { def: GeneralDef; from?: Target };
@@ -269,7 +269,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
           </div>
         </div>
 
-        <div className="hslide" style={{ '--rows': 2 } as CSSProperties}>
+        <HSlide rows={2}>
           {listed.map(({ def, owned: o }) => {
             const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
             const rank = shownRarity(def.rarity, o.promote);
@@ -305,7 +305,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
               </div>
             );
           })}
-        </div>
+        </HSlide>
         {listed.length === 0 && (
           <p className="py-6 text-center text-xs text-stone-500">
             {needle ? '찾는 장수가 없습니다.' : benchOnly ? '대기 장수가 없습니다. 보유 전체를 누르면 부대에 넣은 장수도 보입니다.' : '해당 세력의 장수가 없습니다.'}

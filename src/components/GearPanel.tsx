@@ -11,7 +11,7 @@ import {
 import { useGame } from '../store/gameStore';
 import type { GearSlot, Stats } from '../types';
 import { GearArt } from './GearArt';
-import { cn, NameSearch } from './ui';
+import { cn, HSlide, NameSearch } from './ui';
 
 const SLOT_ORDER: GearSlot[] = ['weapon', 'armor', 'tome'];
 const SLOT_MARK: Record<GearSlot, string> = { weapon: '劍', armor: '甲', tome: '書' };
@@ -80,7 +80,7 @@ export function GearBag() {
         return (
           <section key={slot}>
             <h3 className="mb-2 text-sm font-black text-stone-300">{GEAR_SLOT_LABEL[slot]}</h3>
-            <div className="hslide">
+            <HSlide>
               {list.map((def) => {
                 const item = bag[def.id];
                 if (!item) {
@@ -167,7 +167,7 @@ export function GearBag() {
                   </div>
                 );
               })}
-            </div>
+            </HSlide>
           </section>
         );
       })}

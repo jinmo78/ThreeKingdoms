@@ -1,5 +1,5 @@
-import { Moon, RefreshCw, Sun } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, Moon, RefreshCw, Sun } from 'lucide-react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { applyTheme, currentTheme, type Theme } from '../theme';
 
@@ -169,5 +169,37 @@ export function Modal({ children, onClose, wide, ink }: { children: ReactNode; o
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** 가로 슬라이드 목록: 폰은 손가락으로 밀고, PC는 스크롤바 대신 좌우 화살표로 넘긴다 */
+export function HSlide({ rows = 1, children }: { rows?: number; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ start: true, end: false });
+  const update = () => {
+    const el = ref.current;
+    if (!el) return;
+    const next = { start: el.scrollLeft < 4, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 4 };
+    setEdge((p) => (p.start === next.start && p.end === next.end ? p : next));
+  };
+  useEffect(() => {
+    update();
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+  const go = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.9, behavior: 'smooth' });
+  return (
+    <div className="hslide-wrap">
+      <div ref={ref} className="hslide" style={{ '--rows': rows } as CSSProperties} onScroll={update}>{children}</div>
+      {!edge.start && (
+        <button type="button" aria-label="이전" className="hslide-arrow left-1" onClick={() => go(-1)}><ChevronLeft size={18} /></button>
+      )}
+      {!edge.end && (
+        <button type="button" aria-label="다음" className="hslide-arrow right-1" onClick={() => go(1)}><ChevronRight size={18} /></button>
+      )}
+    </div>
   );
 }
