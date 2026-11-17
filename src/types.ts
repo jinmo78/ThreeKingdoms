@@ -58,6 +58,8 @@ export interface OwnedGear {
   promote: number;
   /** 레벨·강화·등급에 쓰는 파편 */
   shards: number;
+  /** 같은 장비 개수. 장수 여러 명에게 나눠 끼운다. */
+  count?: number;
 }
 
 export interface OwnedGeneral {

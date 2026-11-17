@@ -113,7 +113,8 @@ export function simulateBattle(player: UnitProfile[], enemy: UnitProfile[], seed
     const s = g.skill;
     const p = f.p;
     const base = s.scaling === 'war' ? p.atk : s.scaling === 'int' ? p.intel * 1.25 : p.def * 1.1;
-    const mult = s.power * p.synergy.powerMult * CHAIN_MULT[step];
+    const caster = p.members.find((m) => m?.def.id === g.id);
+    const mult = s.power * p.synergy.powerMult * CHAIN_MULT[step] * (1 + (caster?.skillPower ?? 0));
     const magical = s.scaling === 'int';
     const hits: Hit[] = [];
 

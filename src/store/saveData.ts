@@ -1,14 +1,14 @@
 // 저장 본문. 브라우저(localStorage)와 Firestore가 같은 모양을 쓴다.
 import { GEAR_MAP } from '../data/gear';
 import { GENERAL_MAP } from '../data/generals';
-import { GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL } from '../engine/gear';
+import { GEAR_COPY_MAX, GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL } from '../engine/gear';
 import { LEGACY_POINT_GOLD, PRESET_LIMIT } from '../engine/formationBook';
 import { emptyUnit } from '../engine/profiles';
 import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
 import type { GearSlot, OwnedGear, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 export interface FormationPreset {
   id: string;
@@ -94,6 +94,7 @@ function sanitizeGear(raw: unknown): Record<string, OwnedGear> {
       enhance: clampInt(g.enhance, 0, GEAR_MAX_ENHANCE, 0),
       promote: clampInt(g.promote, 0, maxGearPromote(def.rarity), 0),
       shards: clampInt(g.shards, 0, 9999, 0),
+      count: clampInt(g.count, 1, GEAR_COPY_MAX, 1),
     };
   }
   return gear;
@@ -102,7 +103,7 @@ function sanitizeGear(raw: unknown): Record<string, OwnedGear> {
 function sanitizeRoster(raw: unknown, gear: Record<string, OwnedGear>): Record<string, OwnedGeneral> {
   if (!raw || typeof raw !== 'object') return {};
   const roster: Record<string, OwnedGeneral> = {};
-  const used = new Set<string>();
+  const used: Record<string, number> = {};
   for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
     if (!GENERAL_MAP[id] || !value || typeof value !== 'object') continue;
     const g = value as Partial<OwnedGeneral> & { gear?: unknown };
@@ -110,8 +111,10 @@ function sanitizeRoster(raw: unknown, gear: Record<string, OwnedGear>): Record<s
     if (g.gear && typeof g.gear === 'object') {
       for (const slot of GEAR_SLOTS) {
         const gid = (g.gear as Record<string, unknown>)[slot];
-        if (typeof gid !== 'string' || !gear[gid] || GEAR_MAP[gid]?.slot !== slot || used.has(gid)) continue;
-        used.add(gid);
+        const ownedGear = typeof gid === 'string' ? gear[gid] : undefined;
+        const cap = ownedGear?.count ?? 1;
+        if (typeof gid !== 'string' || !ownedGear || GEAR_MAP[gid]?.slot !== slot || (used[gid] ?? 0) >= cap) continue;
+        used[gid] = (used[gid] ?? 0) + 1;
         slots[slot] = gid;
       }
     }
@@ -207,7 +210,7 @@ function sanitizeCounts(raw: unknown): Record<string, number> {
   return out;
 }
 
-/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) → v10(장비) */
+/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) → v10(장비) → v11(장비 개수) */
 export function migrateSave(persisted: unknown, version: number): SaveData {
   const src = (persisted && typeof persisted === 'object' ? { ...(persisted as Record<string, unknown>) } : {}) as Record<string, unknown>;
   if (version < 2 && Array.isArray(src.formation)) {
@@ -255,6 +258,11 @@ export function migrateSave(persisted: unknown, version: number): SaveData {
     delete src.recruitUsed;
   }
   if (version < 10 && (src.gear == null || typeof src.gear !== 'object')) src.gear = {};
+  if (version < 11 && src.gear && typeof src.gear === 'object') {
+    const gear = { ...(src.gear as Record<string, OwnedGear>) };
+    for (const id of Object.keys(gear)) gear[id] = { ...gear[id], count: gear[id]?.count ?? 1 };
+    src.gear = gear;
+  }
   return sanitizeSave(src);
 }
 

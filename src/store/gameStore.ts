@@ -17,7 +17,7 @@ import type { ArmyTheme } from '../engine/aiArmy';
 import { conquestFloor } from '../engine/conquest';
 import {
   GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL, GEAR_PROMOTE_SHARDS,
-  equipOn, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, grantGear,
+  equipOn, gearCount, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, grantGear, unequipOne,
 } from '../engine/gear';
 import { emptyUnit, enemyUnitsToProfiles, playerProfiles } from '../engine/profiles';
 import { expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget } from '../engine/unit';
@@ -54,7 +54,7 @@ export interface BattleReward {
   firstClear: boolean;
   levelUps: { id: string; from: number; to: number }[];
   /** 이번 전투에서 나온 장비. 이미 가진 것이면 파편 */
-  gear?: { name: string; isNew: boolean };
+  gear?: { name: string; isNew: boolean; copy?: boolean };
 }
 
 /** stage: 원정 · practice: 모의전(보상 없음) · conquest: 천하 토벌전 */
@@ -107,8 +107,10 @@ interface GameState extends SaveData {
   autoForm: () => void;
   /** 태생 등급에서 품계를 한 단계 올린다. 금화가 부족하면 false */
   promote: (id: string) => boolean;
-  /** 장비를 장수에게 끼우거나, generalId가 없으면 보관한다 */
+  /** 장비를 장수에게 끼우거나, generalId가 없으면 모두에게서 벗긴다 */
   equipGear: (generalId: string | null, gearId: string) => void;
+  /** 그 장수에게서만 장비를 벗긴다 */
+  unequipGear: (generalId: string, gearId: string) => void;
   gearLevelUp: (id: string) => 'ok' | 'missing' | 'max' | 'shard' | 'gold';
   gearEnhance: (id: string) => 'ok' | 'missing' | 'max' | 'shard' | 'gold';
   gearPromote: (id: string) => 'ok' | 'missing' | 'max' | 'need' | 'shard' | 'gold';
@@ -160,7 +162,7 @@ function grantExp(roster: Record<string, OwnedGeneral>, formation: Unit[], amoun
 
 /** 승리 시 장비. 없으면 바로 지급하고, 있으면 첫 클리어는 파편, 재도전은 40%. */
 function stageDrop(gear: SaveData['gear'], stageId: string, win: boolean, firstClear: boolean) {
-  if (!win) return { gear, drop: null as { name: string; isNew: boolean } | null };
+  if (!win) return { gear, drop: null as { name: string; isNew: boolean; copy?: boolean } | null };
   const index = STAGES.findIndex((s) => s.id === stageId);
   const stage = STAGES[index];
   const id = stage ? stageGearId(stage.chapter, index) : null;
@@ -294,7 +296,11 @@ export const useGame = create<GameState>()(
       equipGear: (generalId, gearId) => {
         const { roster, gear } = get();
         if (!gear[gearId] || (generalId != null && !roster[generalId])) return;
-        set({ roster: equipOn(roster, generalId, gearId) });
+        set({ roster: equipOn(roster, generalId, gearId, gearCount(gear[gearId])) });
+      },
+      unequipGear: (generalId, gearId) => {
+        if (!get().roster[generalId]) return;
+        set({ roster: unequipOne(get().roster, generalId, gearId) });
       },
       gearLevelUp: (id) => {
         const { gold, gear } = get();

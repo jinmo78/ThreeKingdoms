@@ -4,8 +4,8 @@ import { GEAR, GEAR_MAP, GEAR_SLOT_LABEL } from '../data/gear';
 import { RARITY, STAT_LABEL } from '../data/meta';
 import { GENERAL_MAP } from '../data/generals';
 import {
-  GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL, GEAR_PROMOTE_SHARDS,
-  gearBonus, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, wearerOf,
+  GEAR_COPY_MAX, GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL, GEAR_PROMOTE_SHARDS,
+  gearBonus, gearCount, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, gearSkill, wearersOf,
 } from '../engine/gear';
 import { useGame } from '../store/gameStore';
 import type { GearSlot, Stats } from '../types';
@@ -31,6 +31,7 @@ export function GearBag() {
   const roster = useGame((s) => s.roster);
   const gold = useGame((s) => s.gold);
   const equipGear = useGame((s) => s.equipGear);
+  const unequipGear = useGame((s) => s.unequipGear);
   const gearLevelUp = useGame((s) => s.gearLevelUp);
   const gearEnhance = useGame((s) => s.gearEnhance);
   const gearPromote = useGame((s) => s.gearPromote);
@@ -47,8 +48,8 @@ export function GearBag() {
   return (
     <div className="space-y-3">
       <p className="text-[11px] leading-relaxed text-stone-500">
-        획득 {ownedCount}/{GEAR.length}. 흐린 그림은 아직 없는 장비입니다. 원정 첫 승리에 그 장의 장비가 나오고, 이미 가진 장비가 다시 나오면 파편입니다.
-        레벨은 파편 1개, 강화는 파편 2개, 등급은 Lv.{GEAR_MAX_LEVEL}·강화 +{GEAR_MAX_ENHANCE}에서 파편 {GEAR_PROMOTE_SHARDS}개로 올립니다.
+        획득한 종류 {ownedCount}/{GEAR.length}. 같은 장비는 {GEAR_COPY_MAX}개까지 모아 여러 장수에게 나눠 끼웁니다. 장수 한 명은 무기·갑주·서책을 함께 낍니다.
+        개수가 가득 차면 파편입니다. 레벨은 파편 1개, 강화는 파편 2개, 등급은 Lv.{GEAR_MAX_LEVEL}·강화 +{GEAR_MAX_ENHANCE}에서 파편 {GEAR_PROMOTE_SHARDS}개로 올립니다.
       </p>
       <div className="flex flex-wrap items-center gap-1">
         <NameSearch value={query} onChange={setQuery} placeholder="장비 이름" />
@@ -94,7 +95,9 @@ export function GearBag() {
                 }
                 const rank = gearRarity(def, item.promote);
                 const bonus = gearBonus(def, item);
-                const wearer = wearerOf(roster, def.id);
+                const skill = gearSkill(def, item);
+                const copies = gearCount(item);
+                const wornBy = wearersOf(roster, def.id);
                 const nextRank = gearPromoteLeft(def, item.promote) > 0 ? gearRarity(def, item.promote + 1) : null;
                 const levelCost = gearLevelCost(item.level);
                 const enhanceCost = gearEnhanceCost(item.enhance);
@@ -108,23 +111,33 @@ export function GearBag() {
                         <div className="flex items-center gap-1.5">
                           <span className={cn('rounded px-1 py-0.5 text-[10px] font-black', RARITY[rank].badge)}>{rank}</span>
                           <span className="font-bold">{def.name}</span>
-                          <span className="ml-auto text-xs font-bold text-amber-300">{STAT_LABEL[def.stat]} +{bonus}</span>
+                          <span className="ml-auto text-right text-xs font-bold text-amber-300">{effectLabel(def.stat, bonus, skill)}</span>
                         </div>
                         <p className="mt-1 text-[11px] text-stone-500">{def.desc} {SLOT_FIT[def.slot].who}에게 맞습니다.</p>
                       </div>
                     </div>
                     <div className="mt-1 text-[11px] text-stone-400">
-                      Lv.{item.level}/{GEAR_MAX_LEVEL} · 강화 +{item.enhance} · 파편 {item.shards}
+                      보유 {copies} · 장착 {wornBy.length}/{copies} · Lv.{item.level}/{GEAR_MAX_LEVEL} · 강화 +{item.enhance} · 파편 {item.shards}
                     </div>
+                    {wornBy.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {wornBy.map((id) => (
+                          <button key={id} type="button" onClick={() => unequipGear(id, def.id)}
+                            className="rounded-full bg-stone-800 px-2 py-0.5 text-[10px] text-stone-200">
+                            {GENERAL_MAP[id]?.name ?? id} 해제
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <label className="mt-2 flex items-center gap-2 text-[11px] text-stone-400">
                       장착
                       <select
-                        value={wearer ?? ''}
-                        onChange={(e) => equipGear(e.target.value || null, def.id)}
+                        value=""
+                        onChange={(e) => { if (e.target.value) equipGear(e.target.value, def.id); }}
                         className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-950 px-2 py-1 text-xs text-stone-200"
                       >
-                        <option value="">보관</option>
-                        {generals.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        <option value="">{wornBy.length >= copies ? '빈 개수 없음 · 옮길 장수' : '끼울 장수'}</option>
+                        {generals.filter((g) => !wornBy.includes(g.id)).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
                       </select>
                     </label>
                     <div className="mt-2 flex flex-wrap gap-1">
@@ -169,6 +182,13 @@ export function GearBag() {
   );
 }
 
+function effectLabel(stat: keyof Stats, bonus: number, skill: { power: number; rate: number }) {
+  const bits = [`${STAT_LABEL[stat]} +${bonus}`];
+  if (skill.power) bits.push(`전법 위력 +${Math.round(skill.power * 100)}%`);
+  if (skill.rate) bits.push(`전법 발동 +${Math.round(skill.rate * 100)}%`);
+  return bits.join(' · ');
+}
+
 function GrowBtn({ label, note, disabled, onClick }: { label: string; note: string; disabled: boolean; onClick: () => void }) {
   return (
     <button
@@ -188,6 +208,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
   const roster = useGame((s) => s.roster);
   const bag = useGame((s) => s.gear);
   const equipGear = useGame((s) => s.equipGear);
+  const unequipGear = useGame((s) => s.unequipGear);
   const owned = roster[generalId];
   const general = GENERAL_MAP[generalId];
   if (!owned || !general) return null;
@@ -218,7 +239,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
                 onChange={(e) => {
                   const next = e.target.value;
                   if (!next) {
-                    if (current) equipGear(null, current);
+                    if (current) unequipGear(generalId, current);
                     return;
                   }
                   equipGear(generalId, next);
@@ -228,17 +249,16 @@ export function EquippedGear({ generalId }: { generalId: string }) {
                 <option value="">없음</option>
                 {choices.map((id) => {
                   const piece = GEAR_MAP[id];
-                  const wearer = wearerOf(roster, id);
-                  const who = wearer && wearer !== generalId ? GENERAL_MAP[wearer]?.name : null;
+                  const others = wearersOf(roster, id).filter((gid) => gid !== generalId).length;
                   return (
                     <option key={id} value={id}>
-                      {piece.name}{who ? ` · ${who}` : ''}
+                      {piece.name}{others ? ` · ${others}명` : ''}
                     </option>
                   );
                 })}
               </select>
               <div className="mt-1 text-amber-300">
-                {worn && wornItem ? `${STAT_LABEL[worn.stat]} +${gearBonus(worn, wornItem)}` : SLOT_FIT[slot].who}
+                {worn && wornItem ? effectLabel(worn.stat, gearBonus(worn, wornItem), gearSkill(worn, wornItem)) : SLOT_FIT[slot].who}
               </div>
             </label>
           );

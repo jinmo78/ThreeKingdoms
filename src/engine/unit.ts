@@ -46,6 +46,10 @@ export interface UnitMember {
   stars: number;
   promote: number;
   stats: Stats;
+  /** 이 장수가 전법을 쓸 때 위력 배율에 더한다. 장비. */
+  skillPower?: number;
+  /** 부대 전법 발동률에 더한다. 장비. */
+  skillRateAdd?: number;
 }
 
 export interface UnitProfile {
@@ -100,9 +104,10 @@ export function buildProfile(members: (UnitMember | null)[]): UnitProfile | null
   const synergy = calcSynergy(members.map((m) => m?.def ?? null));
   const troop = commander.def.troop;
   const speed = 10 + intel * 0.02 + (troop === 'cavalry' ? 2 : 0);
-  // 주장 전법 발동률: 기본 + 참모 지력 보정
+  // 주장 전법 발동률: 기본 + 참모 지력 + 장비(서책)
   const strategistInt = members[STRATEGIST_INDEX]?.stats.int ?? 0;
-  const skillRate = Math.min(0.6, commander.def.skill.rate + strategistInt * 0.001);
+  const gearRate = members.reduce((sum, m) => sum + (m?.skillRateAdd ?? 0), 0);
+  const skillRate = Math.min(0.7, commander.def.skill.rate + strategistInt * 0.001 + gearRate);
 
   const power = Math.round((atk + intel * 0.8 + def * 0.8) * synergy.powerMult * 2 + hp * 0.2);
 

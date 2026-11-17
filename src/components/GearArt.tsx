@@ -6,7 +6,7 @@ export function GearArt({ id, dim, size = 'md' }: { id: string; dim?: boolean; s
   const def = GEAR_MAP[id];
   return (
     <img
-      src={`${import.meta.env.BASE_URL}gear/${id}.webp`}
+      src={`${import.meta.env.BASE_URL}gear/${def?.art ?? id}.webp`}
       alt={def?.name ?? ''}
       draggable={false}
       loading="lazy"
