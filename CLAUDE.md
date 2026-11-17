@@ -49,6 +49,7 @@
 - 3단계 전술(`src/engine/tactics.ts`): 성마다 지형(강·숲·관문·평지, `STAGE_TERRAIN`), 날씨는 30분마다 시각으로 계산. 출정 때 정면/수공/화공/기습을 고름(금화 0/40/40/30, March.tactic). 수공·화공=수비대 전체 병력 %, 기습=선공+지원군 차단. 지원군(확률 20~50%, 행군 id로 고정)은 수비대에 부대 1개 추가
 - 4단계 내정(SAVE_VERSION 14, `src/engine/domain.ts`): 점령하면 `castles[stageId]` 생성(레벨·수비 부대·마지막 징수 시각). 수입 = (6+번호×1.5)×(1+0.35×(Lv-1))×(수비 1.25) 금/시, 최대 8시간분 적립, 징수는 `collectGold`, 투자는 `upgradeCastle` (최대 Lv5). 수비 부대는 `setGarrison`(출정 불가로 잠김, 5단계 방어에 사용 예정). 이전 저장은 `ensureCastles`가 보충
 - 로드맵: 5 AI 군주 · 비동기 대전
+- UI 규칙(2026-11-17): 긴 목록은 `HSlide`(ui.tsx, 가로 슬라이드 · PC 화살표/폰 스와이프) 사용. 모바일 군령 시트(`Briefing`)는 처음엔 닫힘 + ✕ 버튼, 출정 버튼은 시트 맨 위 고정. 지도 틀(`.war-map`)은 `overflow-clip`이라 `scrollIntoView` 금지(`window.scrollTo` 사용)
 
 ## 밸런스 점검 방법
 수치를 바꿀 때는 감으로 하지 말고 시뮬레이션으로 확인:
@@ -59,8 +60,9 @@
 
 ## 다음 단계 후보
 - 출석·무료 등용 UX, 금화 수급 재조정
+- 폰 가로 모드(2026-11-17 논의, 미착수): `docs/작업기록-2026-11-17.md` 참고
 - 일기토(장수 1:1 미니게임), 장수·스테이지 확장, 장비/보물
-- 일자별 상세 기록: `docs/작업기록-YYYY-MM-DD.md` (최근: 2026-11-15)
+- 일자별 상세 기록: `docs/작업기록-YYYY-MM-DD.md` (최근: 2026-11-17)
 
 ## PWA
 - `vite-plugin-pwa` + Workbox. 빌드 산출물에 SW·manifest 포함 (`registerType: autoUpdate`)
