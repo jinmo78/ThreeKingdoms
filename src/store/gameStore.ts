@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { GEAR_MAP, conquestGearId, stageGearId } from '../data/gear';
-import { STAGE_MAP, STAGES } from '../data/stages';
+import { isUnlocked, STAGE_MAP, STAGES, stageIndex } from '../data/stages';
 import { simulateBattle, type BattleResult } from '../engine/battle';
 import { autoFormation } from '../engine/autoFormation';
 import { PRESET_LIMIT, formationGold } from '../engine/formationBook';
@@ -21,7 +21,7 @@ import {
 } from '../engine/gear';
 import { emptyUnit, enemyUnitsToProfiles, playerProfiles, unitProfile } from '../engine/profiles';
 import {
-  GARRISON_RECOVER_MS, MIN_SORTIE, SQUAD_RECOVER_MS, clearGarrison, garrisonKey, pruneWounds, ratioOf, squadKey, withRatio,
+  GARRISON_RECOVER_MS, MAX_MARCHES, MIN_SORTIE, SQUAD_RECOVER_MS, clearGarrison, garrisonKey, marchMs, pruneWounds, ratioOf, squadKey, withRatio,
 } from '../engine/siege';
 import { expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget } from '../engine/unit';
 
@@ -131,8 +131,10 @@ interface GameState extends SaveData {
   /** 편성 화면 상성 힌트의 상대 — 스테이지 id | 'conquest' | 'practice' (저장 안 함) */
   focusStage: string | null;
   setFocusStage: (id: string) => void;
-  /** picks: 출정시킬 편성 번호(0~2). 없으면 출정 가능한 부대 전부 */
-  startBattle: (stageId: string, picks?: number[]) => boolean;
+  /** 출정: 도착 시각이 되면 전투가 풀린다. picks는 편성 번호(0~2), 없으면 출정 가능한 부대 전부 */
+  startMarch: (stageId: string, picks?: number[]) => boolean;
+  /** 도착한 부대가 있으면 전투를 계산해 전투 화면을 연다 */
+  resolveMarches: () => boolean;
   /** 모의전 관전 (보상 없음) */
   startPractice: (enemies: EnemyUnit[], title: string) => boolean;
   /** 천하 토벌전 다음 층 도전 */
@@ -178,6 +180,71 @@ function stageDrop(gear: SaveData['gear'], stageId: string, win: boolean, firstC
   return { gear: granted.bag, drop: granted.drop };
 }
 
+/** 도착한 부대의 공성전을 계산해 상태 변화분을 돌려준다. 출정할 부대가 없으면 null */
+function siegeBattle(s: GameState, stageId: string, units: Unit[], now: number): Partial<GameState> | null {
+  const { roster, cleared, fought, gold, gear, wounds } = s;
+  const stage = STAGE_MAP[stageId];
+  if (!stage) return null;
+
+  const squads = units
+    .map((u) => ({ u, p: unitProfile(u, roster, gear), r: ratioOf(wounds, squadKey(u.commander!), now, SQUAD_RECOVER_MS) }))
+    .filter((q): q is typeof q & { p: NonNullable<typeof q.p> } => !!q.p && q.r >= MIN_SORTIE);
+  if (squads.length === 0) return null;
+
+  // 수비대: 점령한 성은 새 수비대, 아직이면 지난 공격에서 남은 병력
+  const already = (cleared[stageId] ?? 0) > 0;
+  let defenders = stage.enemies
+    .map((e, i) => ({ i, p: enemyUnitsToProfiles([e])[0], r: already ? 1 : ratioOf(wounds, garrisonKey(stageId, i), now, GARRISON_RECOVER_MS) }))
+    .filter((d) => d.p && d.r > 0.001);
+  if (defenders.length === 0) defenders = stage.enemies.map((e, i) => ({ i, p: enemyUnitsToProfiles([e])[0], r: 1 })).filter((d) => d.p);
+
+  const result = simulateBattle(
+    squads.map((q) => q.p), defenders.map((d) => d.p), randomSeed(),
+    [squads.map((q) => q.r), defenders.map((d) => d.r)],
+  );
+
+  // 전투 뒤 남은 병력을 기록 (승리하면 성이 함락돼 수비대 기록은 사라진다)
+  const left = result.events[result.events.length - 1].hp;
+  let nextWounds = wounds;
+  squads.forEach((q, k) => { nextWounds = withRatio(nextWounds, squadKey(q.u.commander!), left[0][k] / q.p.hp, now); });
+  if (result.win) nextWounds = clearGarrison(nextWounds, stageId);
+  else if (!already) defenders.forEach((d, k) => { nextWounds = withRatio(nextWounds, garrisonKey(stageId, d.i), left[1][k] / d.p.hp, now); });
+  nextWounds = pruneWounds(nextWounds, now);
+  const standing = result.win ? 0 : left[1].filter((h) => h > 0).length;
+
+  // 보상은 전투 계산 즉시 확정 (새로고침으로 결과를 바꿀 수 없게)
+  // 금화·경험치는 첫 클리어에만. 장비는 승리하면 따로 나온다.
+  const firstClear = result.win && !already;
+  const rewardGold = already ? 0 : result.win
+    ? stage.reward.gold + stage.firstClearGold
+    : Math.round(stage.reward.gold * 0.2);
+  const rewardExp = already ? 0 : result.win ? stage.reward.exp : Math.round(stage.reward.exp * 0.3);
+  const granted = rewardExp > 0
+    ? grantExp(roster, squads.map((q) => q.u), rewardExp)
+    : { roster, levelUps: [] as BattleReward['levelUps'] };
+  const dropped = stageDrop(gear, stageId, result.win, firstClear);
+  const reward = !rewardGold && !rewardExp && !dropped.drop
+    ? null
+    : { gold: rewardGold, exp: rewardExp, firstClear, levelUps: granted.levelUps, gear: dropped.drop ?? undefined };
+
+  return {
+    gold: gold + rewardGold,
+    roster: granted.roster,
+    gear: dropped.gear,
+    wounds: nextWounds,
+    cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
+    fought: { ...fought, [stageId]: (fought[stageId] ?? 0) + 1 },
+    battle: {
+      mode: 'stage', title: stage.title, subtitle: stage.id, stageId, enemies: stage.enemies,
+      result,
+      reward,
+      siege: { captured: result.win, left: standing, total: stage.enemies.length },
+    },
+    view: 'battle',
+    focusStage: stageId,
+  };
+}
+
 export const useGame = create<GameState>()(
   persist(
     (set, get) => ({
@@ -197,6 +264,7 @@ export const useGame = create<GameState>()(
       presets: [],
       gear: {},
       wounds: {},
+      marches: [],
       view: 'campaign',
       battle: null,
       entered: false,
@@ -384,74 +452,34 @@ export const useGame = create<GameState>()(
       focusStage: null,
       setFocusStage: (focusStage) => set({ focusStage }),
 
-      startBattle: (stageId, picks) => {
-        const { formation, roster, cleared, fought, gold, gear, wounds } = get();
+      startMarch: (stageId, picks) => {
+        const { formation, roster, cleared, gear, wounds, marches } = get();
         const stage = STAGE_MAP[stageId];
-        if (!stage) return false;
+        if (!stage || !isUnlocked(stageId, cleared) || marches.length >= MAX_MARCHES) return false;
         const now = Date.now();
-
-        // 출정 부대: 지정한(없으면 전부) 편성 중 병력이 남은 부대
-        const squads = formation
-          .map((u, i) => ({ i, u, p: u.commander && (!picks || picks.includes(i)) ? unitProfile(u, roster, gear) : null }))
-          .map((s) => ({ ...s, r: s.u.commander ? ratioOf(wounds, squadKey(s.u.commander), now, SQUAD_RECOVER_MS) : 0 }))
-          .filter((s): s is typeof s & { p: NonNullable<typeof s.p> } => !!s.p && s.r >= MIN_SORTIE);
-        if (squads.length === 0) return false;
-
-        // 수비대: 점령한 성은 새 수비대, 아직이면 지난 공격에서 남은 병력
-        const already = (cleared[stageId] ?? 0) > 0;
-        let defenders = stage.enemies
-          .map((e, i) => ({ i, p: enemyUnitsToProfiles([e])[0], r: already ? 1 : ratioOf(wounds, garrisonKey(stageId, i), now, GARRISON_RECOVER_MS) }))
-          .filter((d) => d.p && d.r > 0.001);
-        if (defenders.length === 0) defenders = stage.enemies.map((e, i) => ({ i, p: enemyUnitsToProfiles([e])[0], r: 1 })).filter((d) => d.p);
-
-        const result = simulateBattle(
-          squads.map((s) => s.p), defenders.map((d) => d.p), randomSeed(),
-          [squads.map((s) => s.r), defenders.map((d) => d.r)],
-        );
-
-        // 전투 뒤 남은 병력을 기록 (승리하면 성이 함락돼 수비대 기록은 사라진다)
-        const left = result.events[result.events.length - 1].hp;
-        let nextWounds = wounds;
-        squads.forEach((s, k) => { nextWounds = withRatio(nextWounds, squadKey(s.u.commander!), left[0][k] / s.p.hp, now); });
-        if (result.win) nextWounds = clearGarrison(nextWounds, stageId);
-        else if (!already) defenders.forEach((d, k) => { nextWounds = withRatio(nextWounds, garrisonKey(stageId, d.i), left[1][k] / d.p.hp, now); });
-        nextWounds = pruneWounds(nextWounds, now);
-        const standing = result.win ? 0 : left[1].filter((h) => h > 0).length;
-
-        // 보상은 전투 계산 즉시 확정 (새로고침으로 결과를 바꿀 수 없게)
-        // 금화·경험치는 첫 클리어에만. 장비는 승리하면 따로 나온다.
-        const sent = squads.map((s) => s.u);
-        const firstClear = result.win && !already;
-        const rewardGold = already ? 0 : result.win
-          ? stage.reward.gold + stage.firstClearGold
-          : Math.round(stage.reward.gold * 0.2);
-        const rewardExp = already ? 0 : result.win ? stage.reward.exp : Math.round(stage.reward.exp * 0.3);
-        const granted = rewardExp > 0
-          ? grantExp(roster, sent, rewardExp)
-          : { roster, levelUps: [] as BattleReward['levelUps'] };
-        const dropped = stageDrop(gear, stageId, result.win, firstClear);
-        const reward = !rewardGold && !rewardExp && !dropped.drop
-          ? null
-          : { gold: rewardGold, exp: rewardExp, firstClear, levelUps: granted.levelUps, gear: dropped.drop ?? undefined };
-
-        set({
-          gold: gold + rewardGold,
-          roster: granted.roster,
-          gear: dropped.gear,
-          wounds: nextWounds,
-          cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
-          fought: { ...fought, [stageId]: (fought[stageId] ?? 0) + 1 },
-          battle: {
-            mode: 'stage', title: stage.title, subtitle: stage.id, stageId, enemies: stage.enemies,
-            result,
-            reward,
-            siege: { captured: result.win, left: standing, total: stage.enemies.length },
-          },
-          view: 'battle',
-          focusStage: stageId,
-        });
+        const busy = new Set(marches.flatMap((m) => m.units.map((u) => u.commander)));
+        const units = formation
+          .filter((u, i) => u.commander && (!picks || picks.includes(i)) && !busy.has(u.commander)
+            && ratioOf(wounds, squadKey(u.commander), now, SQUAD_RECOVER_MS) >= MIN_SORTIE
+            && unitProfile(u, roster, gear))
+          .map((u) => ({ ...u }));
+        if (units.length === 0) return false;
+        const eta = now + marchMs(stageIndex(stageId));
+        set({ marches: [...marches, { id: `${now}-${stageId}`, stageId, units, from: now, eta }], focusStage: stageId });
         return true;
       },
+
+      resolveMarches: () => {
+        const s = get();
+        if (s.battle) return false;
+        const now = Date.now();
+        const due = s.marches.filter((m) => m.eta <= now).sort((a, b) => a.eta - b.eta)[0];
+        if (!due) return false;
+        const patch = siegeBattle(s, due.stageId, due.units, now);
+        set({ ...(patch ?? {}), marches: s.marches.filter((m) => m.id !== due.id) });
+        return !!patch;
+      },
+
       startPractice: (enemies, title) => {
         const { formation, roster, gear } = get();
         const mine = playerProfiles(formation, roster, gear);

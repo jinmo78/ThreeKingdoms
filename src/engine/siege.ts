@@ -6,6 +6,21 @@
 // · 순수 함수: 저장소(localStorage)와 무관
 // ============================================================
 
+import type { Unit } from '../types';
+
+/** 행군 중인 부대. 도착 시각(eta)이 지나면 전투가 풀린다. */
+export interface March {
+  id: string;
+  stageId: string;
+  /** 출발 시점의 부대 편성 (이후 편성을 바꿔도 영향 없음) */
+  units: Unit[];
+  from: number;
+  eta: number;
+}
+export const MAX_MARCHES = 3;
+/** 행군 시간 — 지도 위 성이 멀수록(스테이지 번호가 클수록) 오래 걸린다 */
+export const marchMs = (stageIndex: number) => (10 + stageIndex * 3) * 1000;
+
 export interface Wound {
   /** 기록 시점의 남은 병력 비율 (0~1) */
   r: number;

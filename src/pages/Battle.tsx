@@ -18,7 +18,7 @@ const DELAY: Record<BattleEvent['kind'], number> = {
 export default function BattlePage() {
   const battle = useGame((s) => s.battle);
   const closeBattle = useGame((s) => s.closeBattle);
-  const startBattle = useGame((s) => s.startBattle);
+  const startMarch = useGame((s) => s.startMarch);
   const startPractice = useGame((s) => s.startPractice);
   const startConquest = useGame((s) => s.startConquest);
   const setView = useGame((s) => s.setView);
@@ -67,13 +67,13 @@ export default function BattlePage() {
   const { result, reward, mode } = battle;
   const next = mode === 'stage' && battle.stageId ? nextStage(battle.stageId) : null;
   const retry = () => {
-    if (mode === 'stage') startBattle(battle.stageId!);
+    if (mode === 'stage') { closeBattle(); startMarch(battle.stageId!); }
     else if (mode === 'practice') startPractice(battle.enemies, battle.title);
     else startConquest();
   };
   // 다음: 원정은 다음 스테이지, 토벌전은 다음 층 (승리했을 때만)
   const onNext = !result.win ? undefined
-    : mode === 'stage' && next ? () => { startBattle(next.id); }
+    : mode === 'stage' && next ? () => { closeBattle(); startMarch(next.id); }
       : mode === 'conquest' ? () => { startConquest(); } : undefined;
   const nextTitle = mode === 'stage' ? next?.title : mode === 'conquest' ? `${(battle.floor ?? 0) + 1}층` : undefined;
   const showBanner = ev.kind === 'skill' || ev.kind === 'chain';
@@ -394,7 +394,7 @@ function ResultOverlay({
         <div className="mt-4 grid gap-2">
           {onNext && <Btn onClick={onNext}>다음: {nextTitle} <ChevronRight size={15} /></Btn>}
           <div className="grid grid-cols-3 gap-2">
-            <Btn variant="ghost" size="sm" onClick={onRetry}>다시 도전</Btn>
+            <Btn variant="ghost" size="sm" onClick={onRetry}>{mode === 'stage' ? '다시 출정' : '다시 도전'}</Btn>
             <Btn variant="ghost" size="sm" onClick={onFormation}>편성</Btn>
             <Btn variant="ghost" size="sm" onClick={onCampaign}>{backLabel}</Btn>
           </div>

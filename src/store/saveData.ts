@@ -5,11 +5,12 @@ import { GEAR_COPY_MAX, GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL } from '../engine/gear'
 import { LEGACY_POINT_GOLD, PRESET_LIMIT } from '../engine/formationBook';
 import { emptyUnit } from '../engine/profiles';
 import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
-import { pruneWounds, type Wounds } from '../engine/siege';
+import { MAX_MARCHES, pruneWounds, type March, type Wounds } from '../engine/siege';
+import { STAGE_MAP } from '../data/stages';
 import type { GearSlot, OwnedGear, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 export interface FormationPreset {
   id: string;
@@ -43,6 +44,8 @@ export interface SaveData {
   gear: Record<string, OwnedGear>;
   /** 공성 부상: 출정 부대와 성 수비대의 남은 병력 (시간이 지나면 회복) */
   wounds: Wounds;
+  /** 행군 중인 부대 */
+  marches: March[];
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
@@ -72,6 +75,7 @@ export function freshSave(): SaveData {
     presets: [],
     gear: {},
     wounds: {},
+    marches: [],
   };
 }
 
@@ -201,7 +205,27 @@ export function sanitizeSave(raw: unknown): SaveData {
     presets: sanitizePresets(src.presets, roster),
     gear,
     wounds: sanitizeWounds(src.wounds),
+    marches: sanitizeMarches(src.marches, roster),
   };
+}
+
+function sanitizeMarches(raw: unknown, roster: Record<string, OwnedGeneral>): March[] {
+  if (!Array.isArray(raw)) return [];
+  const out: March[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const m = item as Partial<March>;
+    if (typeof m.id !== 'string' || !/^[\w-]{1,40}$/.test(m.id) || seen.has(m.id)) continue;
+    if (typeof m.stageId !== 'string' || !STAGE_MAP[m.stageId]) continue;
+    if (typeof m.from !== 'number' || typeof m.eta !== 'number' || !Number.isFinite(m.from) || !Number.isFinite(m.eta)) continue;
+    const units = sanitizeFormation(m.units, roster).filter((u) => u.commander);
+    if (units.length === 0) continue;
+    seen.add(m.id);
+    out.push({ id: m.id, stageId: m.stageId, units, from: m.from, eta: m.eta });
+    if (out.length >= MAX_MARCHES) break;
+  }
+  return out;
 }
 
 function sanitizeWounds(raw: unknown): Wounds {
@@ -228,7 +252,7 @@ function sanitizeCounts(raw: unknown): Record<string, number> {
   return out;
 }
 
-/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) → v10(장비) → v11(장비 개수) → v12(공성 부상) */
+/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) → v10(장비) → v11(장비 개수) → v12(공성 부상) → v13(행군) */
 export function migrateSave(persisted: unknown, version: number): SaveData {
   const src = (persisted && typeof persisted === 'object' ? { ...(persisted as Record<string, unknown>) } : {}) as Record<string, unknown>;
   if (version < 2 && Array.isArray(src.formation)) {
@@ -302,6 +326,7 @@ export function pickSave(s: SaveData): SaveData {
     presets: s.presets,
     gear: s.gear,
     wounds: s.wounds,
+    marches: s.marches,
   };
 }
 
