@@ -1,10 +1,12 @@
 // 장수 등용(가챠) 화면 — 일일 무료 · 출석 · 금화 등용
 import { CalendarCheck, Coins, Flag, Gift, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { GeneralCard, GeneralDetail } from '../components/General';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
+import { GeneralDetail } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
 import { Btn, cn, Modal, Panel } from '../components/ui';
 import { RECRUITABLE } from '../data/generals';
+import { FACTION, TROOP } from '../data/meta';
 import {
   ATTEND_REWARDS,
   attendancePreview,
@@ -15,7 +17,7 @@ import { DUPLICATE_REFUND, PULL_COST, RATES } from '../engine/gacha';
 import { useGame, type RecruitResult } from '../store/gameStore';
 import type { GeneralDef, Rarity } from '../types';
 
-type Phase = 'idle' | 'summoning' | 'reveal';
+type Phase = 'idle' | 'reveal';
 
 export default function Recruit() {
   const gold = useGame((s) => s.gold);
@@ -29,6 +31,9 @@ export default function Recruit() {
   const attendStreak = useGame((s) => s.attendStreak);
   const [phase, setPhase] = useState<Phase>('idle');
   const [results, setResults] = useState<RecruitResult[]>([]);
+  const [opened, setOpened] = useState<boolean[]>([]);
+  const [skipped, setSkipped] = useState(false);
+  const [lastCount, setLastCount] = useState<1 | 10>(1);
   const [detail, setDetail] = useState<GeneralDef | null>(null);
   const [ratesOpen, setRatesOpen] = useState(false);
   const [attendNote, setAttendNote] = useState<string | null>(null);
@@ -44,9 +49,25 @@ export default function Recruit() {
   function pull(count: 1 | 10) {
     const r = recruit(count);
     if (!r) return;
+    setLastCount(count);
     setResults(r);
-    setPhase('summoning');
-    setTimeout(() => setPhase('reveal'), 1100);
+    setOpened(r.map(() => false));
+    setSkipped(false);
+    setPhase('reveal');
+  }
+
+  // 닫힌 밀서를 하나씩 연다. 모두 펼치기를 누르면 남은 예약은 지운다.
+  useEffect(() => {
+    if (phase !== 'reveal' || skipped || results.length === 0) return;
+    const timers = results.map((_, i) => window.setTimeout(() => {
+      setOpened((prev) => prev.map((v, j) => (j === i ? true : v)));
+    }, 700 + i * 240));
+    return () => timers.forEach(clearTimeout);
+  }, [phase, results, skipped]);
+
+  function openAll() {
+    setSkipped(true);
+    setOpened(results.map(() => true));
   }
 
   function onAttend() {
@@ -58,7 +79,8 @@ export default function Recruit() {
     setAttendNote(`연속 ${r.streak}일 출석! 무료 등용 +${r.reward}`);
   }
 
-  const best: Rarity | null = results.some((r) => r.def.rarity === 'SSR') ? 'SSR' : results.some((r) => r.def.rarity === 'SR') ? 'SR' : results.length ? 'R' : null;
+  const allOpen = phase === 'reveal' && opened.length > 0 && opened.every(Boolean);
+  const again = recruitCost(lastCount, freePulls);
   const ownedCount = RECRUITABLE.filter((g) => roster[g.id]).length;
   const spentFree = results[0]?.freeUsed ?? 0;
   const spentGold = results[0]?.goldSpent ?? 0;
@@ -127,7 +149,7 @@ export default function Recruit() {
           free={cost1.freeUsed}
           gold={cost1.gold}
           canAfford={gold >= cost1.gold}
-          disabled={phase === 'summoning'}
+          disabled={phase === 'reveal'}
           onClick={() => pull(1)}
         />
         <PullButton
@@ -135,7 +157,7 @@ export default function Recruit() {
           free={cost10.freeUsed}
           gold={cost10.gold}
           canAfford={gold >= cost10.gold}
-          disabled={phase === 'summoning'}
+          disabled={phase === 'reveal'}
           onClick={() => pull(10)}
           note="SR 이상 확정"
           gold10
@@ -158,47 +180,49 @@ export default function Recruit() {
               <p className="text-xs text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">누적 등용 {totalPulls}회</p>
             </div>
           )}
+        </div>
+      </div>
 
-          {phase === 'summoning' && (
-            <div className="text-center">
-              <div className="relative mx-auto h-36 w-36">
-                <div className={cn('absolute inset-0 animate-spin rounded-full border-4 border-t-transparent',
-                  best === 'SSR' ? 'border-amber-500' : best === 'SR' ? 'border-violet-400' : 'border-red-500')} />
-                <div className="absolute inset-6 flex items-center justify-center rounded-full bg-stone-900">
-                  <Flag size={48} className={cn('animate-wave', best === 'SSR' ? 'text-amber-300' : best === 'SR' ? 'text-violet-300' : 'text-red-300')} />
-                </div>
-              </div>
-              <p className="mt-4 animate-pulse font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-                {best === 'SSR' ? '하늘에 금빛 기운이 서린다…!' : best === 'SR' ? '보랏빛 기운이 감돈다…' : '장수를 찾는 중…'}
-              </p>
-            </div>
-          )}
-
-          {phase === 'reveal' && (
-            <div className="w-full">
-              {best === 'SSR' && <div className="pointer-events-none absolute inset-0 animate-flash bg-amber-400/40" />}
-              <p className="mb-2 text-center text-xs font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
+      {phase === 'reveal' && createPortal(
+        <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[#171513]/88 px-3 py-4">
+          <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="min-w-0 text-xs text-[#E7DCC8]">
                 {spentFree > 0 && `무료 -${spentFree}`}
                 {spentFree > 0 && spentGold > 0 && ' · '}
                 {spentGold > 0 && `금화 -${spentGold}`}
                 {spentFree === 0 && spentGold === 0 && '무료'}
                 {results.some((r) => r.refund) && ` · 중복 환급 +${results.reduce((n, r) => n + r.refund, 0)}`}
               </p>
-              <div className={cn('mx-auto grid gap-2', results.length === 1 ? 'max-w-[180px] grid-cols-1' : 'grid-cols-3 sm:grid-cols-5')}>
-                {results.map((r, i) => (
-                  <div key={i} className="animate-pop-in relative" style={{ animationDelay: `${i * 0.12}s` }}>
-                    <GeneralCard def={r.def} highlight onClick={() => setDetail(r.def)} />
-                    <span className={cn('absolute left-1/2 top-[52%] -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-px text-[10px] font-black',
-                      r.isNew ? 'bg-red-600 text-white' : r.refund ? 'bg-stone-700 text-amber-200' : 'bg-amber-400 text-[#1c1612]')}>
-                      {r.isNew ? 'NEW' : r.refund ? `+${r.refund}금` : `돌파 ★${r.stars}`}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {!allOpen && (
+                <button type="button" onClick={openAll}
+                  className="min-h-11 shrink-0 rounded-lg border border-[#C6A15B]/70 px-3 font-serif text-xs font-bold text-[#F3ECE0]">
+                  모두 펼치기
+                </button>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+            <div className={cn('mx-auto grid w-full gap-3', results.length === 1 ? 'max-w-[17rem] grid-cols-1' : 'max-w-lg grid-cols-2 sm:max-w-none sm:grid-cols-5')}>
+              {results.map((r, i) => (
+                <Missive
+                  key={`${r.def.id}-${i}`}
+                  result={r}
+                  open={!!opened[i]}
+                  instant={skipped}
+                  onOpen={() => setOpened((prev) => prev.map((v, j) => (j === i ? true : v)))}
+                  onDetail={() => setDetail(r.def)}
+                />
+              ))}
+            </div>
+            {allOpen && (
+              <div className="mx-auto mt-4 grid w-full max-w-sm grid-cols-2 gap-2 pb-6">
+                <Btn variant="ghost" onClick={() => setPhase('idle')}>확인</Btn>
+                <Btn onClick={() => pull(lastCount)} disabled={gold < again.gold}>다시 등용</Btn>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body,
+      )}
 
       <div className="hidden sm:block">
         <Panel title="등용 확률" icon={<Sparkles size={15} />}><RatesBody /></Panel>
@@ -222,6 +246,66 @@ export default function Recruit() {
         </Modal>
       )}
     </div>
+  );
+}
+
+function Missive({
+  result, open, instant, onOpen, onDetail,
+}: {
+  result: RecruitResult; open: boolean; instant: boolean; onOpen: () => void; onDetail: () => void;
+}) {
+  const { def } = result;
+  const faction = FACTION[def.faction];
+  const grand = def.rarity === 'SSR';
+  return (
+    <button
+      type="button"
+      onClick={() => (open ? onDetail() : onOpen())}
+      className={cn(
+        'missive',
+        grand ? 'missive-ssr' : def.rarity === 'SR' ? 'missive-sr' : 'missive-r',
+        open && 'is-open',
+        instant && 'is-instant',
+      )}
+    >
+      <span className="roller" />
+      <span className="paper-clip">
+        <span className="paper">
+          <span className="mb-1 block h-1 w-8" style={{ background: faction.hex }} />
+          <span className="flex items-center justify-between gap-1">
+            <span className="font-serif text-[10px] font-bold" style={{ color: faction.hex }}>{faction.full}</span>
+            <span className="seal">{TROOP[def.troop].seal}</span>
+          </span>
+          <span className="mt-1 block truncate font-serif text-base font-black">{def.name}</span>
+          <span className="block truncate text-[10px] text-[#6b6258]">{def.title}</span>
+          <span className="mt-1 block truncate font-serif text-[11px] font-bold">【{def.skill.name}】</span>
+          <span className="line-clamp-2 block text-[10px] leading-snug text-[#4a433c]">{def.skill.desc}</span>
+          {!result.isNew && (
+            <span className="mt-0.5 block text-[10px] text-[#8A6230]">
+              {result.refund ? `환급 +${result.refund}` : `돌파 ★${result.stars}`}
+            </span>
+          )}
+          {open && <span className="stamp">{result.isNew ? '신규' : '중복'}</span>}
+        </span>
+      </span>
+      <span className="roller" />
+      {!instant && <span className="wax">封</span>}
+      {grand && open && <Motes />}
+    </button>
+  );
+}
+
+const MOTES: [string, string][] = [
+  ['-18px', '-28px'], ['22px', '-24px'], ['-28px', '8px'], ['26px', '12px'], ['0px', '-34px'], ['16px', '-8px'],
+];
+
+function Motes() {
+  return (
+    <span className="pointer-events-none absolute inset-0">
+      {MOTES.map(([dx, dy], i) => (
+        <span key={i} className="mote" style={{ left: '50%', top: '30%', '--dx': dx, '--dy': dy, animationDelay: `${i * 0.08}s` } as CSSProperties} />
+      ))}
+    </span>
   );
 }
 

@@ -164,6 +164,114 @@ body {
 }
 .ink-dim { animation: ink-dim calc(1.05s / var(--battle-speed)) ease both; }
 
+/* 등용 밀서. 닫혀 있으면 축만 보이고, 열리면 한지가 위아래로 늘어난다. */
+.missive {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 4.75rem;
+  width: 100%;
+}
+.missive.is-open { min-height: 0; }
+.missive .roller {
+  display: block;
+  height: 13px;
+  flex: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c6a15b, #5c3d1e 42%, #e7d3a1 50%, #3a2814 58%, #8a6230);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.missive .paper-clip {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.7s ease;
+}
+.missive.is-open .paper-clip { grid-template-rows: 1fr; }
+.missive.is-instant .paper-clip,
+.missive.is-instant .stamp { transition: none; animation: none; }
+.missive .paper {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 24%, rgba(42, 36, 28, 0.1), transparent 46%),
+    #f3ece0;
+  color: #2a241c;
+  padding: 0.45rem 0.55rem 1.6rem;
+}
+.missive-sr .paper { box-shadow: inset 0 0 0 1px rgba(198, 161, 91, 0.45); }
+.missive-ssr.is-open .paper {
+  background:
+    linear-gradient(118deg, transparent 18%, rgba(184, 56, 46, 0.16) 48%, transparent 70%),
+    radial-gradient(circle at 80% 20%, rgba(198, 161, 91, 0.2), transparent 40%),
+    #f3ece0;
+  box-shadow: inset 0 0 0 1px #c6a15b, 0 0 18px rgba(198, 161, 91, 0.55);
+}
+.missive .wax {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(248, 231, 210, 0.55);
+  background: #b8382e;
+  color: #f8e7d2;
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 4px rgba(184, 56, 46, 0.25);
+}
+.missive.is-open .wax { animation: seal-burst 0.4s ease forwards; pointer-events: none; }
+.missive.is-instant .wax { display: none; }
+@keyframes seal-burst {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  45% { transform: translate(-50%, -50%) scale(1.18); box-shadow: 0 0 18px #b8382e; }
+  100% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+}
+.missive .stamp {
+  position: absolute;
+  right: 0.4rem;
+  bottom: 0.35rem;
+  display: flex;
+  width: 2.4rem;
+  height: 2.4rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(248, 231, 210, 0.55);
+  background: #b8382e;
+  color: #f8e7d2;
+  font-family: var(--font-serif);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  animation: stamp-down 0.42s cubic-bezier(0.2, 1.4, 0.4, 1) 0.48s both;
+}
+@keyframes stamp-down {
+  0% { transform: translateY(-16px) scale(1.45); opacity: 0; }
+  70% { transform: translateY(1px) scale(0.92); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.missive .mote {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #e7d3a1;
+  animation: mote-fly 1.3s ease-out both;
+}
+@keyframes mote-fly {
+  0% { transform: translate(0, 0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--color-stone-600); border-radius: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
