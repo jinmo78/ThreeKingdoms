@@ -14,6 +14,7 @@ import { useGame } from '../store/gameStore';
 import { sanitizeFormation } from '../store/saveData';
 import type { EnemyUnit, Faction, GeneralDef, OwnedGeneral, Slot, Troop, Unit } from '../types';
 import { SLOTS } from '../types';
+import { GearBag } from './GearPanel';
 import { CounterFormationButton } from './CounterFormation';
 import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from './General';
 import { MatchupBadge } from './Matchup';
@@ -45,6 +46,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
   const [autoNote, setAutoNote] = useState(false);
   const [target, setTarget] = useState<Target>({ unit: 0, slot: 'commander' });
   const [filter, setFilter] = useState<Faction | 'all'>('all');
+  const [benchOnly, setBenchOnly] = useState(true);
   const [detail, setDetail] = useState<DetailState | null>(null);
   const [info, setInfo] = useState<number | null>(null);
   const [picker, setPicker] = useState(false);
@@ -68,6 +70,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         .sort((a, b) => rarityRank(b.def) - rarityRank(a.def) || b.owned.level - a.owned.level),
     [roster, filter],
   );
+  const listed = benchOnly ? owned.filter((x) => !placed[x.def.id]) : owned;
 
   // 현재 선택 슬롯에 넣었을 때 새로 생기거나 강화되는 시너지
   const preview = useMemo(() => {
@@ -192,12 +195,18 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         })}
       </div>
 
-      <section className="hidden rounded-2xl border border-stone-800 bg-stone-900/60 p-3 sm:block">
+      <section className="rounded-2xl border border-stone-800 bg-stone-900/60 p-3">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span className="text-sm font-bold">
-            <span className={UNIT_TINT[target.unit].title}>제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}</span>에 배치할 장수
-            <span className="ml-2 text-[11px] font-normal text-stone-500">누르면 보유 장수와 비교</span>
+            보유 장수
+            <span className="ml-2 text-[11px] font-normal text-stone-500">
+              {benchOnly ? '부대에 없는 대기 장수' : '등용한 장수 전체'} · 누르면 제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}과 비교
+            </span>
           </span>
+          <button type="button" onClick={() => setBenchOnly((v) => !v)}
+            className={cn('rounded-md px-2 py-1 text-xs font-bold', benchOnly ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-800 text-stone-300')}>
+            {benchOnly ? '대기만' : '보유 전체'}
+          </button>
           <div className="ml-auto flex gap-1">
             {(['all', ...FACTIONS] as const).map((f) => (
               <button key={f} type="button" onClick={() => setFilter(f)}
@@ -209,7 +218,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {owned.map(({ def, owned: o }) => {
+          {listed.map(({ def, owned: o }) => {
             const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
             const rank = shownRarity(def.rarity, o.promote);
             const where = placed[def.id];
@@ -245,7 +254,16 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
             );
           })}
         </div>
-        {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">해당 세력의 장수가 없습니다.</p>}
+        {listed.length === 0 && (
+          <p className="py-6 text-center text-xs text-stone-500">
+            {benchOnly ? '대기 장수가 없습니다. 보유 전체를 누르면 부대에 넣은 장수도 보입니다.' : '해당 세력의 장수가 없습니다.'}
+          </p>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-stone-800 bg-stone-900/60 p-3">
+        <h3 className="mb-2 font-serif text-base font-black">장비</h3>
+        <GearBag />
       </section>
 
       {picker && (

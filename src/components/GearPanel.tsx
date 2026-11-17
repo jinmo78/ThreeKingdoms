@@ -29,7 +29,7 @@ export function GearBag() {
   if (ownedIds.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-stone-700 p-4 text-center text-xs text-stone-500">
-        아직 장비가 없습니다. 원정에서 이기면 장비나 파편이 나옵니다.
+        아직 장비가 없습니다. 원정이나 토벌전에서 이기면 여기에 쌓입니다.
       </p>
     );
   }
@@ -156,7 +156,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
           );
         })}
       </div>
-      <p className="mt-1 text-[10px] text-stone-500">장수록의 장비 탭에서 끼우고 성장시킵니다.</p>
+      <p className="mt-1 text-[10px] text-stone-500">편성 화면 아래 장비에서 끼우고 성장시킵니다.</p>
     </div>
   );
 }

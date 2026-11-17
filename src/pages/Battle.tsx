@@ -263,7 +263,7 @@ function ResultOverlay({
             {reward.gear && (
               <div className="flex justify-between border-t border-stone-800 pt-1.5">
                 <span className="text-stone-400">장비</span>
-                <span className="font-bold text-amber-200">{reward.gear.name} {reward.gear.isNew ? '획득' : '파편 +1'}</span>
+                <span className="text-right font-bold text-amber-200">{reward.gear.name} {reward.gear.isNew ? '획득' : '파편 +1'}<span className="mt-0.5 block text-[10px] font-normal text-stone-400">편성 화면의 장비에서 확인</span></span>
               </div>
             )}
             {reward.levelUps.length > 0 && (
