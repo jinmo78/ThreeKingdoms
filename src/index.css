@@ -192,15 +192,20 @@ body {
 .missive.is-instant .paper-clip,
 .missive.is-instant .stamp { transition: none; animation: none; }
 .missive .paper {
-  position: relative;
   min-height: 0;
   overflow: hidden;
   background:
     radial-gradient(circle at 18% 24%, rgba(42, 36, 28, 0.1), transparent 46%),
     #f3ece0;
   color: #2a241c;
-  padding: 0.45rem 0.55rem 1.6rem;
 }
+.missive .sheet {
+  display: flex;
+  height: 12.5rem;
+  flex-direction: column;
+  padding: 0.45rem 0.5rem 0.4rem;
+}
+.missive.is-solo .sheet { height: 17.5rem; }
 .missive-sr .paper { box-shadow: inset 0 0 0 1px rgba(198, 161, 91, 0.45); }
 .missive-ssr.is-open .paper {
   background:
@@ -236,12 +241,11 @@ body {
   100% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
 }
 .missive .stamp {
-  position: absolute;
-  right: 0.4rem;
-  bottom: 0.35rem;
+  position: relative;
   display: flex;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: none;
   align-items: center;
   justify-content: center;
   border: 2px solid rgba(248, 231, 210, 0.55);

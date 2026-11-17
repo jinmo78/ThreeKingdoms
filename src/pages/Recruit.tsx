@@ -2,7 +2,7 @@
 import { CalendarCheck, Coins, Flag, Gift, Sparkles } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { GeneralDetail } from '../components/General';
+import { GeneralDetail, GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
 import { Btn, cn, Modal, Panel } from '../components/ui';
 import { RECRUITABLE } from '../data/generals';
@@ -184,9 +184,9 @@ export default function Recruit() {
       </div>
 
       {phase === 'reveal' && createPortal(
-        <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[#171513]/88 px-3 py-4">
-          <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col">
-            <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[#171513]/94">
+          <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center px-3 py-4">
+            <div className="mb-3 flex w-full items-center justify-between gap-2">
               <p className="min-w-0 text-xs text-[#E7DCC8]">
                 {spentFree > 0 && `무료 -${spentFree}`}
                 {spentFree > 0 && spentGold > 0 && ' · '}
@@ -201,11 +201,12 @@ export default function Recruit() {
                 </button>
               )}
             </div>
-            <div className={cn('mx-auto grid w-full gap-3', results.length === 1 ? 'max-w-[17rem] grid-cols-1' : 'max-w-lg grid-cols-2 sm:max-w-none sm:grid-cols-5')}>
+            <div className={cn('grid w-full items-start gap-3', results.length === 1 ? 'max-w-[16rem] grid-cols-1' : 'max-w-sm grid-cols-2 sm:max-w-none sm:grid-cols-5')}>
               {results.map((r, i) => (
                 <Missive
                   key={`${r.def.id}-${i}`}
                   result={r}
+                  solo={results.length === 1}
                   open={!!opened[i]}
                   instant={skipped}
                   onOpen={() => setOpened((prev) => prev.map((v, j) => (j === i ? true : v)))}
@@ -214,7 +215,7 @@ export default function Recruit() {
               ))}
             </div>
             {allOpen && (
-              <div className="mx-auto mt-4 grid w-full max-w-sm grid-cols-2 gap-2 pb-6">
+              <div className="mt-4 grid w-full max-w-sm grid-cols-2 gap-2">
                 <Btn variant="ghost" onClick={() => setPhase('idle')}>확인</Btn>
                 <Btn onClick={() => pull(lastCount)} disabled={gold < again.gold}>다시 등용</Btn>
               </div>
@@ -250,19 +251,21 @@ export default function Recruit() {
 }
 
 function Missive({
-  result, open, instant, onOpen, onDetail,
+  result, solo, open, instant, onOpen, onDetail,
 }: {
-  result: RecruitResult; open: boolean; instant: boolean; onOpen: () => void; onDetail: () => void;
+  result: RecruitResult; solo?: boolean; open: boolean; instant: boolean; onOpen: () => void; onDetail: () => void;
 }) {
   const { def } = result;
   const faction = FACTION[def.faction];
   const grand = def.rarity === 'SSR';
+  const note = result.isNew ? '' : result.refund ? `환급 +${result.refund}` : `돌파 ★${result.stars}`;
   return (
     <button
       type="button"
       onClick={() => (open ? onDetail() : onOpen())}
       className={cn(
         'missive',
+        solo && 'is-solo',
         grand ? 'missive-ssr' : def.rarity === 'SR' ? 'missive-sr' : 'missive-r',
         open && 'is-open',
         instant && 'is-instant',
@@ -271,21 +274,20 @@ function Missive({
       <span className="roller" />
       <span className="paper-clip">
         <span className="paper">
-          <span className="mb-1 block h-1 w-8" style={{ background: faction.hex }} />
-          <span className="flex items-center justify-between gap-1">
-            <span className="font-serif text-[10px] font-bold" style={{ color: faction.hex }}>{faction.full}</span>
-            <span className="seal">{TROOP[def.troop].seal}</span>
-          </span>
-          <span className="mt-1 block truncate font-serif text-base font-black">{def.name}</span>
-          <span className="block truncate text-[10px] text-[#6b6258]">{def.title}</span>
-          <span className="mt-1 block truncate font-serif text-[11px] font-bold">【{def.skill.name}】</span>
-          <span className="line-clamp-2 block text-[10px] leading-snug text-[#4a433c]">{def.skill.desc}</span>
-          {!result.isNew && (
-            <span className="mt-0.5 block text-[10px] text-[#8A6230]">
-              {result.refund ? `환급 +${result.refund}` : `돌파 ★${result.stars}`}
+          <span className="sheet">
+            <span className="flex items-center justify-between gap-1">
+              <span className="truncate font-serif text-[10px] font-bold" style={{ color: faction.hex }}>{faction.full}</span>
+              <span className="seal">{TROOP[def.troop].seal}</span>
             </span>
-          )}
-          {open && <span className="stamp">{result.isNew ? '신규' : '중복'}</span>}
+            <GeneralToken def={def} size={solo ? 'lg' : 'md'} className="mx-auto mt-1" />
+            <span className={cn('mt-1 block truncate text-center font-serif font-black', solo ? 'text-lg' : 'text-sm')}>{def.name}</span>
+            <span className="block h-4 truncate text-center text-[10px] text-[#6b6258]">{def.title}</span>
+            <span className="block h-4 truncate text-center font-serif text-[11px] font-bold">【{def.skill.name}】</span>
+            <span className="mt-auto flex h-9 items-end justify-between gap-1">
+              <span className="truncate text-[10px] text-[#8A6230]">{note}</span>
+              {open && <span className="stamp">{result.isNew ? '신규' : '중복'}</span>}
+            </span>
+          </span>
         </span>
       </span>
       <span className="roller" />
