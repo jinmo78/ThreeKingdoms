@@ -30,13 +30,19 @@ export function GeneralToken({ def, size = 'md', className, rarity }: {
   const s = SIZE[size];
   const img = portraitImageUrl(def.id);
   const rank = rarity ?? def.rarity;
+  const troop = TROOP[def.troop];
   return (
     <div className={cn('relative shrink-0', className)}>
-      <div className={cn('overflow-hidden', s.box, RARITY[rank].border)}>
-        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className="block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]" />
-          : <Portrait def={def} className="block h-full w-full" />}
+      <div className={cn('relative overflow-hidden bg-[#171513]', s.box, RARITY[rank].border, FACTION[def.faction].frame)}>
+        {!img && (
+          <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center font-serif text-[1.7em] text-[#C6A15B]/30">{def.name}</span>
+        )}
+        {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className="relative block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]" />
+          : <Portrait def={def} className="relative block h-full w-full" />}
       </div>
-      <span className={cn('absolute leading-none', s.troop)} aria-label={TROOP[def.troop].label}>{TROOP[def.troop].emoji}</span>
+      {size !== 'xs' && (
+        <span className={cn('seal absolute', s.troop)} aria-label={troop.label}>{troop.seal}</span>
+      )}
     </div>
   );
 }
@@ -77,15 +83,16 @@ export function GeneralCard({
 }) {
   const rank = shownRarity(def.rarity, owned?.promote);
   const r = RARITY[rank];
+  const faction = FACTION[def.faction];
   const sealed = owned === undefined && !highlight;
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        'group relative flex w-full flex-col items-center gap-1.5 overflow-hidden rounded-2xl border p-3 text-center transition-transform hover:-translate-y-0.5',
-        sealed ? 'border-stone-600 bg-stone-700' : 'bg-stone-900',
-        !sealed && r.border, highlight && r.glow, className,
+        'group relative flex w-full flex-col items-center gap-2 overflow-hidden rounded-2xl border-2 p-3 text-center leading-relaxed transition-transform hover:-translate-y-0.5',
+        sealed ? 'border-stone-600 bg-stone-800/80' : cn('bg-stone-900', faction.frame, faction.wash),
+        highlight && r.glow, className,
       )}
     >
       <div className="relative flex w-full items-center justify-between">

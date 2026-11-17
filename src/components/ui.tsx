@@ -13,10 +13,10 @@ export function Panel({
   title?: ReactNode; icon?: ReactNode; action?: ReactNode; children: ReactNode; className?: string;
 }) {
   return (
-    <section className={cn('rounded-2xl border border-stone-800 bg-stone-900/70', className)}>
+    <section className={cn('rounded-2xl border border-[#C6A15B]/55 bg-stone-900/80 shadow-[inset_0_1px_0_rgba(255,248,235,0.35)]', className)}>
       {(title || action) && (
-        <header className="flex items-center justify-between gap-2 border-b border-stone-800 px-4 py-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold tracking-wide text-stone-200">
+        <header className="flex items-center justify-between gap-2 border-b border-[#C6A15B]/35 px-4 py-3">
+          <h3 className="flex items-center gap-2 font-serif text-sm font-bold tracking-wide text-stone-200">
             {icon && <span className="text-red-300">{icon}</span>}
             {title}
           </h3>
@@ -36,12 +36,12 @@ export function Btn({
   disabled?: boolean; className?: string; title?: string;
 }) {
   const v: Record<BtnVariant, string> = {
-    primary: 'bg-red-700 text-white hover:bg-red-600 shadow-[0_6px_20px_-8px_rgba(220,38,38,0.7)]',
-    gold: 'bg-amber-400 text-[#1c1612] hover:bg-amber-500 shadow-[0_6px_20px_-8px_rgba(251,191,36,0.7)]',
+    primary: 'bg-[#B8382E] text-[#F8E7D2] hover:bg-[#9C2E26] shadow-[0_6px_20px_-8px_rgba(184,56,46,0.75)]',
+    gold: 'bg-[#C6A15B] text-[#171513] hover:bg-[#D4B36E] shadow-[0_6px_20px_-8px_rgba(198,161,91,0.7)]',
     ghost: 'bg-stone-800 text-stone-200 hover:bg-stone-700',
-    outline: 'border border-stone-700 text-stone-200 hover:border-red-500/60 hover:text-red-200',
+    outline: 'border border-[#C6A15B]/70 text-stone-200 hover:border-[#B8382E] hover:text-red-300',
   };
-  const s = { sm: 'px-2.5 py-1 text-xs', md: 'px-4 py-2 text-sm', lg: 'px-6 py-3 text-base' }[size];
+  const s = { sm: 'min-h-9 px-3 py-1.5 text-xs', md: 'min-h-11 px-4 py-2.5 text-sm', lg: 'min-h-12 px-6 py-3 text-base' }[size];
   return (
     <button
       type="button"
@@ -76,7 +76,7 @@ export function ReloadButton({ className }: { className?: string }) {
       aria-label="새로고침"
       title="새로고침"
       onClick={() => window.location.reload()}
-      className={cn('rounded-lg p-2 text-stone-400 hover:bg-stone-800 hover:text-stone-100', className)}
+      className={cn('min-h-11 min-w-11 rounded-lg p-2 text-[#F3ECE0] hover:bg-[#C6A15B]/15 hover:text-[#C6A15B]', className)}
     >
       <RefreshCw size={16} />
     </button>
@@ -99,7 +99,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         setTheme(next);
       }}
       className={cn(
-        'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-700 bg-stone-900 text-stone-200',
+        'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#C6A15B]/50 bg-transparent text-[#F3ECE0]',
         className,
       )}
     >
@@ -144,7 +144,7 @@ export function NameSearch({ value, onChange, placeholder }: { value: string; on
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full min-w-[8rem] flex-1 rounded-lg border border-stone-700 bg-stone-950 px-2 py-1 text-xs text-stone-100 placeholder:text-stone-500"
+      className="min-h-11 w-full min-w-[8rem] flex-1 rounded-lg border border-[#C6A15B]/45 bg-stone-950 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500"
     />
   );
 }
@@ -159,7 +159,7 @@ export function Modal({ children, onClose, wide }: { children: ReactNode; onClos
     <div className="fixed inset-0 z-50 flex items-end justify-center overscroll-none bg-black/75 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div
         className={cn(
-          'animate-slide-in flex max-h-[92vh] w-full flex-col overscroll-contain rounded-t-2xl border border-stone-700 bg-stone-900 p-5 sm:rounded-2xl',
+          'animate-slide-in flex max-h-[92vh] w-full flex-col overscroll-contain rounded-t-2xl border border-[#C6A15B]/70 bg-stone-950 p-5 leading-relaxed sm:rounded-2xl',
           wide ? 'h-[92vh] max-w-4xl overflow-hidden' : 'max-w-lg overflow-y-auto',
         )}
         onClick={(e) => e.stopPropagation()}

@@ -100,7 +100,7 @@ export function AccountButton() {
   return (
     <>
       <button type="button" aria-label={label} title={label} onClick={() => setOpen(true)}
-        className="rounded-full p-2 text-stone-300 hover:bg-stone-800 hover:text-stone-100">
+        className="min-h-11 min-w-11 rounded-full p-2 text-[#F3ECE0] hover:bg-[#C6A15B]/15">
         <UserRound size={16} />
       </button>
       {open && (

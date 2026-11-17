@@ -3,6 +3,7 @@
 // 목록에는 새로 켜지는 시너지와 주장 상성을 미리 표시
 import { Coins, Plus, Save, Sparkles, Trash2, Wand2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { BOND_MAP } from '../data/bonds';
 import { GENERAL_MAP } from '../data/generals';
 import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP, UNIT_TINT } from '../data/meta';
 import { FORMATION_GOLD, PRESET_LIMIT, formationGold, unitGold } from '../engine/formationBook';
@@ -28,6 +29,44 @@ function unitDefs(u: Unit | undefined): (GeneralDef | null)[] {
     const id = u?.[s];
     return id ? GENERAL_MAP[id] ?? null : null;
   });
+}
+
+/** 주장 중심의 좌우 대칭 진형. 데이터 순서는 바꾸지 않는다. */
+const FORM_ROWS: Slot[][] = [
+  ['vice1', 'commander', 'vice2'],
+  ['aide1', 'strategist', 'aide2'],
+];
+
+/** 지금 켜진 시너지에 들어 있는 장수. 표시용이라 전투 계산은 그대로다. */
+function glowingIds(members: (GeneralDef | null)[]): Set<string> {
+  const glow = new Set<string>();
+  const present = members.filter((m): m is GeneralDef => !!m);
+  const byFaction = new Map<string, GeneralDef[]>();
+  for (const g of present) {
+    const list = byFaction.get(g.faction) ?? [];
+    list.push(g);
+    byFaction.set(g.faction, list);
+  }
+  for (const list of byFaction.values()) if (list.length >= 3) list.forEach((g) => glow.add(g.id));
+  const commander = members[0];
+  if (commander) {
+    const same = present.filter((g) => g.troop === commander.troop);
+    if (same.length >= 3) same.forEach((g) => glow.add(g.id));
+  }
+  const holders = new Map<string, Set<string>>();
+  for (const g of present) {
+    for (const bond of g.bonds) {
+      if (!holders.has(bond)) holders.set(bond, new Set());
+      holders.get(bond)!.add(g.id);
+    }
+  }
+  for (const [bond, ids] of holders) {
+    const def = BOND_MAP[bond];
+    if (def && ids.size >= def.tiers[0].count) ids.forEach((id) => glow.add(id));
+  }
+  const strategist = members[3];
+  if (strategist && strategist.stats.int >= 90) glow.add(strategist.id);
+  return glow;
 }
 
 export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-3' }: {
@@ -129,7 +168,9 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         {formation.map((u, ui) => {
           if (!u) return null;
           const p = unitProfile(u, roster, gear);
-          const syn = p?.synergy ?? calcSynergy(unitDefs(u));
+          const members = unitDefs(u);
+          const syn = p?.synergy ?? calcSynergy(members);
+          const linkedIds = glowingIds(members);
           return (
             <section key={ui} className={cn('rounded-2xl border-2 p-3 transition-shadow', UNIT_TINT[ui].card,
               target.unit === ui && 'ring-2 ring-stone-100')}>
@@ -144,16 +185,21 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                 )}
               </header>
 
-              <div className="grid grid-cols-3 gap-2">
-                {SLOTS.map((slot) => {
+              <div className="space-y-2">
+                {FORM_ROWS.map((row) => (
+                <div key={row.join()} className="grid grid-cols-3 items-stretch gap-2">
+                {row.map((slot) => {
                   const id = u[slot];
                   const def = id ? GENERAL_MAP[id] ?? null : null;
                   const owned = id ? roster[id] : undefined;
                   const active = target.unit === ui && target.slot === slot;
+                  const linked = !!def && linkedIds.has(def.id);
                   const badCommander = !!enemy && slot === 'commander' && def && matchupGrade(matchupVs(def.troop, enemyTroops)) === 'bad';
                   return (
-                    <div key={slot} className={cn('relative flex flex-col items-center gap-1 rounded-xl border-2 border-dashed p-2',
-                      active ? 'border-red-500 bg-red-950/40' : badCommander ? 'border-solid border-red-500/50 bg-stone-950/60' : def ? 'border-transparent bg-stone-950/60' : 'border-stone-700')}>
+                    <div key={slot} className={cn('relative flex min-h-24 flex-col items-center gap-1 rounded-xl border-2 p-2',
+                      slot === 'commander' ? 'border-solid border-[#C6A15B]' : 'border-dashed border-stone-700',
+                      linked && 'synergy-glow',
+                      active ? 'border-[#B8382E] bg-red-950/40' : badCommander ? 'border-solid border-[#B8382E] bg-stone-950/60' : 'bg-stone-950/60')}>
                       <button type="button" onClick={() => (def ? setTarget({ unit: ui, slot }) : openSlot(ui, slot))}
                         className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>
                         {SLOT_LABEL[slot].label}{active ? ' · 선택' : ''}
@@ -183,6 +229,8 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                     </div>
                   );
                 })}
+                </div>
+                ))}
               </div>
 
               <button type="button" onClick={() => setInfo(ui)}

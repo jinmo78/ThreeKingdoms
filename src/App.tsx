@@ -47,13 +47,13 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
-      <header className="sticky top-0 z-30 border-b border-stone-800/80 bg-stone-950">
+      <header className="sticky top-0 z-30 border-b border-[#C6A15B]/45 bg-[#171513]/95 text-[#F3ECE0] backdrop-blur">
         <div className="flex items-center gap-3 px-4 py-2.5">
-          <button type="button" onClick={goTitle} title="첫 화면" aria-label="첫 화면으로" className="flex items-center gap-2">
+          <button type="button" onClick={goTitle} title="첫 화면" aria-label="첫 화면으로" className="flex min-h-11 items-center gap-2">
             <BannerEmblem className="h-8 w-8" />
             <div className="text-left leading-tight">
-              <div className="font-serif text-base font-black tracking-wide text-stone-100">{GAME_TITLE}</div>
-              <div className="text-[10px] tracking-[0.3em] text-red-300/80">{GAME_SUBTITLE}</div>
+              <div className="font-serif text-base font-bold tracking-wide text-[#C6A15B]">{GAME_TITLE}</div>
+              <div className="hidden text-[10px] tracking-[0.3em] text-[#B8382E] sm:block">{GAME_SUBTITLE}</div>
             </div>
           </button>
           {!inBattle && (
@@ -67,7 +67,7 @@ export default function App() {
             <AccountButton />
             <ReloadButton />
             <ThemeToggle />
-            <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-bold text-amber-300">
+            <div className="flex min-h-9 items-center gap-1.5 rounded-full border border-[#C6A15B]/50 bg-[#C6A15B]/12 px-3 py-1 text-sm font-bold text-[#C6A15B]">
               <Coins size={15} />
               <span className="tabular">{gold.toLocaleString()}</span>
             </div>
@@ -75,7 +75,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className={cn('flex-1 px-4 py-5', !inBattle && 'pb-24 lg:pb-8')}>
+      <main className={cn('scroll-sheet mx-3 mt-3 flex-1 rounded-2xl px-4 py-5', !inBattle && 'mb-20 lg:mb-4')}>
         {view === 'campaign' && <Campaign />}
         {view === 'formation' && <Formation />}
         {view === 'recruit' && <Recruit />}
@@ -87,13 +87,13 @@ export default function App() {
       <GameConflict />
 
       {!inBattle && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-800 bg-stone-950 pb-[env(safe-area-inset-bottom)] lg:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-[#C6A15B]/45 bg-[#171513]/95 pb-[env(safe-area-inset-bottom)] text-[#F3ECE0] backdrop-blur lg:hidden">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = view === t.id;
             return (
               <button key={t.id} type="button" onClick={() => setView(t.id)}
-                className={cn('flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-bold', active ? 'text-red-300' : 'text-stone-500')}>
+                className={cn('flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[11px] font-bold', active ? 'text-[#B8382E]' : 'text-[#C6A15B]/80')}>
                 <Icon size={20} />
                 {t.label}
               </button>
@@ -108,8 +108,8 @@ export default function App() {
 function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: LucideIcon; label: string }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-bold transition-colors',
-        active ? 'bg-red-900/40 text-red-200' : 'text-stone-400 hover:bg-stone-800 hover:text-stone-200')}>
+      className={cn('flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-serif text-sm font-bold transition-colors',
+        active ? 'bg-[#B8382E] text-[#F8E7D2]' : 'text-[#C6A15B] hover:bg-[#C6A15B]/15')}>
       <Icon size={15} />
       {label}
     </button>

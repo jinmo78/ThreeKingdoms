@@ -11,5 +11,5 @@ export function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle('dark', theme === 'dark');
   document.documentElement.style.colorScheme = theme;
   localStorage.setItem(KEY, theme);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0c0a09' : '#f3eadb');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#171513');
 }
