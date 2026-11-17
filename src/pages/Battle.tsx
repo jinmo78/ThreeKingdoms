@@ -1,11 +1,11 @@
 // 전투 재생 화면 — 미리 계산된 이벤트를 순서대로 보여 줌
-import { ChevronRight, Coins, FastForward, RotateCcw, SkipForward, Swords, Trophy, Zap } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronRight, Coins, FastForward, RotateCcw, SkipForward, Swords, Trophy } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
-import { Bar, Btn, cn } from '../components/ui';
+import { Btn, cn } from '../components/ui';
 import { GENERAL_MAP } from '../data/generals';
-import { TROOP, UNIT_TINT } from '../data/meta';
+import { FACTION, TROOP, UNIT_TINT } from '../data/meta';
 import { nextStage } from '../data/stages';
 import type { BattleEvent, Side } from '../engine/battle';
 import { shownRarity, type UnitProfile } from '../engine/unit';
@@ -26,6 +26,7 @@ export default function BattlePage() {
   const [speed, setSpeed] = useState(1);
   const [seenBattle, setSeenBattle] = useState(battle);
   const logRef = useRef<HTMLDivElement>(null);
+  const fieldRef = useRef<HTMLDivElement>(null);
 
   // 새 전투의 첫 화면이 이전 인덱스를 잠깐 보여 주지 않게, 그리기 전에 되돌린다
   if (battle !== seenBattle) {
@@ -46,6 +47,16 @@ export default function BattlePage() {
   useEffect(() => {
     logRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [idx]);
+
+  // 전법 적중 때만 전장을 흔든다. 재생 타이머와는 별개라 배속을 바꿔도 전투가 멈추지 않는다
+  const heavy = (ev?.kind === 'skill' || ev?.kind === 'chain') && !!ev.hits.some((h) => h.kind === 'dmg');
+  useEffect(() => {
+    if (!heavy || !fieldRef.current) return;
+    fieldRef.current.animate(
+      [{ transform: 'translateX(0)' }, { transform: 'translateX(-3px)' }, { transform: 'translateX(3px)' }, { transform: 'translateX(0)' }],
+      { duration: 320 / speed, easing: 'ease-in-out' },
+    );
+  }, [idx, heavy, speed]);
 
   const log = useMemo(() => events.slice(0, idx + 1).reverse(), [events, idx]);
 
@@ -87,37 +98,21 @@ export default function BattlePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
-        {/* 전장 */}
-        <div className="relative overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-3">
+        {/* 전장. 적군이 위, 아군이 아래, 가운데가 컷인 */}
+        <div
+          className="battle-stage relative overflow-hidden rounded-2xl border border-[#C6A15B]/40 bg-[#171513] p-2 sm:p-3"
+          style={{ '--battle-speed': speed } as CSSProperties}
+        >
           <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80" />
-          <div className="pointer-events-none absolute inset-0 bg-stone-950/35" />
-          <div className="relative">
-          <SideRow side={1} units={result.units[1]} ev={ev} events={events} idx={idx} cinematic={speed === 1} label="적군" />
+          <div className="pointer-events-none absolute inset-0 bg-[#171513]/40" />
+          <div ref={fieldRef} className="relative">
+          {showBanner && <div key={`dim-${ev.id}`} className="ink-dim pointer-events-none absolute inset-0 z-[1] bg-[#171513]/60" />}
+          <div className="relative z-[2]">
+          <SideRow side={1} units={result.units[1]} ev={ev} events={events} idx={idx} cinematic={speed === 1} speed={speed} label="적군" />
 
-          <div className="relative my-3 flex h-16 items-center justify-center">
-            <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-red-700 to-transparent" />
-            {showBanner ? (
-              <div key={ev.id} className="animate-banner relative text-center">
-                {ev.kind === 'chain' && (
-                  <div className="flex items-center justify-center gap-1 text-sm font-black text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]">
-                    <Zap size={16} fill="currentColor" /> {ev.chainStep && ev.chainStep > 1 ? `연쇄 ${ev.chainStep}단${'!'.repeat(ev.chainStep)}` : '연쇄 발동!'} <Zap size={16} fill="currentColor" />
-                  </div>
-                )}
-                <div className={cn('font-serif font-black',
-                  ev.kind === 'chain' ? 'text-3xl text-amber-200' : 'text-2xl text-red-200')}>
-                  【{ev.skill}】
-                </div>
-                <div className="text-[11px] text-stone-300">{ev.caster}</div>
-              </div>
-            ) : ev.kind === 'start' ? (
-              <div key={ev.id} className="animate-banner relative font-serif text-2xl font-black text-stone-100">전투 개시</div>
-            ) : (
-              <Swords size={20} className="relative text-stone-400" />
-            )}
-            {ev.kind === 'chain' && <div key={`f${ev.id}`} className="pointer-events-none absolute -inset-x-3 -inset-y-40 animate-flash bg-amber-400/20" />}
-          </div>
+          <CenterStage ev={ev} events={events} idx={idx} units={result.units} showBanner={showBanner} />
 
-          <SideRow side={0} units={result.units[0]} ev={ev} events={events} idx={idx} cinematic={speed === 1} label="아군" />
+          <SideRow side={0} units={result.units[0]} ev={ev} events={events} idx={idx} cinematic={speed === 1} speed={speed} label="아군" />
 
           {done && <ResultOverlay
             win={result.win}
@@ -133,14 +128,13 @@ export default function BattlePage() {
             backLabel={mode === 'stage' ? '원정 지도' : '돌아가기'}
           />}
           </div>
+          </div>
         </div>
 
         {/* 전투 기록 */}
-        <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-stone-800 bg-stone-950/70 p-3 text-xs lg:max-h-[560px]">
+        <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-[#C6A15B]/35 bg-[#F3ECE0]/90 p-2 text-xs text-[#3a332c] lg:max-h-[560px] dark:bg-[#221E1A]/90 dark:text-[#E7DCC8]">
           {log.map((e) => (
-            <div key={e.id} className={cn('animate-slide-in leading-snug', logColor(e))}>
-              {e.text}
-            </div>
+            <LogLine key={e.id} e={e} />
           ))}
         </div>
       </div>
@@ -148,18 +142,110 @@ export default function BattlePage() {
   );
 }
 
-function logColor(e: BattleEvent) {
-  if (e.kind === 'chain') return 'font-bold text-amber-300';
-  if (e.kind === 'skill') return 'font-semibold text-red-300';
-  if (e.kind === 'rout') return 'text-stone-500 line-through decoration-red-500/60';
-  if (e.kind === 'end' || e.kind === 'start') return 'font-bold text-stone-100';
-  return e.actor?.side === 0 ? 'text-sky-200/80' : 'text-stone-400';
+function LogLine({ e }: { e: BattleEvent }) {
+  if (e.kind === 'skill' || e.kind === 'chain') {
+    const chain = e.kind === 'chain';
+    const n = (e.chainStep ?? 0) + 1;
+    return (
+      <div className="animate-slide-in flex items-start gap-1.5 leading-snug">
+        <span className={cn('mt-px shrink-0 rounded-sm px-1 font-serif text-[10px] font-black',
+          chain ? 'bg-[#B8382E] text-[#F8E7D2]' : 'bg-[#C6A15B] text-[#171513]')}>
+          {chain ? `${n}연쇄` : '전법'}
+        </span>
+        <span className={chain ? 'font-bold text-[#B8382E]' : 'font-semibold text-[#8A6230]'}>{e.text}</span>
+      </div>
+    );
+  }
+  const calm = e.kind === 'rout' ? 'text-[#8a8178] line-through decoration-[#B8382E]/50'
+    : e.kind === 'end' || e.kind === 'start' ? 'font-bold'
+      : 'text-[#4a433c] dark:text-[#C9BBA6]';
+  return <div className={cn('animate-slide-in leading-snug', calm)}>{e.text}</div>;
+}
+
+/** 이번 전법 연쇄에 이름을 올린 장수. 주장 발동부터 현재 단계까지 */
+function chainNames(events: BattleEvent[], idx: number): string[] {
+  const ev = events[idx];
+  if (!ev || (ev.kind !== 'skill' && ev.kind !== 'chain') || !ev.actor) return [];
+  const names: string[] = [];
+  for (let i = idx; i >= 0; i--) {
+    const e = events[i];
+    if ((e.kind !== 'skill' && e.kind !== 'chain') || e.actor?.side !== ev.actor.side || e.actor.idx !== ev.actor.idx) break;
+    if (e.caster) names.unshift(e.caster);
+    if (e.kind === 'skill') break;
+  }
+  return names;
+}
+
+function CenterStage({
+  ev, events, idx, units, showBanner,
+}: {
+  ev: BattleEvent; events: BattleEvent[]; idx: number; units: UnitProfile[][]; showBanner: boolean;
+}) {
+  const names = ev.kind === 'chain' ? chainNames(events, idx) : [];
+  const n = (ev.chainStep ?? 0) + 1;
+  const hex = casterHex(units, ev);
+  return (
+    <div className="relative my-2 flex min-h-24 items-center justify-center overflow-hidden sm:min-h-28">
+      <div className="absolute inset-x-4 top-1/2 h-px bg-gradient-to-r from-transparent via-[#B8382E] to-transparent" />
+      {showBanner ? (
+        <div key={ev.id} className="ink-cutin relative z-10 w-full max-w-[18rem] px-2 sm:max-w-md">
+          <div
+            className="px-3 py-2 text-center text-[#F8E7D2] shadow-lg"
+            style={{
+              background: `linear-gradient(100deg, transparent, ${hex} 8%, #171513 22%, #171513 78%, ${hex} 92%, transparent)`,
+              clipPath: 'polygon(1% 22%, 6% 4%, 94% 0, 100% 68%, 96% 100%, 4% 88%)',
+            }}
+          >
+            <div className="truncate font-serif text-[11px] tracking-widest sm:text-xs">{ev.caster}</div>
+            <div className="truncate font-serif text-xl font-black sm:text-3xl">【{ev.skill}】</div>
+          </div>
+          {names.length > 1 && (
+            <div className={cn('mt-1 flex flex-wrap items-center justify-center gap-1', comboClass(n))}>
+              {names.map((name, i) => (
+                <span key={`${name}-${i}`} className="flex items-center gap-1">
+                  {i > 0 && <span className="text-[10px] text-[#C6A15B]">—</span>}
+                  <span className="max-w-16 truncate rounded-sm border border-[#C6A15B]/70 bg-[#171513]/80 px-1 py-px font-serif text-[10px] text-[#F3ECE0]">{name}</span>
+                </span>
+              ))}
+              <span className="font-serif font-black">{n}연쇄</span>
+            </div>
+          )}
+        </div>
+      ) : ev.kind === 'start' ? (
+        <div key={ev.id} className="animate-banner relative font-serif text-2xl font-black text-[#F3ECE0]">전투 개시</div>
+      ) : (
+        <Swords size={20} className="relative text-[#C6A15B]" />
+      )}
+    </div>
+  );
+}
+
+function comboClass(n: number) {
+  if (n >= 4) return 'text-base text-[#F8E7D2] drop-shadow-[0_0_8px_rgba(184,56,46,0.9)] sm:text-xl';
+  if (n >= 3) return 'text-sm text-[#B8382E] drop-shadow-[0_0_6px_rgba(198,161,91,0.8)] sm:text-lg';
+  return 'text-xs text-[#C6A15B] sm:text-sm';
+}
+
+function casterHex(units: UnitProfile[][], ev: BattleEvent) {
+  const unit = ev.actor ? units[ev.actor.side][ev.actor.idx] : undefined;
+  const m = unit?.members.find((x) => x?.def.name === ev.caster);
+  return m ? FACTION[m.def.faction].hex : '#C6A15B';
+}
+
+function TroopBar({ value, max, speed }: { value: number; max: number; speed: number }) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
+  return (
+    <div className="relative mt-2 h-1.5 overflow-hidden rounded-full bg-[#171513]/50">
+      <div className="absolute inset-y-0 left-0 bg-white/85" style={{ width: `${pct}%`, transition: `width ${0.28 / speed}s ease ${0.3 / speed}s` }} />
+      <div className="absolute inset-y-0 left-0 bg-[#C45A32]" style={{ width: `${pct}%`, transition: `width ${0.08 / speed}s linear` }} />
+    </div>
+  );
 }
 
 function SideRow({
-  side, units, ev, events, idx, cinematic, label,
+  side, units, ev, events, idx, cinematic, speed, label,
 }: {
-  side: Side; units: UnitProfile[]; ev: BattleEvent; events: BattleEvent[]; idx: number; cinematic: boolean; label: string;
+  side: Side; units: UnitProfile[]; ev: BattleEvent; events: BattleEvent[]; idx: number; cinematic: boolean; speed: number; label: string;
 }) {
   // 1배속에서는 '궤멸' 이벤트에 도달한 뒤에만 쓰러진 상태로 둔다
   const announced = new Set<number>();
@@ -181,17 +267,20 @@ function SideRow({
           const justRouted = cinematic && ev.kind === 'rout' && ev.actor?.side === side && ev.actor.idx === i;
           // 2·4배속은 카드 전체를 바로 흐리게. 1배속은 초상만 가라앉히고 '궤멸' 글자는 남긴다
           const legacyFade = !cinematic && routed;
+          const casting = acting && (ev.kind === 'skill' || ev.kind === 'chain');
           return (
-            // 같은 부대가 연달아 맞아도 흔들림이 다시 재생되도록 피격 시 key를 바꿔 다시 마운트
-            <div key={hit?.kind === 'dmg' ? `${i}-${ev.id}` : i}
-              className={cn('relative rounded-xl border p-2 transition-all',
+            <div key={i}
+              className={cn('relative min-w-0 rounded-xl border p-1.5 transition-all sm:p-2',
                 side === 0 ? UNIT_TINT[i]?.card ?? 'border-sky-900/70 bg-sky-950/30' : 'border-red-900/70 bg-red-950/20',
                 acting && 'animate-pulse-ring border-amber-400/80',
-                hit?.kind === 'dmg' && 'animate-shake',
-                legacyFade && 'opacity-30 grayscale')}
+                casting && 'synergy-glow',
+                legacyFade && 'opacity-40 grayscale')}
             >
-              <div key={cinematic && acting ? `go-${ev.id}` : 'still'}
-                className={cn(cinematic && acting && (side === 0 ? 'animate-lunge-up' : 'animate-lunge-down'))}>
+              <div key={(cinematic && acting) || hit?.kind === 'dmg' ? `go-${ev.id}` : 'still'}
+                className={cn(
+                  cinematic && acting && (side === 0 ? 'animate-lunge-up' : 'animate-lunge-down'),
+                  hit?.kind === 'dmg' && 'animate-shake',
+                )}>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm">{TROOP[u.troop].emoji}</span>
                   {side === 0 && <span className={cn('text-[10px] font-black', UNIT_TINT[i]?.title)}>{i + 1}</span>}
@@ -199,7 +288,8 @@ function SideRow({
                 </div>
                 <div className={cn('mt-1.5 grid grid-cols-3 justify-items-center gap-0.5 sm:grid-cols-6',
                   justRouted && 'animate-rout-sink',
-                  cinematic && announced.has(i) && !justRouted && 'translate-y-2.5 opacity-30 grayscale')}>
+                  (cinematic ? announced.has(i) : routed) && 'grayscale',
+                  cinematic && announced.has(i) && !justRouted && 'translate-y-2.5 opacity-40')}>
                   {u.members.map((m, mi) => m ? (
                     <div key={mi} className="relative">
                       <GeneralToken def={m.def} rarity={shownRarity(m.def.rarity, m.promote)} size="xs"
@@ -211,18 +301,19 @@ function SideRow({
                   ) : <div key={mi} className="h-8 w-8 rounded-md border border-dashed border-stone-800" />)}
                 </div>
               </div>
-              <Bar value={hp} max={u.hp} className="mt-2" color={side === 0 ? UNIT_TINT[i]?.bar ?? 'bg-sky-500' : 'bg-red-500'} />
-              <div className="tabular mt-0.5 text-right text-[10px] text-stone-400">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
+              <TroopBar value={hp} max={u.hp} speed={speed} />
+              <div className="tabular mt-0.5 text-right text-[10px] text-[#E7DCC8]">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
               {(cinematic ? announced.has(i) || justRouted : routed) && (
-                <div className={cn('absolute inset-0 flex items-center justify-center font-serif text-lg font-black text-red-600',
-                  justRouted && 'animate-rout-pop')}>궤멸</div>
+                <div className={cn('absolute inset-0 flex items-center justify-center', justRouted && 'animate-rout-pop')}>
+                  <span className="seal px-1.5 py-2 font-serif text-sm tracking-widest">패퇴</span>
+                </div>
               )}
               {hit && (
                 <span key={ev.id}
-                  className={cn('animate-float-up pointer-events-none absolute left-1/2 top-2 font-black',
-                    hit.kind === 'heal' ? 'text-emerald-300' : ev.kind === 'chain' ? 'text-xl text-amber-300' : ev.kind === 'skill' ? 'text-lg text-red-300' : 'text-base text-stone-100')}>
+                  className={cn('animate-float-up pointer-events-none absolute left-1/2 top-1 z-10 max-w-[9rem] -translate-x-1/2 whitespace-nowrap text-center font-black',
+                    hit.kind === 'heal' ? 'text-sm text-emerald-300' : ev.kind === 'chain' ? 'text-base text-amber-200 sm:text-xl' : ev.kind === 'skill' ? 'text-sm text-red-200 sm:text-lg' : 'text-xs text-[#F3ECE0] sm:text-base')}>
                   {hit.kind === 'heal' ? '+' : '-'}{hit.amount}
-                  {hit.matchup === 'adv' && <span className="ml-0.5 text-[10px] text-orange-300">상성!</span>}
+                  {hit.matchup === 'adv' && <span className="ml-0.5 block text-[10px] font-bold text-orange-300">상성 유리!</span>}
                 </span>
               )}
             </div>

@@ -135,6 +135,35 @@ body {
   box-shadow: 0 0 0 1px #c6a15b, 0 0 16px rgba(198, 161, 91, 0.55);
 }
 
+/* 전투 연출. 길이는 --battle-speed(1·2·4)로 나눈다. 재생 타이머와 따로 돈다. */
+.battle-stage { --battle-speed: 1; }
+.battle-stage .animate-shake { animation-duration: calc(0.35s / var(--battle-speed)); }
+.battle-stage .animate-float-up { animation-duration: calc(0.85s / var(--battle-speed)); }
+.battle-stage .animate-banner { animation-duration: calc(1s / var(--battle-speed)); }
+.battle-stage .animate-flash { animation-duration: calc(0.9s / var(--battle-speed)); }
+.battle-stage .animate-pulse-ring { animation-duration: calc(0.7s / var(--battle-speed)); }
+.battle-stage .animate-lunge-up,
+.battle-stage .animate-lunge-down { animation-duration: calc(0.28s / var(--battle-speed)); }
+.battle-stage .animate-portrait-hit { animation-duration: calc(0.28s / var(--battle-speed)); }
+.battle-stage .animate-rout-sink { animation-duration: calc(0.45s / var(--battle-speed)); }
+.battle-stage .animate-rout-pop { animation-duration: calc(0.4s / var(--battle-speed)); }
+
+@keyframes ink-cutin {
+  0% { transform: translateX(-105%); opacity: 0; }
+  16% { transform: translateX(0); opacity: 1; }
+  78% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(105%); opacity: 0; }
+}
+.ink-cutin { animation: ink-cutin calc(1.05s / var(--battle-speed)) ease both; }
+
+@keyframes ink-dim {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.ink-dim { animation: ink-dim calc(1.05s / var(--battle-speed)) ease both; }
+
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--color-stone-600); border-radius: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
