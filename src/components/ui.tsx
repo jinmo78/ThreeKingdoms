@@ -149,18 +149,19 @@ export function NameSearch({ value, onChange, placeholder }: { value: string; on
   );
 }
 
-export function Modal({ children, onClose, wide }: { children: ReactNode; onClose: () => void; wide?: boolean }) {
+export function Modal({ children, onClose, wide, ink }: { children: ReactNode; onClose: () => void; wide?: boolean; ink?: boolean }) {
   useEffect(() => {
     lockPageScroll();
     return unlockPageScroll;
   }, []);
   // sticky·overflow 조상 안에서는 fixed가 뷰포트에 안 붙고 레이아웃이 깨지므로 body로 포털한다
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center overscroll-none bg-black/75 p-0 sm:items-center sm:p-4" onClick={onClose}>
+    <div className={cn('fixed inset-0 z-50 flex items-end justify-center overscroll-none p-0 sm:items-center sm:p-4', ink ? 'bg-[#171513]/80' : 'bg-black/75')} onClick={onClose}>
       <div
         className={cn(
-          'animate-slide-in flex max-h-[92vh] w-full flex-col overscroll-contain rounded-t-2xl border border-[#C6A15B]/70 bg-stone-950 p-5 leading-relaxed sm:rounded-2xl',
-          wide ? 'h-[92vh] max-w-4xl overflow-hidden' : 'max-w-lg overflow-y-auto',
+          'animate-slide-in flex max-h-[92dvh] w-full flex-col overscroll-contain rounded-t-2xl border border-[#C6A15B]/70 bg-stone-950 p-5 leading-relaxed sm:rounded-2xl',
+          ink && 'border-2 border-[#C6A15B] bg-[#F3ECE0] text-[#1C1612] dark:bg-[#221E1A] dark:text-[#F3ECE0]',
+          wide ? 'h-[92dvh] max-w-4xl overflow-hidden' : 'max-w-lg overflow-y-auto',
         )}
         onClick={(e) => e.stopPropagation()}
       >

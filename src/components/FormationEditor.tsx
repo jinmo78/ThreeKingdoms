@@ -385,7 +385,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
       )}
 
       {detail && (
-        <Modal wide onClose={() => setDetail(null)}>
+        <Modal ink wide onClose={() => setDetail(null)}>
           <CompareBoard
             detail={detail}
             owned={matched}

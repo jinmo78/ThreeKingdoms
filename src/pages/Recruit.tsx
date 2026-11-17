@@ -217,9 +217,8 @@ export default function Recruit() {
       )}
 
       {detail && (
-        <Modal onClose={() => setDetail(null)}>
-          <GeneralDetail def={detail} owned={roster[detail.id]} />
-          <Btn variant="ghost" className="mt-4 w-full" onClick={() => setDetail(null)}>닫기</Btn>
+        <Modal ink onClose={() => setDetail(null)}>
+          <GeneralDetail def={detail} owned={roster[detail.id]} onClose={() => setDetail(null)} />
         </Modal>
       )}
     </div>

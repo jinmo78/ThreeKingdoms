@@ -2,14 +2,15 @@
 import { Flame, Link2, Sparkles, Star, Users } from 'lucide-react';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BOND_MAP } from '../data/bonds';
+import { BOND_MAP, bondMembers } from '../data/bonds';
+import { GEAR_MAP } from '../data/gear';
 import { EFFECT_LABEL, FACTION, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
-import { gearStats } from '../engine/gear';
+import { gearSkill, gearStats, type GearBag } from '../engine/gear';
 import { effectiveStats, expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
 import { EquippedGear } from './GearPanel';
 import { useGame } from '../store/gameStore';
-import type { GeneralDef, OwnedGeneral, StatKey } from '../types';
+import type { GeneralDef, OwnedGeneral, Stats } from '../types';
 import { portraitFullImageUrl, portraitImageUrl } from '../data/portraitImages';
 import { Portrait } from './Portrait';
 import { Bar, cn } from './ui';
@@ -161,10 +162,74 @@ function Stat({ label, value, strong, accent }: { label: string; value: string; 
   );
 }
 
+function wornSkill(owned: OwnedGeneral | undefined, bag: GearBag) {
+  let power = 0;
+  let rate = 0;
+  for (const id of Object.values(owned?.gear ?? {})) {
+    if (!id) continue;
+    const piece = GEAR_MAP[id];
+    const item = bag[id];
+    if (!piece || !item) continue;
+    const skill = gearSkill(piece, item);
+    power += skill.power;
+    rate += skill.rate;
+  }
+  return { power, rate };
+}
+
+/** 무력·통솔·위력·발동·지력. 스탯은 기존 필드만 쓰고, 전법 위력·발동을 나머지 두 축으로 둔다. */
+function StatRadar({ stats, bonus, power, powerAdd, rate, rateAdd }: {
+  stats: Stats; bonus: Stats; power: number; powerAdd: number; rate: number; rateAdd: number;
+}) {
+  const axes = [
+    { label: '무력', value: stats.war + bonus.war, add: bonus.war, max: 160, text: String(stats.war + bonus.war) },
+    { label: '통솔', value: stats.lead + bonus.lead, add: bonus.lead, max: 160, text: String(stats.lead + bonus.lead) },
+    { label: '위력', value: power * (1 + powerAdd), add: powerAdd, max: 3.2, text: power.toFixed(1) },
+    { label: '발동', value: rate + rateAdd, add: rateAdd, max: 0.7, text: `${Math.round((rate + rateAdd) * 100)}%` },
+    { label: '지력', value: stats.int + bonus.int, add: bonus.int, max: 160, text: String(stats.int + bonus.int) },
+  ];
+  const cx = 140;
+  const cy = 118;
+  const radius = 68;
+  const point = (i: number, scale: number) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / axes.length;
+    return [cx + Math.cos(a) * radius * scale, cy + Math.sin(a) * radius * scale];
+  };
+  const ring = (scale: number) => axes.map((_, i) => point(i, scale).join(',')).join(' ');
+  const shape = axes.map((axis, i) => point(i, Math.max(0.08, Math.min(1, axis.value / axis.max))).join(',')).join(' ');
+  return (
+    <svg viewBox="0 0 280 236" className="mx-auto w-full max-w-[280px]" role="img" aria-label={axes.map((a) => `${a.label} ${a.text}`).join(', ')}>
+      {[0.33, 0.66, 1].map((scale) => (
+        <polygon key={scale} points={ring(scale)} fill="none" stroke="currentColor" strokeOpacity={0.2} />
+      ))}
+      {axes.map((_, i) => {
+        const [x, y] = point(i, 1);
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="currentColor" strokeOpacity={0.2} />;
+      })}
+      <polygon points={shape} fill="rgba(198,161,91,0.35)" stroke="#C6A15B" strokeWidth="1.5" />
+      {axes.map((axis, i) => {
+        const [x, y] = point(i, 1.28);
+        const [vx, vy] = point(i, Math.max(0.08, Math.min(1, axis.value / axis.max)));
+        const addText = axis.label === '위력' || axis.label === '발동'
+          ? (axis.add ? `+${Math.round(axis.add * 100)}%` : '')
+          : (axis.add ? `+${axis.add}` : '');
+        return (
+          <g key={axis.label}>
+            <text x={x} y={y} textAnchor="middle" className="fill-current text-[11px] font-bold">{axis.label}</text>
+            <text x={vx} y={vy - 8} textAnchor="middle" className="fill-current text-[10px] font-bold">{axis.text}</text>
+            {addText && <text x={vx} y={vy + 4} textAnchor="middle" className="fill-emerald-700 text-[9px] font-bold dark:fill-emerald-300">{addText}</text>}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 /** 장수 상세 (모달 내용) */
-export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGeneral }) {
+export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?: OwnedGeneral; onClose?: () => void }) {
   const gold = useGame((s) => s.gold);
   const promote = useGame((s) => s.promote);
+  const roster = useGame((s) => s.roster);
   const level = owned?.level ?? 1;
   const promoted = (owned?.promote ?? 0) > 0;
   const rank = shownRarity(def.rarity, owned?.promote);
@@ -173,41 +238,40 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
   const gearBag = useGame((s) => s.gear);
   const stats = effectiveStats(def, level, owned?.stars ?? 0, owned?.promote ?? 0);
   const bonus = owned ? gearStats(owned, gearBag) : { war: 0, int: 0, lead: 0 };
+  const skillAdd = wornSkill(owned, gearBag);
   const ready = !!owned && owned.level >= MAX_LEVEL && owned.stars >= MAX_STARS;
   const ladder = def.rarity === 'R'
     ? [{ rarity: 'R' as const, promote: 0, label: '태생' }, { rarity: 'SR' as const, promote: 1, label: '승급' }]
     : def.rarity === 'SR'
       ? [{ rarity: 'SR' as const, promote: 0, label: '태생' }, { rarity: 'SSR' as const, promote: 1, label: '승급' }]
       : [{ rarity: 'SSR' as const, promote: 0, label: '태생' }];
-  const keys: StatKey[] = ['war', 'int', 'lead'];
+  const faction = FACTION[def.faction];
+  const troop = TROOP[def.troop];
   const fullImg = portraitFullImageUrl(def.id);
   const [showFull, setShowFull] = useState(false);
   return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-3">
-        {fullImg ? (
-          <button
-            type="button"
-            onClick={() => setShowFull(true)}
-            className="shrink-0 rounded-2xl text-left transition hover:brightness-110 active:scale-[0.98]"
-            aria-label={`${def.name} 전신 보기`}
-          >
-            <GeneralToken def={def} size="lg" rarity={rank} />
-          </button>
-        ) : (
-          <GeneralToken def={def} size="lg" rarity={rank} />
-        )}
-        <div className="min-w-0 pt-1">
-          <div className="flex items-center gap-1.5">
-            <RarityBadge rarity={rank} />
-            <FactionBadge faction={def.faction} />
-            <span className="text-xs text-stone-400">{TROOP[def.troop].emoji} {TROOP[def.troop].label}</span>
+    <div className="space-y-3">
+      <header className={cn('z-10', onClose && 'sticky top-0 -mx-5 -mt-5')}>
+        <div className={cn('flex items-center gap-2 px-3 py-2.5 text-[#F8E7D2]', faction.bg)}>
+          {fullImg ? (
+            <button type="button" onClick={() => setShowFull(true)} className="shrink-0" aria-label={`${def.name} 전신 보기`}>
+              <GeneralToken def={def} size="md" rarity={rank} />
+            </button>
+          ) : (
+            <GeneralToken def={def} size="md" rarity={rank} />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] tracking-widest opacity-80">{faction.full}</div>
+            <div className="truncate font-serif text-xl font-bold leading-tight">{def.name}</div>
+            <div className="truncate text-[11px] opacity-80">{def.title}</div>
           </div>
-          <div className="mt-1 font-serif text-2xl font-black">{def.name}</div>
-          <div className="text-xs text-stone-500">{def.title}</div>
-          {fullImg && <div className="mt-1 text-[10px] text-stone-500">초상을 누르면 전신을 볼 수 있습니다.</div>}
+          <RarityBadge rarity={rank} />
+          <span className="seal" aria-label={troop.label}>{troop.seal}</span>
+          {onClose && (
+            <button type="button" onClick={onClose} aria-label="닫기" className="ml-1 flex h-11 w-11 items-center justify-center text-lg text-[#F8E7D2]">✕</button>
+          )}
         </div>
-      </div>
+      </header>
 
       {showFull && fullImg && createPortal(
         <div
@@ -235,17 +299,28 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
       )}
 
       {owned && (
-        <div className="rounded-xl bg-stone-950/60 p-3 text-xs">
-          <div className="mb-1 flex justify-between text-stone-400">
+        <div className="rounded-xl border border-[#C6A15B]/35 bg-stone-950/50 px-3 py-2 text-xs">
+          <div className="mb-1 flex justify-between text-stone-500">
             <span>Lv.{owned.level} <Stars n={owned.stars} className="ml-1" /></span>
             <span className="tabular">EXP {owned.exp} / {expToNext(owned.level)}</span>
           </div>
-          <Bar value={owned.exp} max={expToNext(owned.level)} color="bg-amber-400" />
+          <Bar value={owned.exp} max={expToNext(owned.level)} color="bg-[#C6A15B]" />
           <div className="mt-1 text-[10px] text-stone-500">돌파 {owned.stars}/{MAX_STARS} · 중복 등용 시 능력치 +4%{promoted ? ` · 태생 ${def.rarity}에서 승급` : ''}</div>
         </div>
       )}
 
-      {owned && <EquippedGear generalId={def.id} />}
+      <StatRadar
+        stats={stats}
+        bonus={bonus}
+        power={def.skill.power}
+        powerAdd={skillAdd.power}
+        rate={def.skill.rate}
+        rateAdd={skillAdd.rate}
+      />
+
+      {owned ? <EquippedGear generalId={def.id} /> : (
+        <p className="text-center text-[11px] text-stone-500">등용하면 무기·갑주·서책 세 칸을 함께 낄 수 있습니다.</p>
+      )}
 
       <div>
         <div className="text-xs font-bold text-stone-400">품계</div>
@@ -294,36 +369,50 @@ export function GeneralDetail({ def, owned }: { def: GeneralDef; owned?: OwnedGe
         <p className="text-center text-[11px] text-stone-500">이미 최고의 품계입니다.</p>
       )}
 
-      <div className="space-y-2">
-        {keys.map((k) => (
-          <div key={k} className="flex items-center gap-3 text-xs">
-            <span className="w-8 text-stone-400">{STAT_LABEL[k]}</span>
-            <Bar value={stats[k] + bonus[k]} max={180} className="flex-1" color={k === 'war' ? 'bg-red-500' : k === 'int' ? 'bg-sky-500' : 'bg-amber-500'} />
-            <span className="tabular w-8 text-right font-bold">{stats[k] + bonus[k]}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-xl border border-red-900/60 bg-red-950/30 p-3">
-        <div className="flex items-center justify-between">
-          <span className="font-serif text-base font-black text-red-200">【{def.skill.name}】</span>
-          <span className="text-[10px] text-red-300/80">{EFFECT_LABEL[def.skill.effect]} · {STAT_LABEL[def.skill.scaling]} 기반 · 발동 {Math.round(def.skill.rate * 100)}%</span>
+      <section className="rounded-xl border border-[#C6A15B]/45 bg-stone-950/40 p-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-1">
+          <span className="font-serif text-base font-bold text-[#B8382E]">【{def.skill.name}】</span>
+          <span className="text-[10px] text-stone-500">{EFFECT_LABEL[def.skill.effect]} · {STAT_LABEL[def.skill.scaling]} 기반</span>
         </div>
-        <p className="mt-1 text-xs text-stone-300">{def.skill.desc}</p>
-        <p className="mt-1 text-[10px] text-stone-500">주장일 때 직접 발동, 부장·참모일 때는 연쇄 발동으로 이어집니다.</p>
-      </div>
+        <p className="mt-1 text-xs leading-relaxed text-stone-700 dark:text-stone-200">{def.skill.desc}</p>
+        <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-stone-600 dark:text-stone-300">
+          <li>주장 — 직접 발동 {Math.round(def.skill.rate * 100)}%</li>
+          <li>부장 — 연쇄 1단·2단으로 이어집니다</li>
+          <li>참모 — 연쇄 3단. 참모 지력이 높으면 발동률이 오릅니다</li>
+          <li>보좌 — 전법은 쓰지 않고 시너지 인원에 포함됩니다</li>
+        </ul>
+      </section>
 
-      {def.bonds.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="text-xs font-bold text-stone-400">인연</div>
-          {def.bonds.map((b) => (
-            <div key={b} className="flex items-start gap-2 text-xs">
-              <BondTag id={b} active />
-              <span className="text-stone-500">{BOND_MAP[b]?.desc}</span>
+      <section className="space-y-2">
+        <div className="font-serif text-sm font-bold">인연 관계</div>
+        {def.bonds.length === 0 && <p className="text-[11px] text-stone-500">이어진 인연이 없습니다.</p>}
+        {def.bonds.map((id) => {
+          const bond = BOND_MAP[id];
+          const members = bondMembers(id);
+          return (
+            <div key={id} className="rounded-xl border border-[#C6A15B]/30 p-2">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-serif text-sm font-bold">{id}</span>
+                <span className="text-right text-[10px] text-stone-500">{bond?.desc}</span>
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {members.map((g) => {
+                  const has = !!roster[g.id];
+                  return (
+                    <span key={g.id} className={cn(
+                      'rounded border px-1.5 py-0.5 text-[11px]',
+                      has ? 'border-[#C6A15B] bg-[#C6A15B]/15 font-bold text-stone-800 dark:text-[#F3ECE0]' : 'border-stone-500 text-stone-500 opacity-50 grayscale',
+                      g.id === def.id && 'ring-1 ring-[#B8382E]',
+                    )}>
+                      {g.name}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </section>
     </div>
   );
 }

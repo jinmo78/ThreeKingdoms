@@ -1,4 +1,5 @@
 // 장비 가방. 레벨·강화·등급은 파편과 금화로 올리고, 장수 한 명에게만 끼운다.
+import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { GEAR, GEAR_MAP, GEAR_SLOT_LABEL } from '../data/gear';
 import { RARITY, STAT_LABEL } from '../data/meta';
@@ -13,6 +14,7 @@ import { GearArt } from './GearArt';
 import { cn, NameSearch } from './ui';
 
 const SLOT_ORDER: GearSlot[] = ['weapon', 'armor', 'tome'];
+const SLOT_MARK: Record<GearSlot, string> = { weapon: '劍', armor: '甲', tome: '書' };
 
 /** 무기=무력, 갑주=통솔, 서책=지력. 장수의 가장 높은 능력 칸을 추천한다. */
 const SLOT_FIT: Record<GearSlot, { stat: keyof Stats; gear: string; who: string }> = {
@@ -209,6 +211,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
   const bag = useGame((s) => s.gear);
   const equipGear = useGame((s) => s.equipGear);
   const unequipGear = useGame((s) => s.unequipGear);
+  const [open, setOpen] = useState<GearSlot | null>(null);
   const owned = roster[generalId];
   const general = GENERAL_MAP[generalId];
   if (!owned || !general) return null;
@@ -217,54 +220,83 @@ export function EquippedGear({ generalId }: { generalId: string }) {
     ? '무력·통솔·지력이 비슷합니다. 세 칸 모두 도움이 됩니다.'
     : `먼저 끼울 칸은 ${best.map((slot) => SLOT_FIT[slot].gear).join(' · ')}입니다. ${best.map((slot) => STAT_LABEL[SLOT_FIT[slot].stat]).join(' · ')}을 올립니다.`;
   const ownedIds = Object.keys(bag);
+  const openSlot = open;
+  const choices = openSlot ? ownedIds.filter((id) => GEAR_MAP[id]?.slot === openSlot) : [];
+  const currentOpen = openSlot ? owned.gear?.[openSlot] ?? '' : '';
   return (
     <div>
-      <div className="text-xs font-bold text-stone-400">장비</div>
-      <p className="mt-1 text-[11px] leading-relaxed text-stone-400">{advice} 세 칸은 함께 낄 수 있습니다.</p>
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="font-serif text-sm font-bold">장비</div>
+        <p className="text-right text-[10px] leading-relaxed text-stone-500">{advice}</p>
+      </div>
       <div className="mt-1.5 grid grid-cols-3 gap-1.5">
         {SLOT_ORDER.map((slot) => {
           const current = owned.gear?.[slot] ?? '';
-          const choices = ownedIds.filter((id) => GEAR_MAP[id]?.slot === slot);
           const worn = current ? GEAR_MAP[current] : undefined;
           const wornItem = current ? bag[current] : undefined;
+          const rank = worn && wornItem ? gearRarity(worn, wornItem.promote) : null;
           return (
-            <label key={slot} className="rounded-lg bg-stone-950/60 px-2 py-1.5 text-[11px]">
-              <div className="flex items-center gap-1 text-stone-500">
-                {current ? <GearArt id={current} size="sm" /> : null}
-                <span>{GEAR_SLOT_LABEL[slot]}</span>
-                {best.includes(slot) && <span className="rounded bg-amber-400/20 px-1 text-[10px] font-bold text-amber-300">추천</span>}
-              </div>
-              <select
-                value={current}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  if (!next) {
-                    if (current) unequipGear(generalId, current);
-                    return;
-                  }
-                  equipGear(generalId, next);
-                }}
-                className="mt-1 w-full rounded-md border border-stone-700 bg-stone-950 px-1 py-1 text-[11px] text-stone-100"
-              >
-                <option value="">없음</option>
-                {choices.map((id) => {
-                  const piece = GEAR_MAP[id];
-                  const others = wearersOf(roster, id).filter((gid) => gid !== generalId).length;
-                  return (
-                    <option key={id} value={id}>
-                      {piece.name}{others ? ` · ${others}명` : ''}
-                    </option>
-                  );
-                })}
-              </select>
-              <div className="mt-1 text-amber-300">
-                {worn && wornItem ? effectLabel(worn.stat, gearBonus(worn, wornItem), gearSkill(worn, wornItem)) : SLOT_FIT[slot].who}
-              </div>
-            </label>
+            <button
+              key={slot}
+              type="button"
+              onClick={() => setOpen((cur) => cur === slot ? null : slot)}
+              className={cn(
+                'relative flex min-h-28 flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border px-1 py-2 text-center',
+                worn && rank ? cn('border-2 bg-stone-950/50', RARITY[rank].border) : 'border-dashed border-[#C6A15B]/55 bg-stone-950/30',
+                open === slot && 'ring-2 ring-[#B8382E]',
+              )}
+            >
+              {!worn && (
+                <span aria-hidden className="pointer-events-none absolute text-4xl font-serif text-[#C6A15B]/25">{SLOT_MARK[slot]}</span>
+              )}
+              <span className="relative text-[10px] font-bold text-stone-500">
+                {GEAR_SLOT_LABEL[slot]}
+                {best.includes(slot) && <span className="ml-1 text-[#8C6B2F] dark:text-[#C6A15B]">추천</span>}
+              </span>
+              {worn && wornItem ? (
+                <>
+                  <GearArt id={worn.id} size="sm" />
+                  <span className="relative text-[11px] font-bold leading-tight">{worn.name}</span>
+                  <span className="relative text-[10px] leading-tight text-[#8C6B2F] dark:text-[#C6A15B]">{effectLabel(worn.stat, gearBonus(worn, wornItem), gearSkill(worn, wornItem))}</span>
+                </>
+              ) : (
+                <span className="relative flex items-center gap-0.5 text-xs text-stone-500"><Plus size={14} /> 장착</span>
+              )}
+            </button>
           );
         })}
       </div>
-      <p className="mt-1 text-[10px] text-stone-500">레벨·강화·등급은 편성 화면의 장비에서 올립니다.</p>
+      {openSlot && (
+        <div className="mt-2 space-y-1 rounded-xl border border-[#C6A15B]/40 p-2">
+          <div className="text-[11px] font-bold">{GEAR_SLOT_LABEL[openSlot]} 고르기</div>
+          {currentOpen && (
+            <button type="button" onClick={() => { unequipGear(generalId, currentOpen); setOpen(null); }}
+              className="min-h-11 w-full rounded-lg border border-stone-600 px-2 text-left text-xs">
+              해제
+            </button>
+          )}
+          {choices.length === 0 && <p className="py-2 text-center text-[11px] text-stone-500">가진 장비가 없습니다.</p>}
+          {choices.map((id) => {
+            const piece = GEAR_MAP[id];
+            const item = bag[id];
+            const others = wearersOf(roster, id).filter((gid) => gid !== generalId).length;
+            return (
+              <button key={id} type="button" onClick={() => { equipGear(generalId, id); setOpen(null); }}
+                className={cn('flex min-h-11 w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-xs',
+                  id === currentOpen ? 'border-[#C6A15B] bg-[#C6A15B]/15' : 'border-stone-700')}>
+                <GearArt id={id} size="sm" />
+                <span className="min-w-0 flex-1">
+                  <span className="font-bold">{piece.name}</span>
+                  {others > 0 && <span className="ml-1 text-[10px] text-stone-500">{others}명 장착</span>}
+                  {id === currentOpen && <span className="ml-1 text-[10px] text-[#B8382E]">장착 중</span>}
+                  <span className="mt-0.5 block text-[10px] text-[#8C6B2F] dark:text-[#C6A15B]">{effectLabel(piece.stat, gearBonus(piece, item), gearSkill(piece, item))}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <p className="mt-1 text-[10px] text-stone-500">세 칸은 함께 낄 수 있습니다. 레벨·강화·등급은 편성 화면의 장비에서 올립니다.</p>
     </div>
   );
 }

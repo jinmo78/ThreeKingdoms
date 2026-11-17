@@ -152,10 +152,9 @@ export default function Roster() {
       )}
 
       {detail && (
-        <Modal onClose={() => setDetail(null)}>
-          <GeneralDetail def={detail} owned={roster[detail.id]} />
+        <Modal ink onClose={() => setDetail(null)}>
+          <GeneralDetail def={detail} owned={roster[detail.id]} onClose={() => setDetail(null)} />
           {!roster[detail.id] && <p className="mt-3 text-center text-xs text-stone-500">아직 등용하지 않은 장수입니다.</p>}
-          <Btn variant="ghost" className="mt-4 w-full" onClick={() => setDetail(null)}>닫기</Btn>
         </Modal>
       )}
     </div>
