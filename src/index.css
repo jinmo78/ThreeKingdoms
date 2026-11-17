@@ -424,27 +424,14 @@ html.dark {
   --silk-a: #3b3329;
   --silk-b: #2a241d;
   --silk-hi: rgba(255, 250, 230, 0.06);
-  --tex-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 .9 0 0 0 -.34'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
-  --tex-fiber1: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .55' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 1.5 0 0 0 -.72'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
-  --tex-fiber2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.5 .014' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 1.4 0 0 0 -.68'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
-  --tex-stain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='700'%3E%3Cfilter id='s' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.007 .009' numOctaves='4' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.6 0 0 0 -1.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+  --tex-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 .25 0 0 0 -.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --tex-fiber1: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .55' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 .42 0 0 0 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  --tex-fiber2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.5 .014' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 .39 0 0 0 -.19'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  --tex-stain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='700'%3E%3Cfilter id='s' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.007 .009' numOctaves='4' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .73 0 0 0 -.34'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
 }
 
-/* 한지 질감 오버레이: 얼룩 · 섬유 · 결 */
-.paper-tex { position: relative; }
-.paper-tex::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: inherit;
-  mix-blend-mode: multiply;
-  background-image: var(--tex-stain), var(--tex-fiber1), var(--tex-fiber2), var(--tex-grain);
-  background-size: 700px 700px, 320px 320px, 320px 320px, 200px 200px;
-}
-html.dark .paper-tex::after { mix-blend-mode: normal; opacity: 0.28; }
-
+/* 한지 질감(얼룩 · 섬유 · 결)은 오버레이 대신 .war-map / .silk 자신의 배경 층으로 깐다.
+   위에 덧씌우는 mix-blend 층이 없어서 스크롤할 때 다시 합성하지 않는다. */
 /* 이중 테두리(먹선 + 금박선) + 다층 그림자. 모서리 문양은 <Corners/> */
 .frame {
   position: relative;
@@ -479,16 +466,21 @@ html.dark .frame-sm { background: rgba(0, 0, 0, 0.25); }
 .war-map {
   isolation: isolate;
   color: #3a2e22;
-  background:
+  transform: translateZ(0);
+  will-change: transform;
+  background-image:
+    var(--tex-stain), var(--tex-fiber1), var(--tex-fiber2), var(--tex-grain),
     radial-gradient(ellipse at 50% 0%, rgba(255, 246, 220, 0.55), transparent 60%),
     linear-gradient(180deg, var(--map-a), var(--map-b));
+  background-size: 700px 700px, 320px 320px, 320px 320px, 200px 200px, auto, auto;
+  background-blend-mode: multiply, multiply, multiply, multiply, normal, normal;
   box-shadow:
     0 3px 5px rgba(0, 0, 0, 0.28),
     0 12px 26px rgba(0, 0, 0, 0.32),
     inset 0 0 70px rgba(100, 60, 20, 0.5),
     inset 0 1px 0 rgba(255, 244, 214, 0.55);
 }
-html.dark .war-map { color: #e4d7c2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0 12px 26px rgba(0, 0, 0, 0.45), inset 0 0 70px rgba(0, 0, 0, 0.55); }
+html.dark .war-map { color: #e4d7c2; background-blend-mode: normal; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0 12px 26px rgba(0, 0, 0, 0.45), inset 0 0 70px rgba(0, 0, 0, 0.55); }
 
 /* 진군로 */
 .road path { fill: none; stroke-linecap: round; }
@@ -505,6 +497,7 @@ html.dark .war-map { color: #e4d7c2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0
 /* 성 노드: 원형 메달 + 성루 + 명패 */
 .gate {
   position: absolute;
+  pointer-events: auto;
   z-index: 2;
   display: flex;
   min-width: 44px;
@@ -535,7 +528,7 @@ html.dark .war-map { color: #e4d7c2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0
     inset 0 2px 3px rgba(255, 255, 255, 0.6), inset 0 -5px 9px rgba(80, 50, 15, 0.42);
   transition: box-shadow 0.2s, transform 0.2s;
 }
-.medal svg { width: 50px; height: 52px; filter: drop-shadow(0 2px 1.5px rgba(40, 25, 10, 0.45)); }
+.medal svg { width: 50px; height: 52px; }
 .gate[data-state='locked'] .medal {
   background: radial-gradient(circle at 36% 26%, #5a544b, #2f2b26 62%, #1f1c18);
   box-shadow: 0 0 0 2px var(--ink), 0 0 0 4px #6b6254, 0 0 0 5.5px var(--ink), 0 5px 8px 2px rgba(0, 0, 0, 0.4), inset 0 -5px 9px rgba(0, 0, 0, 0.5);
@@ -592,7 +585,9 @@ html.dark .war-map { color: #e4d7c2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0
 .gate-badge-lock { background: #2a2723; }
 
 /* 붓글씨 명패: 어두운 리본에 관문 이름과 전투력 */
-.plaque { position: relative; margin-top: -3px; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.5)); }
+.plaque { position: relative; margin-top: -3px; }
+/* 그림자는 filter 대신 같은 모양의 단색 조각을 3px 아래에 깐다 */
+.plaque::before { content: ''; position: absolute; inset: 0; transform: translateY(3px); background: rgba(0, 0, 0, 0.45); clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%, 7px 50%); }
 .plaque > span {
   position: relative;
   display: block;
@@ -637,8 +632,8 @@ html.dark .war-map { color: #e4d7c2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0
   left: 50%;
   z-index: 2;
   transform: translate(-50%, -50%);
-  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.45));
 }
+.chapter-banner::before { content: ''; position: absolute; inset: 0; transform: translateY(4px); background: rgba(0, 0, 0, 0.42); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 50%, 100% 100%, 0 100%, 12px 50%); }
 .chapter-banner > span {
   position: relative;
   display: block;
@@ -740,7 +735,8 @@ html.dark .war-map { color: #e4d7c2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0
 .silk {
   position: relative;
   color: var(--color-stone-100);
-  background:
+  background-image:
+    var(--tex-stain), var(--tex-fiber1), var(--tex-fiber2), var(--tex-grain),
     linear-gradient(90deg,
       #6b1a15 0 2px, #c5a059 2px 3px, #8e2a22 3px 10px, #c5a059 10px 11px, #5a1410 11px 13px,
       transparent 13px calc(100% - 13px),
@@ -748,8 +744,11 @@ html.dark .war-map { color: #e4d7c2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0
       #8e2a22 calc(100% - 10px) calc(100% - 3px), #c5a059 calc(100% - 3px) calc(100% - 2px), #6b1a15 calc(100% - 2px)),
     radial-gradient(ellipse at 50% 0%, var(--silk-hi), transparent 60%),
     linear-gradient(180deg, var(--silk-a), var(--silk-b));
+  background-size: 700px 700px, 320px 320px, 320px 320px, 200px 200px, auto, auto, auto;
+  background-blend-mode: multiply, multiply, multiply, multiply, normal, normal, normal;
   box-shadow: inset 0 10px 14px -8px rgba(60, 35, 10, 0.55), inset 0 -10px 14px -8px rgba(60, 35, 10, 0.55);
 }
+html.dark .silk { background-blend-mode: normal; }
 .silk > div { scrollbar-width: none; }
 .silk > div::-webkit-scrollbar { display: none; }
 .seal-lg { min-width: 2.4rem; height: 2.4rem; font-size: 0.95rem; letter-spacing: 0; transform: rotate(-4deg); }

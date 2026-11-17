@@ -1,7 +1,7 @@
 // 원정 지도. 진행·드롭·출진 함수는 그대로 두고 고르는 화면만 고지도로 보여 준다.
 // 그림(한지 질감·산수·성루·두루마리)은 SVG와 index.css(.war-*, .gate, .silk 등)로만 그린다.
 import { Lock, Swords } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
 import { cn } from '../components/ui';
@@ -168,7 +168,7 @@ interface River {
   d: string; edgeL: string; edgeR: string; inL: string; inR: string;
   ripples: { x: number; y: number; a: number; s: number }[];
   label: { t: string; x: number; y: number; a: number } | null;
-  pts: Pt[]; half: number;
+  pts: Pt[]; half: number; z: number;
 }
 
 /** 중심선을 따라 폭이 변하는 큰 강. 폭 = w0 × (0.72 ± 변화). */
@@ -189,10 +189,13 @@ function makeRiver(ctrl: Pt[], w0: number, phase: number, rand: () => number, la
     tan.push([tx, ty]);
     const t = i / (n - 1);
     const w = (w0 * (0.72 + 0.26 * Math.sin(t * 8 + phase) + 0.14 * Math.sin(t * 21 + phase * 1.7))) / 2;
-    L.push([p[0] - ty * w, p[1] + tx * w]);
-    R.push([p[0] + ty * w, p[1] - tx * w]);
-    IL.push([p[0] - ty * w * 0.74, p[1] + tx * w * 0.74]);
-    IR.push([p[0] + ty * w * 0.74, p[1] - tx * w * 0.74]);
+    // 물가가 매끈하지 않도록 양쪽 기슭에 잔 굴곡을 기하에 직접 넣는다(변위 필터 대신).
+    const wl = w * (1 + 0.14 * Math.sin(t * 57 + phase * 3) + 0.08 * Math.sin(t * 131 + phase));
+    const wr = w * (1 + 0.14 * Math.sin(t * 61 + phase * 2 + 1.3) + 0.08 * Math.sin(t * 127 + phase + 2));
+    L.push([p[0] - ty * wl, p[1] + tx * wl]);
+    R.push([p[0] + ty * wr, p[1] - tx * wr]);
+    IL.push([p[0] - ty * wl * 0.74, p[1] + tx * wl * 0.74]);
+    IR.push([p[0] + ty * wr * 0.74, p[1] - tx * wr * 0.74]);
   });
   const ripples: River['ripples'] = [];
   for (let i = 3; i < n; i += 4) {
@@ -214,7 +217,7 @@ function makeRiver(ctrl: Pt[], w0: number, phase: number, rand: () => number, la
   return {
     d: `M${lineTo(L)}L${lineTo([...R].reverse())}Z`,
     edgeL: `M${lineTo(L)}`, edgeR: `M${lineTo(R)}`, inL: `M${lineTo(IL)}`, inR: `M${lineTo(IR)}`,
-    ripples, label: lab, pts: c.filter((_, i) => i % 3 === 0), half: w0 * 0.56,
+    ripples, label: lab, pts: c.filter((_, i) => i % 3 === 0), half: w0 * 0.56, z: 0,
   };
 }
 
@@ -294,6 +297,8 @@ const TERRAIN = (() => {
     margin(8, 1, 9, 5.7),
   ];
 
+  rivers.forEach((r, i) => { r.z = i + 1; }); // 위에서부터 1~8장 순서
+
   type Item = { id: string; x: number; y: number; s: number };
   const zones = ZONES.map((z) => {
     const th = THEME[z.id] ?? THEME[1];
@@ -325,11 +330,11 @@ const TERRAIN = (() => {
   });
 
   // 지도 여백의 주(州) 이름: 번갈아 먹 글씨 · 주홍 인장
-  const marks: { t: string; x: number; y: number; seal: boolean; rot: number }[] = [];
+  const marks: { z: number; t: string; x: number; y: number; seal: boolean; rot: number }[] = [];
   ZONES.forEach((z) => {
     (STATE_NAMES[z.id] ?? []).forEach((t, i) => {
       const p = place(rand, z, 46, rivers, 80);
-      if (p) marks.push({ t, x: p[0], y: p[1] - 20, seal: (i + z.id) % 2 === 1, rot: -8 + rand() * 12 });
+      if (p) marks.push({ z: z.id, t, x: p[0], y: p[1] - 20, seal: (i + z.id) % 2 === 1, rot: -8 + rand() * 12 });
     });
   });
   return { rivers, zones, marks };
@@ -386,12 +391,6 @@ function MapDefs() {
         <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" />
         <feGaussianBlur stdDeviation="0.7" />
       </filter>
-      <filter id="cm-river" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.02 0.03" numOctaves="2" seed="5" result="n" />
-        <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" />
-        <feGaussianBlur stdDeviation="0.5" />
-      </filter>
-
       {CLUSTERS}
       <g id="cm-pine" style={{ fill: 'var(--tree)' }}>
         <rect x="-0.8" y="-3" width="1.6" height="5" />
@@ -428,15 +427,52 @@ function MapDefs() {
   );
 }
 
-/** 지도 뒤쪽: 대하(황하·장강) · 겹산 · 수풀 · 주 이름 · 방위표. 마지막에 길·성 주변을 밝혀 대비를 맞춘다. */
-function Backdrop() {
-  return (
-    <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" viewBox={`0 0 ${VW} ${MAP_H}`} aria-hidden>
-      <MapDefs />
+/* ───────── 장(章) 단위 렌더링 ─────────
+   지도를 8개 장 섹션으로 나누고 content-visibility:auto 를 건다. 화면에서 먼 장은 브라우저가 그리지 않는다.
+   봉우리는 위로, 길은 아래 장으로 삐져나오는데 paint containment 가 섹션 상자 밖을 자르므로,
+   상자를 위·아래로 넉넉히 넓혀 둔다. 층은 둘로 나눈다: 지형(아래) → 길·성(위). */
+const SECTIONS = ZONES.map((z, i) => ({
+  k: i,
+  id: z.id,
+  y0: i === 0 ? 0 : z.y0,
+  y1: i + 1 < ZONES.length ? ZONES[i + 1].y0 : MAP_H,
+}));
+type Sec = (typeof SECTIONS)[number];
+const OVER_TERRAIN: [number, number] = [200, 170]; // 봉우리가 위로 · 길 주변 밝힘이 아래로
+const OVER_ROUTE: [number, number] = [60, 150]; // 현판이 위로 · 길이 다음 장으로
+const idxIn = (n: number, sec: Sec) => Array.from({ length: n }, (_, i) => i).filter((i) => STAGES[i].chapter === sec.id);
 
-      {TERRAIN.rivers.map((r, i) => (
-        <g key={i}>
-          <g filter="url(#cm-river)">
+const secBox = (s: Sec, [t, b]: [number, number]) => ({ top: s.y0 - t, h: s.y1 - s.y0 + t + b });
+
+function Section({ sec, over, wide, children }: { sec: Sec; over: [number, number]; wide?: boolean; children: ReactNode }) {
+  const { top, h } = secBox(sec, over);
+  return (
+    <div
+      className="pointer-events-none absolute"
+      style={{
+        top: `${(top / MAP_H) * 100}%`,
+        height: `${(h / MAP_H) * 100}%`,
+        left: wide ? '-100%' : 0,
+        right: wide ? '-100%' : 0,
+        contentVisibility: 'auto',
+        containIntrinsicSize: `auto ${Math.round(h)}px`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** 지형 한 장: 대하 · 주 이름 · 겹산 · 수풀, 그리고 길·성 주변을 밝히는 층(대비 확보). 상태와 무관해서 한 번만 그린다. */
+const TerrainSection = memo(function TerrainSection({ sec }: { sec: Sec }) {
+  const { top, h } = secBox(sec, OVER_TERRAIN);
+  const z = TERRAIN.zones[sec.k];
+  return (
+    <Section sec={sec} over={OVER_TERRAIN} wide>
+      {/* 옆으로 3배 넓은 상자: PC 에서 길 영역 밖으로 번지는 지형을 자르지 않기 위함 */}
+      <svg className="absolute inset-0 h-full w-full" viewBox={`${-VW} ${f1(top)} ${VW * 3} ${f1(h)}`} aria-hidden>
+        {TERRAIN.rivers.filter((r) => r.z === sec.id).map((r, i) => (
+          <g key={i}>
             <path d={r.d} fill="none" stroke="#e8dcb8" strokeWidth="5" strokeLinejoin="round" opacity=".5" />
             <path d={r.d} fill="url(#cm-water)" stroke="#455A64" strokeWidth=".8" strokeLinejoin="round" />
             <g fill="none" strokeLinecap="round">
@@ -445,85 +481,142 @@ function Backdrop() {
               <path d={r.edgeL} stroke="#efe3c2" strokeWidth="1.2" opacity=".7" />
               <path d={r.edgeR} stroke="#efe3c2" strokeWidth="1.2" opacity=".7" />
             </g>
+            {r.ripples.map((p, j) => (
+              <use key={j} href="#cm-ripple" transform={`translate(${f1(p.x)} ${f1(p.y)}) rotate(${f1(p.a)}) scale(${f1(p.s)})`} />
+            ))}
+            {r.label && (
+              <text transform={`translate(${f1(r.label.x)} ${f1(r.label.y)}) rotate(${f1(r.label.a)})`} textAnchor="middle" dy="4"
+                fontSize="12" fontWeight="900" letterSpacing="6" fill="#efe3c2" opacity=".75" style={{ fontFamily: 'var(--font-serif)' }}>
+                {r.label.t}
+              </text>
+            )}
           </g>
-          {r.ripples.map((p, j) => (
-            <use key={j} href="#cm-ripple" transform={`translate(${f1(p.x)} ${f1(p.y)}) rotate(${f1(p.a)}) scale(${f1(p.s)})`} />
-          ))}
-          {r.label && (
-            <text transform={`translate(${f1(r.label.x)} ${f1(r.label.y)}) rotate(${f1(r.label.a)})`} textAnchor="middle" dy="4"
-              fontSize="12" fontWeight="900" letterSpacing="6" fill="#efe3c2" opacity=".75" style={{ fontFamily: 'var(--font-serif)' }}>
-              {r.label.t}
-            </text>
-          )}
-        </g>
-      ))}
-
-      {TERRAIN.marks.map((m, i) => (
-        <g key={i} transform={`translate(${f1(m.x)} ${f1(m.y)}) rotate(${f1(m.rot)})`} style={{ fontFamily: 'var(--font-serif)' }}>
-          {m.seal ? (
-            <>
-              <rect x="-17" y="-38" width="34" height="76" rx="3" fill="none" stroke="#B8382E" strokeWidth="2.2" opacity=".3" />
-              <text y="-8" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8382E" opacity=".3">{m.t[0]}</text>
-              <text y="26" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8382E" opacity=".3">{m.t[1]}</text>
-            </>
-          ) : (
-            <text textAnchor="middle" fontSize="40" fontWeight="900" letterSpacing="8" fill="currentColor" opacity=".13">{m.t}</text>
-          )}
-        </g>
-      ))}
-
-      {TERRAIN.zones.map((z) => (
-        <g key={z.id}>
-          <g filter="url(#cm-ink)" opacity=".92">
-            {z.mts.map((m, i) => <use key={i} href={`#${m.id}`} transform={`translate(${f1(m.x)} ${f1(m.y)}) scale(${f1(m.s)})`} />)}
-          </g>
-          {z.mists.map((m, i) => <ellipse key={i} cx={f1(m.x)} cy={f1(m.y) - 1} rx={f1(m.rx)} ry={f1(m.ry)} fill="url(#cm-mist)" opacity=".7" />)}
-          <g filter="url(#cm-bleed)">
-            {z.trees.map((t, i) => <use key={i} href={`#${t.id}`} transform={`translate(${f1(t.x)} ${f1(t.y)}) scale(${f1(t.s)})`} />)}
-          </g>
-        </g>
-      ))}
-
-      {/* 길과 성 주변을 한지색으로 밝혀 산·강 위에서도 노드와 점선이 또렷하게 */}
-      <g fill="none" strokeLinecap="round" style={{ stroke: 'var(--map-a)' }}>
-        {SEGMENTS.map((d, i) => <path key={`w${i}`} d={d} strokeWidth="38" opacity=".2" />)}
-        {SEGMENTS.map((d, i) => <path key={`n${i}`} d={d} strokeWidth="22" opacity=".3" />)}
-      </g>
-      {SPOTS.map((s, i) => <use key={i} href="#cm-clear" x={s.x} y={s.y + 16} />)}
-
-      {/* 방위표 */}
-      <g transform={`translate(54 ${MAP_H - 46})`} opacity=".85">
-        <circle r="42" fill="url(#cm-clearg)" />
-        <circle r="30" fill="none" stroke="#8a6230" strokeWidth="1" />
-        <circle r="25" fill="none" stroke="#8a6230" strokeWidth=".6" strokeDasharray="2 2.4" />
-        <path d="M0 -20L3.5 -3.5L20 0L3.5 3.5L0 20L-3.5 3.5L-20 0L-3.5 -3.5Z" transform="rotate(45)" fill="#8a6230" opacity=".35" />
-        <path d="M0 -29L4.5 -4.5L29 0L4.5 4.5L0 29L-4.5 4.5L-29 0L-4.5 -4.5Z" fill="#8a6230" opacity=".55" />
-        <path d="M0 -29L4.5 -4.5L-4.5 -4.5Z" fill="#b8382e" />
-        <circle r="2.4" fill="#c5a059" />
-        {([['北', 0, -34], ['南', 0, 43], ['東', 37, 4], ['西', -37, 4]] as const).map(([t, x, y]) => (
-          <text key={t} x={x} y={y} textAnchor="middle" fontSize="9" fontWeight="900" fill="#8a6230" style={{ fontFamily: 'var(--font-serif)' }}>{t}</text>
         ))}
-      </g>
-    </svg>
-  );
-}
 
-/** 굽이치는 진군로. 점령한 구간은 주홍 붓길, 다음 구간은 금빛 점선이 움직인다. */
-function Road({ cleared, frontierId }: { cleared: Record<string, number>; frontierId: string }) {
-  return (
-    <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${VW} ${MAP_H}`} aria-hidden>
-      {SEGMENTS.map((d, i) => {
-        const id = STAGES[i].id;
-        const st = (cleared[id] ?? 0) > 0 ? 'done' : id === frontierId ? 'front' : 'lock';
-        return (
-          <g key={i} className={`road road-${st}`}>
-            <path className="road-wash" d={d} />
-            <path className="road-brush" d={d} />
-            <path className="road-gold" d={d} />
+        {TERRAIN.marks.filter((m) => m.z === sec.id).map((m, i) => (
+          <g key={i} transform={`translate(${f1(m.x)} ${f1(m.y)}) rotate(${f1(m.rot)})`} style={{ fontFamily: 'var(--font-serif)' }}>
+            {m.seal ? (
+              <>
+                <rect x="-17" y="-38" width="34" height="76" rx="3" fill="none" stroke="#B8382E" strokeWidth="2.2" opacity=".3" />
+                <text y="-8" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8382E" opacity=".3">{m.t[0]}</text>
+                <text y="26" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8382E" opacity=".3">{m.t[1]}</text>
+              </>
+            ) : (
+              <text textAnchor="middle" fontSize="40" fontWeight="900" letterSpacing="8" fill="currentColor" opacity=".13">{m.t}</text>
+            )}
           </g>
+        ))}
+
+        <g filter="url(#cm-ink)" opacity=".92">
+          {z.mts.map((m, i) => <use key={i} href={`#${m.id}`} transform={`translate(${f1(m.x)} ${f1(m.y)}) scale(${f1(m.s)})`} />)}
+        </g>
+        {z.mists.map((m, i) => <ellipse key={i} cx={f1(m.x)} cy={f1(m.y) - 1} rx={f1(m.rx)} ry={f1(m.ry)} fill="url(#cm-mist)" opacity=".7" />)}
+        <g filter="url(#cm-bleed)">
+          {z.trees.map((t, i) => <use key={i} href={`#${t.id}`} transform={`translate(${f1(t.x)} ${f1(t.y)}) scale(${f1(t.s)})`} />)}
+        </g>
+
+        {/* 길과 성 주변을 한지색으로 밝혀 산·강 위에서도 노드와 점선이 또렷하게 */}
+        <g fill="none" strokeLinecap="round" style={{ stroke: 'var(--map-a)' }}>
+          {idxIn(SEGMENTS.length, sec).map((i) => <path key={`w${i}`} d={SEGMENTS[i]} strokeWidth="38" opacity=".2" />)}
+          {idxIn(SEGMENTS.length, sec).map((i) => <path key={`n${i}`} d={SEGMENTS[i]} strokeWidth="22" opacity=".3" />)}
+        </g>
+        {idxIn(SPOTS.length, sec).map((i) => <use key={i} href="#cm-clear" x={SPOTS[i].x} y={SPOTS[i].y + 16} />)}
+
+        {/* 방위표 */}
+        {sec.k === SECTIONS.length - 1 && (
+          <g transform={`translate(54 ${MAP_H - 46})`} opacity=".85">
+            <circle r="42" fill="url(#cm-clearg)" />
+            <circle r="30" fill="none" stroke="#8a6230" strokeWidth="1" />
+            <circle r="25" fill="none" stroke="#8a6230" strokeWidth=".6" strokeDasharray="2 2.4" />
+            <path d="M0 -20L3.5 -3.5L20 0L3.5 3.5L0 20L-3.5 3.5L-20 0L-3.5 -3.5Z" transform="rotate(45)" fill="#8a6230" opacity=".35" />
+            <path d="M0 -29L4.5 -4.5L29 0L4.5 4.5L0 29L-4.5 4.5L-29 0L-4.5 -4.5Z" fill="#8a6230" opacity=".55" />
+            <path d="M0 -29L4.5 -4.5L-4.5 -4.5Z" fill="#b8382e" />
+            <circle r="2.4" fill="#c5a059" />
+            {([['北', 0, -34], ['南', 0, 43], ['東', 37, 4], ['西', -37, 4]] as const).map(([t, x, y]) => (
+              <text key={t} x={x} y={y} textAnchor="middle" fontSize="9" fontWeight="900" fill="#8a6230" style={{ fontFamily: 'var(--font-serif)' }}>{t}</text>
+            ))}
+          </g>
+        )}
+      </svg>
+    </Section>
+  );
+});
+
+/** 길·성 한 장: 굽이치는 진군로(점령 구간은 주홍 붓길, 다음 구간은 금빛 점선) + 장 현판 + 성 노드 */
+function RouteSection({
+  sec, cleared, frontierId, frontierRef, filter, selected, powers, onSelect,
+}: {
+  sec: Sec; cleared: Record<string, number>; frontierId: string; frontierRef: RefObject<HTMLButtonElement>;
+  filter: GearFilter; selected: string; powers: Record<string, number>; onSelect: (id: string) => void;
+}) {
+  const { top, h } = secBox(sec, OVER_ROUTE);
+  const head = HEADS.find((x) => x.id === sec.id);
+  const pct = (y: number) => `${((y - top) / h) * 100}%`;
+  return (
+    <Section sec={sec} over={OVER_ROUTE}>
+      <svg className="absolute inset-0 h-full w-full" viewBox={`0 ${f1(top)} ${VW} ${f1(h)}`} aria-hidden>
+        {idxIn(SEGMENTS.length, sec).map((i) => {
+          const id = STAGES[i].id;
+          const st = (cleared[id] ?? 0) > 0 ? 'done' : id === frontierId ? 'front' : 'lock';
+          return (
+            <g key={i} className={`road road-${st}`}>
+              <path className="road-wash" d={SEGMENTS[i]} />
+              <path className="road-brush" d={SEGMENTS[i]} />
+              <path className="road-gold" d={SEGMENTS[i]} />
+            </g>
+          );
+        })}
+      </svg>
+
+      {head && (
+        <div className="chapter-banner" style={{ top: pct(head.y) }}>
+          <span>
+            <b>제{head.id}장 {head.title}</b>
+            <i>{head.year}</i>
+          </span>
+        </div>
+      )}
+
+      {idxIn(STAGES.length, sec).map((i) => {
+        const s = STAGES[i];
+        const unlocked = isUnlocked(s.id, cleared);
+        const done = (cleared[s.id] ?? 0) > 0;
+        const front = frontierId === s.id && !done;
+        const gearId = stageGearId(s.chapter, i);
+        const slot = gearId ? GEAR_MAP[gearId]?.slot : undefined;
+        const lit = filter !== 'all' && slot === filter;
+        const state = !unlocked ? 'locked' : done ? 'done' : front ? 'front' : 'open';
+        return (
+          <button
+            key={s.id}
+            type="button"
+            ref={s.id === frontierId ? frontierRef : undefined}
+            disabled={!unlocked}
+            onClick={() => onSelect(s.id)}
+            className="gate"
+            data-state={state}
+            data-sel={selected === s.id}
+            data-lit={lit}
+            data-dim={filter !== 'all' && !lit}
+            aria-label={`${s.id} ${s.title}`}
+            style={{ left: `${(SPOTS[i].x / VW) * 100}%`, top: pct(SPOTS[i].y) }}
+          >
+            <span className="medal">
+              <Tower flag={done ? 'red' : 'dark'} wave={unlocked} delay={(i * 0.37) % 1.8} />
+              {!unlocked && <span className="gate-badge gate-badge-lock -bottom-1 left-1/2 -translate-x-1/2"><Lock size={11} /></span>}
+              {front && <span className="gate-badge -right-1.5 -top-1.5"><Swords size={11} /></span>}
+              {lit && slot && <span className="gate-badge -right-1.5 -top-1.5">{SLOT_HAN[slot]}</span>}
+            </span>
+            <span className="plaque">
+              <span>
+                <b>{s.title}</b>
+                <i>{s.id} · 전투력 {shortPower(powers[s.id] ?? 0)}</i>
+              </span>
+            </span>
+          </button>
         );
       })}
-    </svg>
+    </Section>
   );
 }
 
@@ -531,6 +624,7 @@ function Road({ cleared, frontierId }: { cleared: Record<string, number>; fronti
 function Tower({ flag, wave, delay }: { flag: 'red' | 'dark'; wave: boolean; delay: number }) {
   return (
     <svg viewBox="0 0 48 50" aria-hidden>
+      <ellipse cx="24" cy="49" rx="20" ry="1.8" fill="#281908" opacity=".32" />
       <use href="#cm-tower" width="48" height="50" />
       <g className={wave ? 'flag-wave' : undefined} style={wave ? { animationDelay: `${-delay}s` } : undefined}>
         <path
@@ -653,60 +747,17 @@ export default function Campaign() {
           </div>
         </div>
 
-        <div className="frame war-map paper-tex overflow-hidden">
+        <div className="frame war-map overflow-hidden">
           <Corners size={36} />
           <Compass />
           <div className="relative mx-auto w-full max-w-[34rem]" style={{ aspectRatio: `${VW} / ${MAP_H}` }}>
-            <Backdrop />
-            <Road cleared={cleared} frontierId={frontier.id} />
-
-            {HEADS.map((h) => (
-              <div key={h.id} className="chapter-banner" style={{ top: `${(h.y / MAP_H) * 100}%` }}>
-                <span>
-                  <b>제{h.id}장 {h.title}</b>
-                  <i>{h.year}</i>
-                </span>
-              </div>
+            {/* 정의(<defs>)는 한 번만: 성루 · 산 · 물결 · 그라데이션 · 필터를 모든 섹션이 <use> 로 가져다 쓴다 */}
+            <svg width="0" height="0" className="absolute" aria-hidden><MapDefs /></svg>
+            {SECTIONS.map((s) => <TerrainSection key={`t${s.id}`} sec={s} />)}
+            {SECTIONS.map((s) => (
+              <RouteSection key={`r${s.id}`} sec={s} cleared={cleared} frontierId={frontier.id} frontierRef={frontierRef}
+                filter={filter} selected={selected} powers={powers} onSelect={setSelected} />
             ))}
-
-            {STAGES.map((s, i) => {
-              const unlocked = isUnlocked(s.id, cleared);
-              const done = (cleared[s.id] ?? 0) > 0;
-              const front = frontier.id === s.id && !done;
-              const gearId = stageGearId(s.chapter, i);
-              const slot = gearId ? GEAR_MAP[gearId]?.slot : undefined;
-              const lit = filter !== 'all' && slot === filter;
-              const state = !unlocked ? 'locked' : done ? 'done' : front ? 'front' : 'open';
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  ref={s.id === frontier.id ? frontierRef : undefined}
-                  disabled={!unlocked}
-                  onClick={() => setSelected(s.id)}
-                  className="gate"
-                  data-state={state}
-                  data-sel={selected === s.id}
-                  data-lit={lit}
-                  data-dim={filter !== 'all' && !lit}
-                  aria-label={`${s.id} ${s.title}`}
-                  style={{ left: `${(SPOTS[i].x / VW) * 100}%`, top: `${(SPOTS[i].y / MAP_H) * 100}%` }}
-                >
-                  <span className="medal">
-                    <Tower flag={done ? 'red' : 'dark'} wave={unlocked} delay={(i * 0.37) % 1.8} />
-                    {!unlocked && <span className="gate-badge gate-badge-lock -bottom-1 left-1/2 -translate-x-1/2"><Lock size={11} /></span>}
-                    {front && <span className="gate-badge -right-1.5 -top-1.5"><Swords size={11} /></span>}
-                    {lit && slot && <span className="gate-badge -right-1.5 -top-1.5">{SLOT_HAN[slot]}</span>}
-                  </span>
-                  <span className="plaque">
-                    <span>
-                      <b>{s.title}</b>
-                      <i>{s.id} · 전투력 {shortPower(powers[s.id] ?? 0)}</i>
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
           </div>
         </div>
       </div>
@@ -776,7 +827,7 @@ function Briefing({
   return (
     <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto">
       <Roller />
-      <div className="silk paper-tex flex min-h-0 flex-1 flex-col">
+      <div className="silk flex min-h-0 flex-1 flex-col">
         <div key={stageId} className="animate-slide-in min-h-0 flex-1 overflow-y-auto px-6 py-3">
           <div className="flex items-start gap-2.5">
             <span className="seal seal-lg shrink-0">軍令</span>
