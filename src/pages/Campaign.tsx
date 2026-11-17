@@ -4,6 +4,7 @@ import { Lock, Swords } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
+import { DomainBar, DomainPanel } from '../components/DomainPanel';
 import { MarchList, SiegePanel, TacticPicker } from '../components/SiegePanel';
 import { cn } from '../components/ui';
 import { GENERAL_MAP } from '../data/generals';
@@ -691,6 +692,8 @@ export default function Campaign() {
   const startMarch = useGame((s) => s.startMarch);
   const resolveMarches = useGame((s) => s.resolveMarches);
   const marches = useGame((s) => s.marches);
+  const castles = useGame((s) => s.castles);
+  const ensureCastles = useGame((s) => s.ensureCastles);
   const gold = useGame((s) => s.gold);
   const [tactic, setTactic] = useState<Tactic>('none');
   const setView = useGame((s) => s.setView);
@@ -712,6 +715,7 @@ export default function Campaign() {
 
   // 부상 회복은 시간으로 계산하므로 몇 초마다 다시 읽는다
   const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { ensureCastles(); }, [ensureCastles, cleared]);
   const marching = marches.length > 0;
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), marching ? 1000 : 4000);
@@ -724,12 +728,14 @@ export default function Campaign() {
 
   /** 출정 부대(편성 번호 · 병력 비율)와 지금 고른 부대. picked가 null이면 출정 가능한 부대 전부 */
   const squads = useMemo(() => {
-    const away = new Set(marches.flatMap((m) => m.units.map((u) => u.commander)));
+    const away = new Map<string | null, string>();
+    for (const c of Object.values(castles)) if (c.garrison) away.set(c.garrison.commander, '수비 중');
+    for (const m of marches) for (const u of m.units) away.set(u.commander, '행군 중');
     return formation.flatMap((u, idx) => {
       const p = u.commander ? unitProfile(u, roster, gear) : null;
-      return p ? [{ idx, p, r: ratioOf(wounds, squadKey(u.commander!), now, SQUAD_RECOVER_MS), busy: away.has(u.commander) }] : [];
+      return p ? [{ idx, p, r: ratioOf(wounds, squadKey(u.commander!), now, SQUAD_RECOVER_MS), busy: (away.get(u.commander) ?? false) as string | false }] : [];
     });
-  }, [formation, roster, gear, wounds, now, marches]);
+  }, [formation, roster, gear, wounds, now, marches, castles]);
   const [picked, setPicked] = useState<number[] | null>(null);
   const picks = useMemo(
     () => new Set(squads.filter((s) => s.r >= MIN_SORTIE && !s.busy && (!picked || picked.includes(s.idx))).map((s) => s.idx)),
@@ -764,6 +770,7 @@ export default function Campaign() {
     <div className="pb-[20rem] lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-4 lg:pb-0">
       <div className="min-w-0">
         <div className="mb-3">
+          <DomainBar castles={castles} now={now} />
           <div className="flex items-end justify-between gap-2">
             <h2 className="font-serif text-xl font-black tracking-wide">
               천하 원정 <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8382E]">天下遠征</span>
@@ -822,6 +829,7 @@ export default function Campaign() {
         onFight={() => { setFocusStage(stage.id); startMarch(stage.id, [...picks], tactic); }}
         onFormation={() => setView('formation')}
       >
+        {castles[stage.id] && <DomainPanel stageId={stage.id} castle={castles[stage.id]} now={now} gold={gold} squads={squads} />}
         <MarchList marches={marches} now={now} />
         <TacticPicker stageId={stage.id} stageIdx={stageIndex(stage.id)} now={now} gold={gold} tactic={tactic} onPick={setTactic} />
         <SiegePanel squads={squads} garrison={garrison} picks={picks} onToggle={togglePick} />

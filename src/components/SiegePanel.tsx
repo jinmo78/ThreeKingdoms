@@ -9,8 +9,8 @@ import {
 import type { UnitProfile } from '../engine/unit';
 import { cn } from './ui';
 
-/** busy: 다른 성으로 행군 중 */
-export interface SquadRow { idx: number; p: UnitProfile; r: number; busy: boolean }
+/** busy: 행군 중 · 수비 중 같은 사유 (출정 불가) */
+export interface SquadRow { idx: number; p: UnitProfile; r: number; busy: string | false }
 export interface GarrisonRow { p: UnitProfile; r: number }
 
 const pct = (r: number) => `${Math.round(r * 100)}%`;
@@ -141,7 +141,7 @@ export function SiegePanel({ squads, garrison, picks, onToggle }: {
                     on ? 'bg-[#8e2a22] text-[#fff4d6] ring-[#8e2a22]' : 'ring-[#8a6230]/50')}>{on ? '✓' : ''}</span>
                   <span className="seal">{TROOP[p.troop].seal}</span>
                   <span className="min-w-0 flex-1 truncate font-bold">{idx + 1}부대 · {p.name.replace(' 부대', '')}</span>
-                  <span className="tabular opacity-70">{busy ? '행군 중' : ready ? `전투력 ${p.power.toLocaleString()}` : '회복 중'}</span>
+                  <span className="tabular opacity-70">{busy || (ready ? `전투력 ${p.power.toLocaleString()}` : '회복 중')}</span>
                 </div>
                 <div className="mt-1 flex items-center gap-1.5">
                   <div className="flex-1"><Bar r={r} tone="mine" /></div>

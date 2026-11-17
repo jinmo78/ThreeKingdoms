@@ -21,6 +21,7 @@ import {
   equipOn, gearCount, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, grantGear, unequipOne,
 } from '../engine/gear';
 import { emptyUnit, enemyUnitsToProfiles, playerProfiles, unitProfile } from '../engine/profiles';
+import { CASTLE_MAX_LEVEL, accrued, newCastle, upgradeCost } from '../engine/domain';
 import {
   GARRISON_RECOVER_MS, MAX_MARCHES, MIN_SORTIE, type March, SQUAD_RECOVER_MS, clearGarrison, garrisonKey, marchMs, pruneWounds, ratioOf, squadKey, withRatio,
 } from '../engine/siege';
@@ -135,6 +136,13 @@ interface GameState extends SaveData {
   /** 출정: 도착 시각이 되면 전투가 풀린다. picks는 편성 번호(0~2), 없으면 출정 가능한 부대 전부 */
   /** tactic: 수공·화공·기습 (금화가 든다) */
   startMarch: (stageId: string, picks?: number[], tactic?: Tactic) => boolean;
+  /** 점령했는데 내정 기록이 없는 성(이전 저장)에 기록을 만든다 */
+  ensureCastles: () => void;
+  /** 금화 징수. stageId가 없으면 모든 성. 받은 금화를 돌려준다 */
+  collectGold: (stageId?: string) => number;
+  upgradeCastle: (stageId: string) => 'ok' | 'gold' | 'max' | 'none';
+  /** 편성 번호의 부대를 성 수비로 두거나(null이면 해제) */
+  setGarrison: (stageId: string, unitIdx: number | null) => boolean;
   /** 도착한 부대가 있으면 전투를 계산해 전투 화면을 연다 */
   resolveMarches: () => boolean;
   /** 모의전 관전 (보상 없음) */
@@ -249,6 +257,7 @@ function siegeBattle(s: GameState, march: March, now: number): Partial<GameState
     roster: granted.roster,
     gear: dropped.gear,
     wounds: nextWounds,
+    castles: result.win && !already ? { ...s.castles, [stageId]: newCastle(now) } : s.castles,
     cleared: result.win ? { ...cleared, [stageId]: (cleared[stageId] ?? 0) + 1 } : cleared,
     fought: { ...fought, [stageId]: (fought[stageId] ?? 0) + 1 },
     battle: {
@@ -283,6 +292,7 @@ export const useGame = create<GameState>()(
       gear: {},
       wounds: {},
       marches: [],
+      castles: {},
       view: 'campaign',
       battle: null,
       entered: false,
@@ -471,12 +481,15 @@ export const useGame = create<GameState>()(
       setFocusStage: (focusStage) => set({ focusStage }),
 
       startMarch: (stageId, picks, tactic = 'none') => {
-        const { formation, roster, cleared, gear, wounds, marches, gold } = get();
+        const { formation, roster, cleared, gear, wounds, marches, gold, castles } = get();
         const stage = STAGE_MAP[stageId];
         if (!stage || !isUnlocked(stageId, cleared) || marches.length >= MAX_MARCHES) return false;
         if (gold < TACTICS[tactic].cost) return false;
         const now = Date.now();
-        const busy = new Set(marches.flatMap((m) => m.units.map((u) => u.commander)));
+        const busy = new Set([
+          ...marches.flatMap((m) => m.units.map((u) => u.commander)),
+          ...Object.values(castles).map((c) => c.garrison?.commander),
+        ]);
         const units = formation
           .filter((u, i) => u.commander && (!picks || picks.includes(i)) && !busy.has(u.commander)
             && ratioOf(wounds, squadKey(u.commander), now, SQUAD_RECOVER_MS) >= MIN_SORTIE
@@ -489,6 +502,66 @@ export const useGame = create<GameState>()(
           marches: [...marches, { id: `${now}-${stageId}`, stageId, units, tactic, from: now, eta }],
           focusStage: stageId,
         });
+        return true;
+      },
+
+      ensureCastles: () => {
+        const { cleared, castles } = get();
+        const missing = STAGES.filter((s) => (cleared[s.id] ?? 0) > 0 && !castles[s.id]);
+        if (missing.length === 0) return;
+        const now = Date.now();
+        const next = { ...castles };
+        for (const s of missing) next[s.id] = newCastle(now);
+        set({ castles: next });
+      },
+
+      collectGold: (stageId) => {
+        const { castles, gold } = get();
+        const now = Date.now();
+        let total = 0;
+        const next = { ...castles };
+        for (const [id, c] of Object.entries(castles)) {
+          if (stageId && id !== stageId) continue;
+          const got = accrued(stageIndex(id), c, now);
+          if (got <= 0) continue;
+          total += got;
+          next[id] = { ...c, since: now };
+        }
+        if (total > 0) set({ castles: next, gold: gold + total });
+        return total;
+      },
+
+      upgradeCastle: (stageId) => {
+        const { castles, gold } = get();
+        const c = castles[stageId];
+        if (!c) return 'none';
+        if (c.level >= CASTLE_MAX_LEVEL) return 'max';
+        const cost = upgradeCost(stageIndex(stageId), c.level);
+        const now = Date.now();
+        // 수입이 바뀌기 전에 쌓인 금화를 먼저 정산
+        const got = accrued(stageIndex(stageId), c, now);
+        if (gold + got < cost) return 'gold';
+        set({ gold: gold + got - cost, castles: { ...castles, [stageId]: { ...c, level: c.level + 1, since: now } } });
+        return 'ok';
+      },
+
+      setGarrison: (stageId, unitIdx) => {
+        const { castles, formation, marches, gold, roster, gear } = get();
+        const c = castles[stageId];
+        if (!c) return false;
+        const now = Date.now();
+        const got = accrued(stageIndex(stageId), c, now);
+        let garrison: Unit | null = null;
+        if (unitIdx != null) {
+          const u = formation[unitIdx];
+          const busy = new Set([
+            ...marches.flatMap((m) => m.units.map((x) => x.commander)),
+            ...Object.values(castles).map((x) => x.garrison?.commander),
+          ]);
+          if (!u?.commander || busy.has(u.commander) || !unitProfile(u, roster, gear)) return false;
+          garrison = { ...u };
+        }
+        set({ gold: gold + got, castles: { ...castles, [stageId]: { ...c, garrison, since: now } } });
         return true;
       },
 

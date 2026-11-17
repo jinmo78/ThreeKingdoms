@@ -8,10 +8,11 @@ import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
 import { MAX_MARCHES, pruneWounds, type March, type Wounds } from '../engine/siege';
 import { STAGE_MAP } from '../data/stages';
 import { TACTIC_LIST } from '../engine/tactics';
+import { CASTLE_MAX_LEVEL, type Castle } from '../engine/domain';
 import type { GearSlot, OwnedGear, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 export interface FormationPreset {
   id: string;
@@ -47,6 +48,8 @@ export interface SaveData {
   wounds: Wounds;
   /** 행군 중인 부대 */
   marches: March[];
+  /** 점령한 성의 내정 (레벨 · 수비 부대 · 마지막 징수 시각) */
+  castles: Record<string, Castle>;
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
@@ -77,6 +80,7 @@ export function freshSave(): SaveData {
     gear: {},
     wounds: {},
     marches: [],
+    castles: {},
   };
 }
 
@@ -207,7 +211,25 @@ export function sanitizeSave(raw: unknown): SaveData {
     gear,
     wounds: sanitizeWounds(src.wounds),
     marches: sanitizeMarches(src.marches, roster),
+    castles: sanitizeCastles(src.castles, roster),
   };
+}
+
+function sanitizeCastles(raw: unknown, roster: Record<string, OwnedGeneral>): Record<string, Castle> {
+  const out: Record<string, Castle> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  const now = Date.now();
+  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!STAGE_MAP[id] || !v || typeof v !== 'object') continue;
+    const c = v as Partial<Castle>;
+    const garrison = c.garrison ? sanitizeFormation([c.garrison], roster)[0] : null;
+    out[id] = {
+      level: clampInt(c.level, 1, CASTLE_MAX_LEVEL, 1),
+      garrison: garrison?.commander ? garrison : null,
+      since: typeof c.since === 'number' && Number.isFinite(c.since) ? Math.min(now, c.since) : now,
+    };
+  }
+  return out;
 }
 
 function sanitizeMarches(raw: unknown, roster: Record<string, OwnedGeneral>): March[] {
@@ -253,7 +275,7 @@ function sanitizeCounts(raw: unknown): Record<string, number> {
   return out;
 }
 
-/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) → v10(장비) → v11(장비 개수) → v12(공성 부상) → v13(행군) */
+/** v1(3칸) → v2(6칸) → v3(승급) → v4(하루 등용 횟수) → v5(편성 저장) → v6(저장 비용이 금화) → v8(전투 횟수) → v9(무료 등용·출석) → v10(장비) → v11(장비 개수) → v12(공성 부상) → v13(행군) → v14(내정) */
 export function migrateSave(persisted: unknown, version: number): SaveData {
   const src = (persisted && typeof persisted === 'object' ? { ...(persisted as Record<string, unknown>) } : {}) as Record<string, unknown>;
   if (version < 2 && Array.isArray(src.formation)) {
@@ -328,6 +350,7 @@ export function pickSave(s: SaveData): SaveData {
     gear: s.gear,
     wounds: s.wounds,
     marches: s.marches,
+    castles: s.castles,
   };
 }
 
