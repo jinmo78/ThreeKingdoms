@@ -7,10 +7,22 @@ import {
   gearBonus, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, wearerOf,
 } from '../engine/gear';
 import { useGame } from '../store/gameStore';
-import type { GearSlot } from '../types';
+import type { GearSlot, Stats } from '../types';
 import { cn } from './ui';
 
 const SLOT_ORDER: GearSlot[] = ['weapon', 'armor', 'tome'];
+
+/** 무기=무력, 갑주=통솔, 서책=지력. 장수의 가장 높은 능력 칸을 추천한다. */
+const SLOT_FIT: Record<GearSlot, { stat: keyof Stats; gear: string; who: string }> = {
+  weapon: { stat: 'war', gear: '무기', who: '무력이 높은 장수' },
+  armor: { stat: 'lead', gear: '갑주', who: '통솔이 높은 장수' },
+  tome: { stat: 'int', gear: '서책', who: '지력이 높은 장수' },
+};
+
+function recommendedSlots(stats: Stats): GearSlot[] {
+  const top = Math.max(stats.war, stats.lead, stats.int);
+  return SLOT_ORDER.filter((slot) => stats[SLOT_FIT[slot].stat] === top);
+}
 
 export function GearBag() {
   const bag = useGame((s) => s.gear);
@@ -65,7 +77,7 @@ export function GearBag() {
                       <span className="font-bold">{def.name}</span>
                       <span className="ml-auto text-xs font-bold text-amber-300">{STAT_LABEL[def.stat]} +{bonus}</span>
                     </div>
-                    <p className="mt-1 text-[11px] text-stone-500">{def.desc}</p>
+                    <p className="mt-1 text-[11px] text-stone-500">{def.desc} {SLOT_FIT[def.slot].who}에게 맞습니다.</p>
                     <div className="mt-1 text-[11px] text-stone-400">
                       Lv.{item.level}/{GEAR_MAX_LEVEL} · 강화 +{item.enhance} · 파편 {item.shards}
                     </div>
@@ -127,36 +139,67 @@ function GrowBtn({ label, note, disabled, onClick }: { label: string; note: stri
   );
 }
 
-/** 장수 상세에 끼운 장비만 보여 준다. 바꾸고 성장시키는 곳은 장비 탭. */
+/** 장수 상세에서 칸마다 장비를 고른다. 성장은 편성 화면의 장비에서 한다. */
 export function EquippedGear({ generalId }: { generalId: string }) {
   const roster = useGame((s) => s.roster);
   const bag = useGame((s) => s.gear);
+  const equipGear = useGame((s) => s.equipGear);
   const owned = roster[generalId];
-  if (!owned) return null;
+  const general = GENERAL_MAP[generalId];
+  if (!owned || !general) return null;
+  const best = recommendedSlots(general.stats);
+  const advice = best.length === SLOT_ORDER.length
+    ? '무력·통솔·지력이 비슷합니다. 세 칸 모두 도움이 됩니다.'
+    : `먼저 끼울 칸은 ${best.map((slot) => SLOT_FIT[slot].gear).join(' · ')}입니다. ${best.map((slot) => STAT_LABEL[SLOT_FIT[slot].stat]).join(' · ')}을 올립니다.`;
+  const ownedIds = Object.keys(bag);
   return (
     <div>
       <div className="text-xs font-bold text-stone-400">장비</div>
-      <div className="mt-1 grid grid-cols-3 gap-1.5">
+      <p className="mt-1 text-[11px] leading-relaxed text-stone-400">{advice} 세 칸은 함께 낄 수 있습니다.</p>
+      <div className="mt-1.5 grid grid-cols-3 gap-1.5">
         {SLOT_ORDER.map((slot) => {
-          const id = owned.gear?.[slot];
-          const def = id ? GEAR_MAP[id] : undefined;
-          const item = id ? bag[id] : undefined;
+          const current = owned.gear?.[slot] ?? '';
+          const choices = ownedIds.filter((id) => GEAR_MAP[id]?.slot === slot);
+          const worn = current ? GEAR_MAP[current] : undefined;
+          const wornItem = current ? bag[current] : undefined;
           return (
-            <div key={slot} className="rounded-lg bg-stone-950/60 px-2 py-1.5 text-[11px]">
-              <div className="text-stone-500">{GEAR_SLOT_LABEL[slot]}</div>
-              {def && item ? (
-                <>
-                  <div className="truncate font-bold text-stone-100">{def.name}</div>
-                  <div className="text-amber-300">{STAT_LABEL[def.stat]} +{gearBonus(def, item)}</div>
-                </>
-              ) : (
-                <div className="text-stone-600">없음</div>
-              )}
-            </div>
+            <label key={slot} className="rounded-lg bg-stone-950/60 px-2 py-1.5 text-[11px]">
+              <div className="flex items-center gap-1 text-stone-500">
+                {GEAR_SLOT_LABEL[slot]}
+                {best.includes(slot) && <span className="rounded bg-amber-400/20 px-1 text-[10px] font-bold text-amber-300">추천</span>}
+              </div>
+              <select
+                value={current}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  if (!next) {
+                    if (current) equipGear(null, current);
+                    return;
+                  }
+                  equipGear(generalId, next);
+                }}
+                className="mt-1 w-full rounded-md border border-stone-700 bg-stone-950 px-1 py-1 text-[11px] text-stone-100"
+              >
+                <option value="">없음</option>
+                {choices.map((id) => {
+                  const piece = GEAR_MAP[id];
+                  const wearer = wearerOf(roster, id);
+                  const who = wearer && wearer !== generalId ? GENERAL_MAP[wearer]?.name : null;
+                  return (
+                    <option key={id} value={id}>
+                      {piece.name}{who ? ` · ${who}` : ''}
+                    </option>
+                  );
+                })}
+              </select>
+              <div className="mt-1 text-amber-300">
+                {worn && wornItem ? `${STAT_LABEL[worn.stat]} +${gearBonus(worn, wornItem)}` : SLOT_FIT[slot].who}
+              </div>
+            </label>
           );
         })}
       </div>
-      <p className="mt-1 text-[10px] text-stone-500">편성 화면 아래 장비에서 끼우고 성장시킵니다.</p>
+      <p className="mt-1 text-[10px] text-stone-500">레벨·강화·등급은 편성 화면의 장비에서 올립니다.</p>
     </div>
   );
 }
