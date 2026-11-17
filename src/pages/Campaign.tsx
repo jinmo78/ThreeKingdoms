@@ -1,6 +1,6 @@
 // 원정 지도. 진행·드롭·출진 함수는 그대로 두고 고르는 화면만 고지도로 보여 준다.
 // 그림(한지 질감·산수·성루·두루마리)은 SVG와 index.css(.war-*, .gate, .silk 등)로만 그린다.
-import { Lock, Swords } from 'lucide-react';
+import { Lock, Swords, X } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
@@ -707,9 +707,12 @@ export default function Campaign() {
   const [selected, setSelectedState] = useState(
     focusStage && STAGE_MAP[focusStage] && isUnlocked(focusStage, cleared) ? focusStage : firstOpen.id,
   );
+  // 모바일의 군령 시트는 처음엔 닫혀 있고, 성을 눌러야 열린다
+  const [sheet, setSheet] = useState(false);
   const setSelected = (id: string) => {
     setSelectedState(id);
     setFocusStage(id);
+    setSheet(true);
   };
   const stage = STAGE_MAP[selected] ?? firstOpen;
 
@@ -758,19 +761,15 @@ export default function Campaign() {
     return out;
   }, []);
 
-  useEffect(() => {
-    // 처음 열 때는 지금 고른 성(없으면 다음 목표)이 화면 가운데 오게 한다
-    // scrollIntoView는 overflow:hidden인 지도 틀까지 안쪽으로 밀어 맨 위 성(1-1)이 잘리므로, 창만 직접 스크롤한다
-    const el = document.querySelector<HTMLElement>('.gate[data-sel="true"]') ?? frontierRef.current;
-    if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2) });
-  }, []);
+  // 처음에는 지도 맨 위에서 시작한다
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const clearedCount = STAGES.filter((s) => cleared[s.id]).length;
   const dropId = stageGearId(stage.chapter, stageIndex(stage.id));
   const drop = dropId ? GEAR_MAP[dropId] : undefined;
 
   return (
-    <div className="pb-[20rem] lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-4 lg:pb-0">
+    <div className={cn(sheet ? 'pb-[20rem]' : 'pb-4', 'lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-4 lg:pb-0')}>
       <div className="min-w-0">
         <div className="mb-3">
           <DomainBar castles={castles} now={now} />
@@ -816,6 +815,8 @@ export default function Campaign() {
       </div>
 
       <Briefing
+        open={sheet}
+        onClose={() => setSheet(false)}
         stageId={stage.id}
         title={stage.title}
         desc={stage.desc}
@@ -871,8 +872,9 @@ function Roller() {
 
 /** 군령 두루마리: 모바일은 하단 시트, 넓은 화면은 지도 옆에 붙는다. */
 function Briefing({
-  stageId, title, desc, done, enemies, mine, dropId, dropName, noSquads, canFight, fightLabel, fought, stageEnemies, onFight, onFormation, children,
+  open, onClose, stageId, title, desc, done, enemies, mine, dropId, dropName, noSquads, canFight, fightLabel, fought, stageEnemies, onFight, onFormation, children,
 }: {
+  open: boolean; onClose: () => void;
   stageId: string; title: string; desc: string; done: boolean;
   enemies: UnitProfile[]; mine: UnitProfile[];
   dropId: string | null; dropName?: string; noSquads: boolean; canFight: boolean; fightLabel: string; fought: boolean;
@@ -885,7 +887,7 @@ function Briefing({
   const troop = mainTroop(enemies);
   const grade = gradeLabel(mine, enemies);
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto">
+    <div className={cn(!open && 'max-lg:hidden', "fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto")}>
       <Roller />
       <div className="silk flex min-h-0 flex-1 flex-col">
         {/* 제목과 출정 버튼은 두루마리 맨 위에 고정 — 아래 내용이 길어도 버튼이 잘리지 않는다 */}
@@ -896,6 +898,10 @@ function Briefing({
               <div className="font-serif text-lg font-black leading-tight">{stageId} {title}</div>
               <p className="mt-0.5 text-[11px] opacity-70">{desc}</p>
             </div>
+            <button type="button" aria-label="닫기" onClick={onClose}
+              className="-mr-2 -mt-1 ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1713]/10 ring-1 ring-[#8a6230]/40 lg:hidden">
+              <X size={18} />
+            </button>
           </div>
           <div className="mt-2.5">
             {!noSquads ? (
