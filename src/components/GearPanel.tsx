@@ -1,4 +1,5 @@
 // 장비 가방. 레벨·강화·등급은 파편과 금화로 올리고, 장수 한 명에게만 끼운다.
+import { useState } from 'react';
 import { GEAR, GEAR_MAP, GEAR_SLOT_LABEL } from '../data/gear';
 import { RARITY, STAT_LABEL } from '../data/meta';
 import { GENERAL_MAP } from '../data/generals';
@@ -8,7 +9,8 @@ import {
 } from '../engine/gear';
 import { useGame } from '../store/gameStore';
 import type { GearSlot, Stats } from '../types';
-import { cn } from './ui';
+import { GearArt } from './GearArt';
+import { cn, NameSearch } from './ui';
 
 const SLOT_ORDER: GearSlot[] = ['weapon', 'armor', 'tome'];
 
@@ -32,52 +34,85 @@ export function GearBag() {
   const gearLevelUp = useGame((s) => s.gearLevelUp);
   const gearEnhance = useGame((s) => s.gearEnhance);
   const gearPromote = useGame((s) => s.gearPromote);
-  const ownedIds = GEAR.map((g) => g.id).filter((id) => bag[id]);
+  const [own, setOwn] = useState<'all' | 'owned' | 'missing'>('all');
+  const [slotFilter, setSlotFilter] = useState<GearSlot | 'all'>('all');
+  const [query, setQuery] = useState('');
+  const ownedCount = GEAR.filter((g) => bag[g.id]).length;
+  const needle = query.trim();
   const generals = Object.keys(roster).flatMap((id) => {
     const def = GENERAL_MAP[id];
     return def ? [{ id, name: def.name }] : [];
   });
 
-  if (ownedIds.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed border-stone-700 p-4 text-center text-xs text-stone-500">
-        아직 장비가 없습니다. 원정이나 토벌전에서 이기면 여기에 쌓입니다.
-      </p>
-    );
-  }
-
   return (
     <div className="space-y-3">
       <p className="text-[11px] leading-relaxed text-stone-500">
-        원정 첫 승리에 그 장의 장비가 나오고, 이미 가진 장비가 다시 나오면 파편입니다. 깬 스테이지를 다시 이기면 가끔 파편이 더 나옵니다. 토벌전 승리도 파편을 줍니다.
-        레벨은 파편 1개, 강화는 파편 2개, 등급은 Lv.{GEAR_MAX_LEVEL}·강화 +{GEAR_MAX_ENHANCE}에서 파편 {GEAR_PROMOTE_SHARDS}개로 R → SR → SSR까지 올립니다.
+        획득 {ownedCount}/{GEAR.length}. 흐린 그림은 아직 없는 장비입니다. 원정 첫 승리에 그 장의 장비가 나오고, 이미 가진 장비가 다시 나오면 파편입니다.
+        레벨은 파편 1개, 강화는 파편 2개, 등급은 Lv.{GEAR_MAX_LEVEL}·강화 +{GEAR_MAX_ENHANCE}에서 파편 {GEAR_PROMOTE_SHARDS}개로 올립니다.
       </p>
+      <div className="flex flex-wrap items-center gap-1">
+        <NameSearch value={query} onChange={setQuery} placeholder="장비 이름" />
+        {([['all', '전체'], ['owned', '획득'], ['missing', '미획득']] as const).map(([id, label]) => (
+          <button key={id} type="button" onClick={() => setOwn(id)}
+            className={cn('rounded-md px-2 py-1 text-xs font-bold', own === id ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-800 text-stone-300')}>
+            {label}
+          </button>
+        ))}
+        {(['all', ...SLOT_ORDER] as const).map((slot) => (
+          <button key={slot} type="button" onClick={() => setSlotFilter(slot)}
+            className={cn('rounded-md px-2 py-1 text-xs font-bold', slotFilter === slot ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-400')}>
+            {slot === 'all' ? '모든 칸' : GEAR_SLOT_LABEL[slot]}
+          </button>
+        ))}
+      </div>
       {SLOT_ORDER.map((slot) => {
-        const list = ownedIds.filter((id) => GEAR_MAP[id]?.slot === slot);
+        const list = GEAR.filter((g) => {
+          if (g.slot !== slot || (slotFilter !== 'all' && slot !== slotFilter)) return false;
+          const has = !!bag[g.id];
+          if (own === 'owned' && !has) return false;
+          if (own === 'missing' && has) return false;
+          return !needle || g.name.includes(needle);
+        });
         if (list.length === 0) return null;
         return (
           <section key={slot}>
             <h3 className="mb-2 text-sm font-black text-stone-300">{GEAR_SLOT_LABEL[slot]}</h3>
             <div className="grid gap-2 sm:grid-cols-2">
-              {list.map((id) => {
-                const def = GEAR_MAP[id];
-                const item = bag[id];
+              {list.map((def) => {
+                const item = bag[def.id];
+                if (!item) {
+                  return (
+                    <div key={def.id} className="flex gap-2 rounded-xl border border-dashed border-stone-700 bg-stone-950/40 p-3">
+                      <GearArt id={def.id} dim />
+                      <div className="min-w-0">
+                        <div className="font-bold text-stone-400">{def.name}</div>
+                        <p className="mt-1 text-[11px] text-stone-500">{def.desc} {SLOT_FIT[def.slot].who}에게 맞습니다.</p>
+                        <div className="mt-1 text-[11px] text-stone-600">미획득 · 원정·토벌전</div>
+                      </div>
+                    </div>
+                  );
+                }
                 const rank = gearRarity(def, item.promote);
                 const bonus = gearBonus(def, item);
-                const wearer = wearerOf(roster, id);
+                const wearer = wearerOf(roster, def.id);
                 const nextRank = gearPromoteLeft(def, item.promote) > 0 ? gearRarity(def, item.promote + 1) : null;
                 const levelCost = gearLevelCost(item.level);
                 const enhanceCost = gearEnhanceCost(item.enhance);
                 const promoteCost = nextRank === 'SR' || nextRank === 'SSR' ? gearPromoteCost(nextRank) : 0;
                 const ready = item.level >= GEAR_MAX_LEVEL && item.enhance >= GEAR_MAX_ENHANCE;
                 return (
-                  <div key={id} className={cn('rounded-xl border p-3', RARITY[rank].border, 'bg-stone-900/70')}>
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn('rounded px-1 py-0.5 text-[10px] font-black', RARITY[rank].badge)}>{rank}</span>
-                      <span className="font-bold">{def.name}</span>
-                      <span className="ml-auto text-xs font-bold text-amber-300">{STAT_LABEL[def.stat]} +{bonus}</span>
+                  <div key={def.id} className={cn('rounded-xl border p-3', RARITY[rank].border, 'bg-stone-900/70')}>
+                    <div className="flex items-center gap-2">
+                      <GearArt id={def.id} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn('rounded px-1 py-0.5 text-[10px] font-black', RARITY[rank].badge)}>{rank}</span>
+                          <span className="font-bold">{def.name}</span>
+                          <span className="ml-auto text-xs font-bold text-amber-300">{STAT_LABEL[def.stat]} +{bonus}</span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-stone-500">{def.desc} {SLOT_FIT[def.slot].who}에게 맞습니다.</p>
+                      </div>
                     </div>
-                    <p className="mt-1 text-[11px] text-stone-500">{def.desc} {SLOT_FIT[def.slot].who}에게 맞습니다.</p>
                     <div className="mt-1 text-[11px] text-stone-400">
                       Lv.{item.level}/{GEAR_MAX_LEVEL} · 강화 +{item.enhance} · 파편 {item.shards}
                     </div>
@@ -85,7 +120,7 @@ export function GearBag() {
                       장착
                       <select
                         value={wearer ?? ''}
-                        onChange={(e) => equipGear(e.target.value || null, id)}
+                        onChange={(e) => equipGear(e.target.value || null, def.id)}
                         className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-950 px-2 py-1 text-xs text-stone-200"
                       >
                         <option value="">보관</option>
@@ -96,20 +131,20 @@ export function GearBag() {
                       <GrowBtn
                         label="레벨업"
                         disabled={item.level >= GEAR_MAX_LEVEL || item.shards < 1 || gold < levelCost}
-                        onClick={() => gearLevelUp(id)}
+                        onClick={() => gearLevelUp(def.id)}
                         note={item.level >= GEAR_MAX_LEVEL ? '최대' : `파편 1 · 금 ${levelCost}`}
                       />
                       <GrowBtn
                         label="강화"
                         disabled={item.enhance >= GEAR_MAX_ENHANCE || item.shards < 2 || gold < enhanceCost}
-                        onClick={() => gearEnhance(id)}
+                        onClick={() => gearEnhance(def.id)}
                         note={item.enhance >= GEAR_MAX_ENHANCE ? '최대' : `파편 2 · 금 ${enhanceCost}`}
                       />
                       {nextRank && (
                         <GrowBtn
                           label={`${nextRank} 등급`}
                           disabled={!ready || item.shards < GEAR_PROMOTE_SHARDS || gold < promoteCost}
-                          onClick={() => gearPromote(id)}
+                          onClick={() => gearPromote(def.id)}
                           note={ready ? `파편 ${GEAR_PROMOTE_SHARDS} · 금 ${promoteCost}` : `Lv.${GEAR_MAX_LEVEL} · +${GEAR_MAX_ENHANCE} 필요`}
                         />
                       )}
@@ -121,6 +156,15 @@ export function GearBag() {
           </section>
         );
       })}
+      {SLOT_ORDER.every((slot) => GEAR.filter((g) => {
+        if (g.slot !== slot || (slotFilter !== 'all' && slot !== slotFilter)) return false;
+        const has = !!bag[g.id];
+        if (own === 'owned' && !has) return false;
+        if (own === 'missing' && has) return false;
+        return !needle || g.name.includes(needle);
+      }).length === 0) && (
+        <p className="py-6 text-center text-xs text-stone-500">조건에 맞는 장비가 없습니다.</p>
+      )}
     </div>
   );
 }
@@ -165,7 +209,8 @@ export function EquippedGear({ generalId }: { generalId: string }) {
           return (
             <label key={slot} className="rounded-lg bg-stone-950/60 px-2 py-1.5 text-[11px]">
               <div className="flex items-center gap-1 text-stone-500">
-                {GEAR_SLOT_LABEL[slot]}
+                {current ? <GearArt id={current} size="sm" /> : null}
+                <span>{GEAR_SLOT_LABEL[slot]}</span>
                 {best.includes(slot) && <span className="rounded bg-amber-400/20 px-1 text-[10px] font-bold text-amber-300">추천</span>}
               </div>
               <select

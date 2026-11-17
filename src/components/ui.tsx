@@ -138,6 +138,17 @@ function unlockPageScroll() {
   window.scrollTo(0, lockedScrollY);
 }
 
+export function NameSearch({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full min-w-[8rem] flex-1 rounded-lg border border-stone-700 bg-stone-950 px-2 py-1 text-xs text-stone-100 placeholder:text-stone-500"
+    />
+  );
+}
+
 export function Modal({ children, onClose, wide }: { children: ReactNode; onClose: () => void; wide?: boolean }) {
   useEffect(() => {
     lockPageScroll();

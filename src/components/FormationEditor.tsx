@@ -18,7 +18,7 @@ import { GearBag } from './GearPanel';
 import { CounterFormationButton } from './CounterFormation';
 import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from './General';
 import { MatchupBadge } from './Matchup';
-import { Btn, cn, Modal } from './ui';
+import { Btn, cn, Modal, NameSearch } from './ui';
 
 type Target = { unit: number; slot: Slot };
 type DetailState = { def: GeneralDef; from?: Target };
@@ -47,6 +47,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
   const [target, setTarget] = useState<Target>({ unit: 0, slot: 'commander' });
   const [filter, setFilter] = useState<Faction | 'all'>('all');
   const [benchOnly, setBenchOnly] = useState(true);
+  const [query, setQuery] = useState('');
   const [detail, setDetail] = useState<DetailState | null>(null);
   const [info, setInfo] = useState<number | null>(null);
   const [picker, setPicker] = useState(false);
@@ -70,7 +71,9 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         .sort((a, b) => rarityRank(b.def) - rarityRank(a.def) || b.owned.level - a.owned.level),
     [roster, filter],
   );
-  const listed = benchOnly ? owned.filter((x) => !placed[x.def.id]) : owned;
+  const needle = query.trim();
+  const matched = needle ? owned.filter((x) => x.def.name.includes(needle)) : owned;
+  const listed = benchOnly ? matched.filter((x) => !placed[x.def.id]) : matched;
 
   // 현재 선택 슬롯에 넣었을 때 새로 생기거나 강화되는 시너지
   const preview = useMemo(() => {
@@ -207,6 +210,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
             className={cn('rounded-md px-2 py-1 text-xs font-bold', benchOnly ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-800 text-stone-300')}>
             {benchOnly ? '대기만' : '보유 전체'}
           </button>
+          <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
           <div className="ml-auto flex gap-1">
             {(['all', ...FACTIONS] as const).map((f) => (
               <button key={f} type="button" onClick={() => setFilter(f)}
@@ -256,7 +260,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         </div>
         {listed.length === 0 && (
           <p className="py-6 text-center text-xs text-stone-500">
-            {benchOnly ? '대기 장수가 없습니다. 보유 전체를 누르면 부대에 넣은 장수도 보입니다.' : '해당 세력의 장수가 없습니다.'}
+            {needle ? '찾는 장수가 없습니다.' : benchOnly ? '대기 장수가 없습니다. 보유 전체를 누르면 부대에 넣은 장수도 보입니다.' : '해당 세력의 장수가 없습니다.'}
           </p>
         )}
       </section>
@@ -276,7 +280,8 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
             </h3>
             <button type="button" onClick={() => setPicker(false)} className="rounded-lg p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-100" aria-label="닫기"><X size={18} /></button>
           </div>
-          <div className="mb-3 flex flex-wrap gap-1">
+          <div className="mb-3 flex flex-wrap items-center gap-1">
+            <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
             {(['all', ...FACTIONS] as const).map((f) => (
               <button key={f} type="button" onClick={() => setFilter(f)}
                 className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-400')}>
@@ -285,7 +290,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
             ))}
           </div>
           <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
-            {owned.map(({ def, owned: o }) => {
+            {matched.map(({ def, owned: o }) => {
               const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
               const rank = shownRarity(def.rarity, o.promote);
               const where = placed[def.id];
@@ -318,7 +323,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                 </button>
               );
             })}
-            {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">해당 세력의 장수가 없습니다.</p>}
+            {matched.length === 0 && <p className="py-6 text-center text-xs text-stone-500">{needle ? '찾는 장수가 없습니다.' : '해당 세력의 장수가 없습니다.'}</p>}
           </div>
           </div>
         </Modal>
@@ -335,7 +340,9 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         <Modal wide onClose={() => setDetail(null)}>
           <CompareBoard
             detail={detail}
-            owned={owned}
+            owned={matched}
+            query={query}
+            setQuery={setQuery}
             filter={filter}
             setFilter={setFilter}
             placed={placed}
@@ -354,10 +361,12 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
 }
 
 function CompareBoard({
-  detail, owned, filter, setFilter, placed, preview, enemyTroops, target, onPick, onPlace, onRemove, onClose,
+  detail, owned, query, setQuery, filter, setFilter, placed, preview, enemyTroops, target, onPick, onPlace, onRemove, onClose,
 }: {
   detail: DetailState;
   owned: { def: GeneralDef; owned: OwnedGeneral }[];
+  query: string;
+  setQuery: (v: string) => void;
   filter: Faction | 'all';
   setFilter: (f: Faction | 'all') => void;
   placed: Record<string, { unit: number; label: string }>;
@@ -396,7 +405,8 @@ function CompareBoard({
 
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,13rem)_minmax(0,1fr)] gap-3 md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] md:grid-rows-1">
         <div className="flex min-h-0 flex-col overflow-y-auto">
-          <div className="mb-2 flex flex-wrap gap-1">
+          <div className="mb-2 flex flex-wrap items-center gap-1">
+            <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
             {(['all', ...FACTIONS] as const).map((f) => (
               <button key={f} type="button" onClick={() => setFilter(f)}
                 className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-400')}>
@@ -435,7 +445,7 @@ function CompareBoard({
                 </button>
               );
             })}
-            {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">해당 세력의 장수가 없습니다.</p>}
+            {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">{query.trim() ? '찾는 장수가 없습니다.' : '해당 세력의 장수가 없습니다.'}</p>}
           </div>
         </div>
 

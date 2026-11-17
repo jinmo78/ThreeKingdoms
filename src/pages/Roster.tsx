@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { GearBag } from '../components/GearPanel';
 import { GeneralCard, GeneralDetail, GeneralToken, RarityBadge } from '../components/General';
 import { PageHero } from '../components/PageHero';
-import { Btn, cn, Modal } from '../components/ui';
+import { Btn, cn, Modal, NameSearch } from '../components/ui';
 import { BONDS, bondMembers, type BondDef } from '../data/bonds';
 import { RECRUITABLE } from '../data/generals';
 import { FACTION, FACTIONS } from '../data/meta';
 import { bonusText } from '../engine/synergy';
 import { shownRarity } from '../engine/unit';
 import { useGame } from '../store/gameStore';
-import type { GeneralDef, OwnedGeneral } from '../types';
+import type { GeneralDef, OwnedGeneral, Rarity } from '../types';
 
 type OwnFilter = 'all' | 'owned' | 'missing';
 
@@ -19,6 +19,8 @@ export default function Roster() {
   const roster = useGame((s) => s.roster);
   const [tab, setTab] = useState<'generals' | 'gear' | 'bonds'>('generals');
   const [ownFilter, setOwnFilter] = useState<OwnFilter>('all');
+  const [rarity, setRarity] = useState<'all' | Rarity>('all');
+  const [query, setQuery] = useState('');
   const [detail, setDetail] = useState<GeneralDef | null>(null);
   const [bondId, setBondId] = useState<string | null>(null);
   const [rules, setRules] = useState(false);
@@ -43,17 +45,30 @@ export default function Roster() {
 
       {tab === 'generals' && (
         <>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap items-center gap-1">
+            <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
             {([['all', '전체'], ['owned', '등용'], ['missing', '미등용']] as const).map(([id, label]) => (
               <button key={id} type="button" onClick={() => setOwnFilter(id)}
                 className={cn('rounded-full px-3 py-1 text-xs font-bold', ownFilter === id ? 'bg-stone-700 text-stone-100' : 'bg-stone-900 text-stone-500')}>
                 {label}
               </button>
             ))}
+            {(['all', 'SSR', 'SR', 'R'] as const).map((id) => (
+              <button key={id} type="button" onClick={() => setRarity(id)}
+                className={cn('rounded-full px-3 py-1 text-xs font-bold', rarity === id ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-900 text-stone-500')}>
+                {id === 'all' ? '모든 등급' : id}
+              </button>
+            ))}
           </div>
           {FACTIONS.map((f) => {
             const all = RECRUITABLE.filter((g) => g.faction === f);
-            const list = all.filter((g) => ownFilter === 'all' || (ownFilter === 'owned' ? roster[g.id] : !roster[g.id]));
+            const needle = query.trim();
+            const list = all.filter((g) => {
+              if (ownFilter === 'owned' && !roster[g.id]) return false;
+              if (ownFilter === 'missing' && roster[g.id]) return false;
+              if (rarity !== 'all' && g.rarity !== rarity) return false;
+              return !needle || g.name.includes(needle);
+            });
             if (list.length === 0) return null;
             return (
               <section key={f}>
@@ -80,9 +95,12 @@ export default function Roster() {
               </section>
             );
           })}
-          {ownFilter !== 'all' && RECRUITABLE.every((g) => ownFilter === 'owned' ? !roster[g.id] : !!roster[g.id]) && (
-            <p className="text-center text-xs text-stone-500">{ownFilter === 'owned' ? '아직 등용한 장수가 없습니다.' : '등용하지 않은 장수가 없습니다.'}</p>
-          )}
+          {!RECRUITABLE.some((g) => {
+            if (ownFilter === 'owned' && !roster[g.id]) return false;
+            if (ownFilter === 'missing' && roster[g.id]) return false;
+            if (rarity !== 'all' && g.rarity !== rarity) return false;
+            return !query.trim() || g.name.includes(query.trim());
+          }) && <p className="text-center text-xs text-stone-500">조건에 맞는 장수가 없습니다.</p>}
         </>
       )}
 
