@@ -759,7 +759,8 @@ export default function Campaign() {
   }, []);
 
   useEffect(() => {
-    frontierRef.current?.scrollIntoView({ block: 'center' });
+    // 처음 열 때는 지금 고른 성(없으면 다음 목표)이 화면 가운데 오게 한다
+    (document.querySelector<HTMLElement>('.gate[data-sel="true"]') ?? frontierRef.current)?.scrollIntoView({ block: 'center' });
   }, []);
 
   const clearedCount = STAGES.filter((s) => cleared[s.id]).length;
@@ -885,7 +886,8 @@ function Briefing({
     <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto">
       <Roller />
       <div className="silk flex min-h-0 flex-1 flex-col">
-        <div key={stageId} className="animate-slide-in min-h-0 flex-1 overflow-y-auto px-6 py-3">
+        {/* 제목과 출정 버튼은 두루마리 맨 위에 고정 — 아래 내용이 길어도 버튼이 잘리지 않는다 */}
+        <div key={`h${stageId}`} className="shrink-0 px-6 pt-3">
           <div className="flex items-start gap-2.5">
             <span className="seal seal-lg shrink-0">軍令</span>
             <div className="min-w-0">
@@ -893,7 +895,18 @@ function Briefing({
               <p className="mt-0.5 text-[11px] opacity-70">{desc}</p>
             </div>
           </div>
+          <div className="mt-2.5">
+            {!noSquads ? (
+              <button type="button" className="btn-war disabled:opacity-50" disabled={!canFight} onClick={onFight}>
+                <Swords size={18} /> {fightLabel}
+              </button>
+            ) : (
+              <button type="button" className="btn-war btn-war-alt" onClick={onFormation}>편성하러 가기</button>
+            )}
+          </div>
+        </div>
 
+        <div key={stageId} className="animate-slide-in min-h-0 flex-1 overflow-y-auto px-6 pb-3">
           <div className="ornate-rule"><i /></div>
 
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -922,15 +935,6 @@ function Briefing({
 
           {children}
 
-          <div className="mt-3.5 mb-1">
-            {!noSquads ? (
-              <button type="button" className="btn-war disabled:opacity-50" disabled={!canFight} onClick={onFight}>
-                <Swords size={18} /> {fightLabel}
-              </button>
-            ) : (
-              <button type="button" className="btn-war btn-war-alt" onClick={onFormation}>편성하러 가기</button>
-            )}
-          </div>
           <CounterFormationButton enemies={stageEnemies} unlocked={fought} lockedNote="첫 전투 후 개방" className="mt-2 w-full" />
         </div>
       </div>

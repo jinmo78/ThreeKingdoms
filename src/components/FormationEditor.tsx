@@ -2,7 +2,7 @@
 // 넓은 화면: 칸을 고른 뒤 아래 목록에서 배치. 모바일: 빈 칸 + → 팝업에서 배치
 // 목록에는 새로 켜지는 시너지와 주장 상성을 미리 표시
 import { Coins, Plus, Save, Sparkles, Trash2, Wand2, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { BOND_MAP } from '../data/bonds';
 import { GENERAL_MAP } from '../data/generals';
 import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP, UNIT_TINT } from '../data/meta';
@@ -269,7 +269,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="hslide" style={{ '--rows': 2 } as CSSProperties}>
           {listed.map(({ def, owned: o }) => {
             const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
             const rank = shownRarity(def.rarity, o.promote);

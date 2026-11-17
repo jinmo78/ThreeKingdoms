@@ -231,24 +231,14 @@ function Conquest() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* 적군 + 출진: 모바일에서는 위, PC에서는 오른쪽에 고정 */}
         <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:order-last lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
-          <Panel title={`${floor.floor}층 · ${themeLabel(floor.theme)}${floor.boss ? ' (정예)' : ''}`} icon={<Mountain size={15} />}>
-            <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
-              <span className="text-stone-400">적 Lv.{floor.level}{floor.stars > 0 && ` · ★${floor.stars}`}</span>
-              <span className="flex items-center gap-1 text-amber-300"><Coins size={13} /> {floor.reward.gold}</span>
-              <span className="text-stone-400">EXP {floor.reward.exp}</span>
-              {floor.boss && <span className="rounded bg-red-500/15 px-1.5 py-0.5 font-bold text-red-300">보스층</span>}
-            </div>
-            <EnemyLineup units={enemyProf} />
-          </Panel>
-
           <Panel title="출진" icon={<Swords size={15} />}>
             <div className="space-y-3">
-              <TroopAdviceBox enemy={enemyProf} mine={mine} />
-              <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
               <Btn size="lg" className="w-full" disabled={mine.length === 0} onClick={() => startConquest()}>
                 <Swords size={18} /> {floor.floor}층 도전!
               </Btn>
               {mine.length === 0 && <p className="text-center text-xs text-red-300">아래 편성에서 주장을 1명 이상 배치하세요.</p>}
+              <TroopAdviceBox enemy={enemyProf} mine={mine} />
+              <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
               <CounterFormationButton
                 enemies={floor.enemies}
                 unlocked={failFloor === floor.floor}
@@ -259,6 +249,16 @@ function Conquest() {
                 같은 층의 적 구성은 고정입니다. 지면 금화 10%·경험치 30%를 받고, 편성을 바꿔 다시 도전할 수 있습니다.
               </p>
             </div>
+          </Panel>
+
+          <Panel title={`${floor.floor}층 · ${themeLabel(floor.theme)}${floor.boss ? ' (정예)' : ''}`} icon={<Mountain size={15} />}>
+            <div className="mb-3 flex flex-wrap items-center gap-3 text-xs">
+              <span className="text-stone-400">적 Lv.{floor.level}{floor.stars > 0 && ` · ★${floor.stars}`}</span>
+              <span className="flex items-center gap-1 text-amber-300"><Coins size={13} /> {floor.reward.gold}</span>
+              <span className="text-stone-400">EXP {floor.reward.exp}</span>
+              {floor.boss && <span className="rounded bg-red-500/15 px-1.5 py-0.5 font-bold text-red-300">보스층</span>}
+            </div>
+            <EnemyLineup units={enemyProf} />
           </Panel>
         </div>
 

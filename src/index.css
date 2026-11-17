@@ -201,11 +201,11 @@ body {
 }
 .missive .sheet {
   display: flex;
-  height: 12.5rem;
+  height: 19rem;
   flex-direction: column;
   padding: 0.45rem 0.5rem 0.4rem;
 }
-.missive.is-solo .sheet { height: 17.5rem; }
+.missive.is-solo .sheet { height: 23.5rem; }
 .missive-sr .paper { box-shadow: inset 0 0 0 1px rgba(198, 161, 91, 0.45); }
 .missive-ssr.is-open .paper {
   background:
@@ -820,3 +820,13 @@ html.dark .silk { background-blend-mode: normal; }
 @media (prefers-reduced-motion: reduce) {
   .flag-wave, .road-front .road-gold, .gate[data-state='front'] .medal::after, .btn-war::after { animation: none; }
 }
+
+/* 가로 슬라이드 목록: 한 화면에 몇 개만 보이고 옆으로 밀어서 넘긴다 (--rows로 줄 수 지정) */
+.hslide {
+  display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 1), auto);
+  grid-auto-columns: 86%; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem;
+  scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+}
+.hslide > * { scroll-snap-align: start; min-width: 0; }
+@media (min-width: 640px) { .hslide { grid-auto-columns: calc(50% - 0.25rem); } }
+@media (min-width: 1280px) { .hslide { grid-auto-columns: calc(33.333% - 0.35rem); } }

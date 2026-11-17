@@ -80,7 +80,7 @@ export function GearBag() {
         return (
           <section key={slot}>
             <h3 className="mb-2 text-sm font-black text-stone-300">{GEAR_SLOT_LABEL[slot]}</h3>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="hslide">
               {list.map((def) => {
                 const item = bag[def.id];
                 if (!item) {

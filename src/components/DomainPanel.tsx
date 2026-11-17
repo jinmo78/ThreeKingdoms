@@ -21,9 +21,11 @@ export function DomainBar({ castles, now }: { castles: Record<string, Castle>; n
   const stored = list.reduce((n, [id, c]) => n + accrued(stageIndex(id), c, now), 0);
   return (
     <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-[#1b1713]/85 px-3 py-1.5 text-xs text-[#E7DCC8]">
-      <span className="min-w-0 truncate">
-        🏯 영지 {list.length}성 · 수입 <b className="tabular text-amber-300">+{fmt(income)}</b>금/시
-        {msg && <b className="ml-2 text-emerald-300">{msg}</b>}
+      <span className="min-w-0 leading-snug" title="점령한 성은 가만히 둬도 금화를 만듭니다. 성마다 최대 8시간분까지 쌓입니다.">
+        🏯 점령한 성 {list.length}곳 · 1시간에 <b className="tabular text-amber-300">{fmt(income)}</b>금 생산
+        <span className="block text-[10px] opacity-60">
+          {msg ? <b className="text-emerald-300">{msg}</b> : "쌓인 금화를 받으려면 오른쪽 버튼 (성마다 최대 8시간분)"}
+        </span>
       </span>
       <button
         type="button"
@@ -31,7 +33,7 @@ export function DomainBar({ castles, now }: { castles: Record<string, Castle>; n
         onClick={() => { const got = collectGold(); setMsg(got ? `+${fmt(got)}금 징수` : ''); setTimeout(() => setMsg(''), 2500); }}
         className="tabular flex shrink-0 items-center gap-1 rounded-md bg-[#8e2a22] px-2.5 py-1 font-bold text-[#fff4d6] disabled:opacity-40"
       >
-        <Coins size={12} /> 모두 징수 {fmt(stored)}
+        <Coins size={12} /> 금화 받기 {fmt(stored)}
       </button>
     </div>
   );

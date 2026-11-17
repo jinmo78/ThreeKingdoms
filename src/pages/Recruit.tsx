@@ -279,7 +279,7 @@ function Missive({
               <span className="truncate font-serif text-[10px] font-bold" style={{ color: faction.hex }}>{faction.full}</span>
               <span className="seal">{TROOP[def.troop].seal}</span>
             </span>
-            <GeneralToken def={def} size={solo ? 'lg' : 'md'} className="mx-auto mt-1" />
+            <GeneralToken def={def} size="fill" className={cn('mx-auto mt-1', !solo && 'max-w-[11rem]')} />
             <span className={cn('mt-1 block truncate text-center font-serif font-black', solo ? 'text-lg' : 'text-sm')}>{def.name}</span>
             <span className="block h-4 truncate text-center text-[10px] text-[#6b6258]">{def.title}</span>
             <span className="block h-4 truncate text-center font-serif text-[11px] font-bold">【{def.skill.name}】</span>

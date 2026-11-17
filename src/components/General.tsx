@@ -34,7 +34,7 @@ export function GeneralToken({ def, size = 'md', className, rarity }: {
   const troop = TROOP[def.troop];
   return (
     <div className={cn('relative shrink-0', className)}>
-      <div className={cn('relative overflow-hidden bg-[#171513]', s.box, RARITY[rank].border, FACTION[def.faction].frame)}>
+      <div className={cn('relative overflow-hidden bg-[#171513]', s.box, RARITY[rank].border, FACTION[def.faction].frame, RARITY[rank].ring)}>
         {!img && (
           <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center font-serif text-[1.7em] text-[#C6A15B]/30">{def.name}</span>
         )}
