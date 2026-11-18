@@ -116,8 +116,16 @@ function LandShell() {
   const inBattle = view === 'battle';
   const modalTab = TABS.find((t) => t.id === view && t.id !== 'campaign');
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#140e0c] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-      <header className="flex h-10 shrink-0 items-center gap-2 border-b border-[#C6A15B]/45 bg-[#171513] px-2 text-[#F3ECE0]">
+    <div className="fixed inset-0 bg-[#140e0c]">
+      {/* 바탕: 원정 지도 전체 화면. 전투 때만 종이 판 위에 전투 화면 */}
+      {inBattle ? (
+        <main className="scroll-sheet absolute inset-x-1.5 bottom-1.5 top-11 overflow-y-auto rounded-xl p-2"><BattlePage /></main>
+      ) : (
+        <div className="absolute inset-0"><Campaign /></div>
+      )}
+
+      {/* HUD 위: 얇은 반투명 바 */}
+      <header className="absolute inset-x-0 top-0 z-20 flex h-10 items-center gap-2 border-b border-[#C6A15B]/45 bg-[#171513]/85 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-[#F3ECE0] backdrop-blur">
         <button type="button" onClick={goTitle} aria-label="첫 화면으로" className="flex items-center gap-1.5">
           <BannerEmblem className="h-6 w-6" />
           <span className="font-serif text-sm font-bold text-[#C6A15B]">{GAME_TITLE}</span>
@@ -133,26 +141,21 @@ function LandShell() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
-        {!inBattle && (
-          <nav className="flex w-14 shrink-0 flex-col justify-center gap-1 bg-[#171513] py-1 text-[#F3ECE0]">
-            {TABS.map((t) => {
-              const Icon = t.icon;
-              const active = view === t.id;
-              return (
-                <button key={t.id} type="button" onClick={() => setView(t.id)}
-                  className={cn('flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-bold', active ? 'bg-[#B8382E]/25 text-[#B8382E]' : 'text-[#C6A15B]/80')}>
-                  <Icon size={18} />
-                  {t.label}
-                </button>
-              );
-            })}
-          </nav>
-        )}
-        <main className={cn('scroll-sheet m-1.5 min-h-0 min-w-0 flex-1 rounded-xl p-2', inBattle ? 'overflow-y-auto' : 'overflow-hidden')}>
-          {inBattle ? <BattlePage /> : <Campaign />}
-        </main>
-      </div>
+      {/* HUD 오른쪽: 메뉴 버튼 열 (지도가 곧 출진 화면이라 출진 탭은 없다) */}
+      {!inBattle && (
+        <nav className="absolute right-[max(0.375rem,env(safe-area-inset-right))] top-12 z-20 flex flex-col gap-1.5">
+          {TABS.filter((t) => t.id !== 'campaign').map((t) => {
+            const Icon = t.icon;
+            return (
+              <button key={t.id} type="button" onClick={() => setView(t.id)}
+                className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#C6A15B]/60 bg-[#171513]/85 text-[10px] font-bold text-[#C6A15B] shadow-lg backdrop-blur active:bg-[#B8382E]/40">
+                <Icon size={18} />
+                {t.label}
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {modalTab && (
         <Modal wide onClose={() => setView('campaign')}>

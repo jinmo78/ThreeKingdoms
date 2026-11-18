@@ -702,6 +702,8 @@ export default function Campaign() {
   const [filter, setFilter] = useState<GearFilter>('all');
   const frontierRef = useRef<HTMLButtonElement>(null);
   const land = useLandscape();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   const frontier = STAGES.find((s) => isUnlocked(s.id, cleared) && !(cleared[s.id] > 0)) ?? STAGES[STAGES.length - 1];
   const firstOpen = frontier;
@@ -764,31 +766,41 @@ export default function Campaign() {
 
   // 처음에는 지도 맨 위에서 시작한다
   useEffect(() => { window.scrollTo(0, 0); }, []);
+  // 가로: 지도가 길어서, 지금 공략할 성이 화면 가운데 오게 시작한다 (content-visibility 때문에 좌표로 계산)
+  useEffect(() => {
+    const sc = scrollRef.current;
+    const map = mapRef.current;
+    if (!land || !sc || !map) return;
+    const y = map.offsetTop + (SPOTS[STAGES.indexOf(frontier)].y / MAP_H) * map.offsetHeight;
+    sc.scrollTop = y - sc.clientHeight / 2;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [land]);
 
   const clearedCount = STAGES.filter((s) => cleared[s.id]).length;
   const dropId = stageGearId(stage.chapter, stageIndex(stage.id));
   const drop = dropId ? GEAR_MAP[dropId] : undefined;
 
   return (
-    <div className={land ? 'grid h-full min-h-0 grid-cols-[minmax(0,1fr)_17.5rem] gap-2'
+    <div className={land ? 'relative h-full overflow-hidden'
       : cn(sheet ? 'pb-[20rem]' : 'pb-4', 'lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-4 lg:pb-0')}>
-      <div className={cn('min-w-0', land && 'h-full overflow-y-auto')}>
-        <div className="mb-3">
+      {/* 가로: 지도가 화면 전체(스크롤), 그 위에 HUD가 얹힌다 */}
+      <div ref={scrollRef} className={land ? 'war-map absolute inset-0 overflow-x-hidden overflow-y-auto pb-4 pt-11' : 'min-w-0'}>
+        {!land && <div className="mb-3">
           <DomainBar castles={castles} now={now} />
-          <div className="flex items-end justify-between gap-2 land:hidden">
+          <div className="flex items-end justify-between gap-2">
             <h2 className="font-serif text-xl font-black tracking-wide">
               천하 원정 <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8382E]">天下遠征</span>
             </h2>
             <span className="text-xs font-bold text-stone-500">점령 {clearedCount}/{STAGES.length}</span>
           </div>
-          <div className="mt-1.5 h-2 rounded-full bg-[#1b1713]/80 p-px land:hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+          <div className="mt-1.5 h-2 rounded-full bg-[#1b1713]/80 p-px shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
             <div className="h-full rounded-full transition-[width] duration-500"
               style={{ width: `${(clearedCount / STAGES.length) * 100}%`, background: 'linear-gradient(90deg,#8e2a22,#c4352a 60%,#E3C070)' }} />
           </div>
-        </div>
+        </div>}
 
         {/* 병법서 책갈피(죽간) 탭 */}
-        <div className="slip-rail">
+        {!land && <div className="slip-rail">
           <div className="slip-row grid grid-cols-4 gap-1.5 px-2">
             {FILTERS.map(([id, han, label]) => (
               <button key={id} type="button" onClick={() => setFilter(id)} className="slip" data-on={filter === id} aria-pressed={filter === id}>
@@ -799,12 +811,12 @@ export default function Campaign() {
               </button>
             ))}
           </div>
-        </div>
+        </div>}
 
-        <div className="frame war-map overflow-clip">
-          <Corners size={36} />
-          <Compass />
-          <div className="relative mx-auto w-full max-w-[34rem]" style={{ aspectRatio: `${VW} / ${MAP_H}` }}>
+        <div className={land ? undefined : 'frame war-map overflow-clip'}>
+          {!land && <Corners size={36} />}
+          {!land && <Compass />}
+          <div ref={mapRef} className={cn('relative mx-auto w-full', land ? 'max-w-[25rem]' : 'max-w-[34rem]')} style={{ aspectRatio: `${VW} / ${MAP_H}` }}>
             {/* 정의(<defs>)는 한 번만: 성루 · 산 · 물결 · 그라데이션 · 필터를 모든 섹션이 <use> 로 가져다 쓴다 */}
             <svg width="0" height="0" className="absolute" aria-hidden><MapDefs /></svg>
             {SECTIONS.map((s) => <TerrainSection key={`t${s.id}`} sec={s} />)}
@@ -815,6 +827,30 @@ export default function Campaign() {
           </div>
         </div>
       </div>
+
+      {land && (
+        <>
+          {/* 좌상단: 영지 요약 + 장비 드롭 필터 */}
+          <div className="absolute left-[max(0.5rem,env(safe-area-inset-left))] top-12 z-10 w-64 space-y-1.5">
+            <div className="[&>div]:mb-0 [&>div]:border [&>div]:border-[#C6A15B]/50 [&>div]:shadow-lg"><DomainBar castles={castles} now={now} /></div>
+            <div className="flex gap-1">
+              {FILTERS.map(([id, han, label]) => (
+                <button key={id} type="button" onClick={() => setFilter(id)} aria-pressed={filter === id}
+                  className={cn('flex-1 rounded-md border px-1 py-1 text-[11px] font-bold shadow-lg',
+                    filter === id ? 'border-[#F0D58A] bg-[#8e2a22] text-[#fff4d6]' : 'border-[#C6A15B]/50 bg-[#1b1713]/85 text-[#C6A15B]')}>
+                  {han} {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* 좌하단: 행군 중인 부대 */}
+          {marches.length > 0 && (
+            <div className="absolute bottom-2 left-[max(0.5rem,env(safe-area-inset-left))] z-10 w-64 rounded-lg border border-[#C6A15B]/60 bg-[#F3ECE0]/95 px-2 pb-2 text-[#1C1612] shadow-lg [&>div]:mt-1.5">
+              <MarchList marches={marches} now={now} />
+            </div>
+          )}
+        </>
+      )}
 
       <Briefing
         open={sheet}
@@ -889,8 +925,10 @@ function Briefing({
   const troop = mainTroop(enemies);
   const grade = gradeLabel(mine, enemies);
   const land = useLandscape();
+  // 가로: 성을 누르면 오른쪽에 떠오르고 ✕로 닫는다 (오른쪽 메뉴 버튼 열은 피한다)
+  if (land && !open) return null;
   return (
-    <div className={land ? 'flex h-full min-h-0 flex-col'
+    <div className={land ? 'absolute bottom-2 right-[calc(3.75rem+env(safe-area-inset-right))] top-12 z-10 flex w-72 min-h-0 flex-col'
       : cn(!open && 'max-lg:hidden', "fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto")}>
       <Roller />
       <div className="silk flex min-h-0 flex-1 flex-col">
@@ -903,7 +941,7 @@ function Briefing({
               <p className="mt-0.5 text-[11px] opacity-70">{desc}</p>
             </div>
             <button type="button" aria-label="닫기" onClick={onClose}
-              className="-mr-2 -mt-1 ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1713]/10 ring-1 ring-[#8a6230]/40 lg:hidden land:hidden!">
+              className="-mr-2 -mt-1 ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1713]/10 ring-1 ring-[#8a6230]/40 lg:hidden land:flex!">
               <X size={18} />
             </button>
           </div>
