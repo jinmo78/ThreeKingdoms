@@ -97,7 +97,7 @@ export default function BattlePage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px] land:grid-cols-[minmax(0,1fr)_12rem]">
         {/* 전장. 적군이 위, 아군이 아래, 가운데가 컷인 */}
         <div
           className="battle-stage relative overflow-hidden rounded-2xl border border-[#C6A15B]/40 bg-[#171513] p-2 sm:p-3"
@@ -133,7 +133,7 @@ export default function BattlePage() {
         </div>
 
         {/* 전투 기록 */}
-        <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-[#C6A15B]/35 bg-[#F3ECE0]/90 p-2 text-xs text-[#3a332c] lg:max-h-[560px] dark:bg-[#221E1A]/90 dark:text-[#E7DCC8]">
+        <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-[#C6A15B]/35 bg-[#F3ECE0]/90 p-2 text-xs text-[#3a332c] lg:max-h-[560px] land:max-h-[60dvh] dark:bg-[#221E1A]/90 dark:text-[#E7DCC8]">
           {log.map((e) => (
             <LogLine key={e.id} e={e} />
           ))}

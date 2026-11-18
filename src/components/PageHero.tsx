@@ -11,7 +11,7 @@ export function PageHero({ image, title, aside, children, vivid = false }: {
   vivid?: boolean;
 }) {
   return (
-    <header className="relative min-h-44 overflow-hidden rounded-2xl border border-stone-800">
+    <header className="relative min-h-44 overflow-hidden rounded-2xl border border-stone-800 land:hidden">
       <img
         src={`${import.meta.env.BASE_URL}scenes/${image}`}
         alt=""

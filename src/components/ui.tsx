@@ -1,10 +1,23 @@
 import { ChevronLeft, ChevronRight, Moon, RefreshCw, Sun } from 'lucide-react';
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { applyTheme, currentTheme, type Theme } from '../theme';
 
 export function cn(...cls: (string | false | null | undefined)[]) {
   return cls.filter(Boolean).join(' ');
+}
+
+/** 폰 가로 화면(높이 500px 이하). index.css의 `land:` 변형과 같은 조건 */
+const LAND_QUERY = '(orientation: landscape) and (max-height: 500px)';
+export function useLandscape() {
+  return useSyncExternalStore(
+    (cb) => {
+      const m = window.matchMedia(LAND_QUERY);
+      m.addEventListener('change', cb);
+      return () => m.removeEventListener('change', cb);
+    },
+    () => window.matchMedia(LAND_QUERY).matches,
+  );
 }
 
 export function Panel({
@@ -159,7 +172,7 @@ export function Modal({ children, onClose, wide, ink }: { children: ReactNode; o
     <div className={cn('fixed inset-0 z-50 flex items-end justify-center overscroll-none p-0 sm:items-center sm:p-4', ink ? 'bg-[#171513]/80' : 'bg-black/75')} onClick={onClose}>
       <div
         className={cn(
-          'animate-slide-in flex max-h-[92dvh] w-full flex-col overscroll-contain rounded-t-2xl border border-[#C6A15B]/70 bg-stone-950 p-5 leading-relaxed sm:rounded-2xl',
+          'animate-slide-in flex max-h-[92dvh] w-full flex-col overscroll-contain rounded-t-2xl border border-[#C6A15B]/70 bg-stone-950 p-5 leading-relaxed land:p-3 sm:rounded-2xl',
           ink && 'border-2 border-[#C6A15B] bg-[#F3ECE0] text-[#1C1612] dark:bg-[#221E1A] dark:text-[#F3ECE0]',
           wide ? 'h-[92dvh] max-w-4xl overflow-hidden' : 'max-w-lg overflow-y-auto',
         )}

@@ -51,6 +51,13 @@
 - 로드맵: 5 AI 군주 · 비동기 대전
 - UI 규칙(2026-11-17): 긴 목록은 `HSlide`(ui.tsx, 가로 슬라이드 · PC 화살표/폰 스와이프) 사용. 모바일 군령 시트(`Briefing`)는 처음엔 닫힘 + ✕ 버튼, 출정 버튼은 시트 맨 위 고정. 지도 틀(`.war-map`)은 `overflow-clip`이라 `scrollIntoView` 금지(`window.scrollTo` 사용)
 
+## 폰 가로 모드 (2026-11-18, 1단계)
+- 조건: 가로 + 높이 500px 이하. CSS는 `land:` 변형(index.css `@custom-variant`), JS는 `useLandscape()`(ui.tsx) — 두 조건은 항상 같게 유지
+- 가로면 `App.tsx`의 `LandShell`로 전환: 고정 화면(스크롤 없음), 좌측 탭 레일, 원정 지도가 바탕, 편성·도전·등용·장수록은 `Modal wide`로 띄움. 세로는 기존 UI 그대로
+- 지도(`Campaign`)는 가로에서 좌 지도(자체 스크롤) + 우 군령 패널 고정. 전투는 로그를 옆으로
+- 참고한 '삼국지 패도' 화면은 배치 구조만 참고 (HUD가 지도 위, 기능은 모달). 그림·명칭 모방 금지
+- 다음: 가로 전용 천하 지도(드래그 이동), 전투 HUD화, 모달 내부 편성 화면 가로 최적화
+
 ## 밸런스 점검 방법
 수치를 바꿀 때는 감으로 하지 말고 시뮬레이션으로 확인:
 `src/engine`의 `simulateBattle`, `autoFormation`, `rollGenerals`(시드 고정)를 import하는 임시 스크립트를

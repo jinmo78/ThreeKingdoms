@@ -6,7 +6,7 @@ import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
 import { DomainBar, DomainPanel } from '../components/DomainPanel';
 import { MarchList, SiegePanel, TacticPicker } from '../components/SiegePanel';
-import { cn } from '../components/ui';
+import { cn, useLandscape } from '../components/ui';
 import { GENERAL_MAP } from '../data/generals';
 import { GEAR_MAP, stageGearId } from '../data/gear';
 import { TROOP } from '../data/meta';
@@ -701,6 +701,7 @@ export default function Campaign() {
   const setFocusStage = useGame((s) => s.setFocusStage);
   const [filter, setFilter] = useState<GearFilter>('all');
   const frontierRef = useRef<HTMLButtonElement>(null);
+  const land = useLandscape();
 
   const frontier = STAGES.find((s) => isUnlocked(s.id, cleared) && !(cleared[s.id] > 0)) ?? STAGES[STAGES.length - 1];
   const firstOpen = frontier;
@@ -769,17 +770,18 @@ export default function Campaign() {
   const drop = dropId ? GEAR_MAP[dropId] : undefined;
 
   return (
-    <div className={cn(sheet ? 'pb-[20rem]' : 'pb-4', 'lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-4 lg:pb-0')}>
-      <div className="min-w-0">
+    <div className={land ? 'grid h-full min-h-0 grid-cols-[minmax(0,1fr)_17.5rem] gap-2'
+      : cn(sheet ? 'pb-[20rem]' : 'pb-4', 'lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-4 lg:pb-0')}>
+      <div className={cn('min-w-0', land && 'h-full overflow-y-auto')}>
         <div className="mb-3">
           <DomainBar castles={castles} now={now} />
-          <div className="flex items-end justify-between gap-2">
+          <div className="flex items-end justify-between gap-2 land:hidden">
             <h2 className="font-serif text-xl font-black tracking-wide">
               천하 원정 <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8382E]">天下遠征</span>
             </h2>
             <span className="text-xs font-bold text-stone-500">점령 {clearedCount}/{STAGES.length}</span>
           </div>
-          <div className="mt-1.5 h-2 rounded-full bg-[#1b1713]/80 p-px shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+          <div className="mt-1.5 h-2 rounded-full bg-[#1b1713]/80 p-px land:hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
             <div className="h-full rounded-full transition-[width] duration-500"
               style={{ width: `${(clearedCount / STAGES.length) * 100}%`, background: 'linear-gradient(90deg,#8e2a22,#c4352a 60%,#E3C070)' }} />
           </div>
@@ -886,8 +888,10 @@ function Briefing({
   const leadName = commander ? GENERAL_MAP[commander]?.name ?? lead?.name : lead?.name;
   const troop = mainTroop(enemies);
   const grade = gradeLabel(mine, enemies);
+  const land = useLandscape();
   return (
-    <div className={cn(!open && 'max-lg:hidden', "fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto")}>
+    <div className={land ? 'flex h-full min-h-0 flex-col'
+      : cn(!open && 'max-lg:hidden', "fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto")}>
       <Roller />
       <div className="silk flex min-h-0 flex-1 flex-col">
         {/* 제목과 출정 버튼은 두루마리 맨 위에 고정 — 아래 내용이 길어도 버튼이 잘리지 않는다 */}
@@ -899,7 +903,7 @@ function Briefing({
               <p className="mt-0.5 text-[11px] opacity-70">{desc}</p>
             </div>
             <button type="button" aria-label="닫기" onClick={onClose}
-              className="-mr-2 -mt-1 ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1713]/10 ring-1 ring-[#8a6230]/40 lg:hidden">
+              className="-mr-2 -mt-1 ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1b1713]/10 ring-1 ring-[#8a6230]/40 lg:hidden land:hidden!">
               <X size={18} />
             </button>
           </div>

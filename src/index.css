@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 폰 가로 화면. ui.tsx의 useLandscape()와 같은 조건 */
+@custom-variant land (@media (orientation: landscape) and (max-height: 500px));
+
 @theme {
   --font-sans: "Noto Sans KR", "Pretendard", "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
   --font-serif: "Gowun Batang", "Noto Serif KR", "Batang", "AppleMyungjo", serif;

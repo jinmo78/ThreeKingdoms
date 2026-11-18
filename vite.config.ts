@@ -21,7 +21,7 @@ export default defineConfig(({ command }) => ({
         lang: 'ko',
         dir: 'ltr',
         display: 'standalone',
-        orientation: 'portrait-primary',
+        orientation: 'any',
         background_color: '#140e0c',
         theme_color: '#f3eadb',
         categories: ['games', 'entertainment'],
