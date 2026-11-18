@@ -843,3 +843,26 @@ html.dark .silk { background-blend-mode: normal; }
 .hslide > * { scroll-snap-align: start; min-width: 0; }
 @media (min-width: 640px) { .hslide { grid-auto-columns: calc(50% - 0.25rem); } }
 @media (min-width: 1280px) { .hslide { grid-auto-columns: calc(33.333% - 0.35rem); } }
+
+/* 폰 가로 지도(.land-map): 24성이 한 화면에 들어가도록 노드·명패·진군로를 작게 */
+.land-map .gate { min-width: 0; transform: translate(-50%, -19px); }
+.land-map .gate:not(:disabled):hover { transform: translate(-50%, -21px); }
+.land-map .medal { width: 38px; height: 38px; box-shadow: 0 0 0 1.5px var(--ink), 0 0 0 3px #c5a059, 0 0 0 4px var(--ink), 0 4px 6px 1px rgba(0, 0, 0, 0.4), inset 0 -3px 6px rgba(80, 50, 15, 0.42); }
+.land-map .gate[data-state='done'] .medal { box-shadow: 0 0 0 1.5px var(--ink), 0 0 0 3px #e0b95f, 0 0 0 4px var(--ink), 0 0 9px 2px rgba(184, 56, 46, 0.5), 0 4px 6px 1px rgba(0, 0, 0, 0.4); }
+.land-map .gate[data-state='locked'] .medal { box-shadow: 0 0 0 1.5px var(--ink), 0 0 0 3px #6b6254, 0 0 0 4px var(--ink), 0 3px 5px 1px rgba(0, 0, 0, 0.4); }
+.land-map .gate[data-sel='true'] .medal { box-shadow: 0 0 0 1.5px var(--ink), 0 0 0 3px #e3c070, 0 0 0 4px var(--ink), 0 0 0 6.5px rgba(184, 56, 46, 0.85), 0 0 12px 5px rgba(184, 56, 46, 0.45); }
+.land-map .medal svg { width: 30px; height: 31px; }
+.land-map .gate-badge { width: 15px; height: 15px; font-size: 9px; }
+.land-map .gate-badge svg { width: 9px; height: 9px; }
+.land-map .plaque { margin-top: -1px; }
+.land-map .plaque > span { min-width: 0; max-width: 5.6rem; padding: 1px 9px; }
+.land-map .plaque > span::before { inset: 1px 4px; }
+.land-map .plaque b { font-size: 9.5px; }
+.land-map .plaque i { font-size: 7.5px; }
+.land-map .chapter-banner > span { padding: 2px 17px; }
+.land-map .chapter-banner > span::before { inset: 1px 8px; }
+.land-map .chapter-banner b { font-size: 10px; line-height: 1.2; }
+.land-map .chapter-banner i { font-size: 8px; line-height: 1.1; }
+.land-map .road-wash { stroke-width: 8px; }
+.land-map .road-brush { stroke-width: 3px; }
+.land-map .road-gold { stroke-width: 2px; }

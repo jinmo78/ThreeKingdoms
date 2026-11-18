@@ -1,7 +1,7 @@
 // 원정 지도. 진행·드롭·출진 함수는 그대로 두고 고르는 화면만 고지도로 보여 준다.
 // 그림(한지 질감·산수·성루·두루마리)은 SVG와 index.css(.war-*, .gate, .silk 등)로만 그린다.
 import { Lock, Swords, X } from 'lucide-react';
-import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
 import { DomainBar, DomainPanel } from '../components/DomainPanel';
@@ -582,46 +582,148 @@ function RouteSection({
         </div>
       )}
 
-      {idxIn(STAGES.length, sec).map((i) => {
-        const s = STAGES[i];
-        const unlocked = isUnlocked(s.id, cleared);
-        const done = (cleared[s.id] ?? 0) > 0;
-        const front = frontierId === s.id && !done;
-        const gearId = stageGearId(s.chapter, i);
-        const slot = gearId ? GEAR_MAP[gearId]?.slot : undefined;
-        const lit = filter !== 'all' && slot === filter;
-        const state = !unlocked ? 'locked' : done ? 'done' : front ? 'front' : 'open';
-        return (
-          <button
-            key={s.id}
-            type="button"
-            ref={s.id === frontierId ? frontierRef : undefined}
-            disabled={!unlocked}
-            onClick={() => onSelect(s.id)}
-            className="gate"
-            data-state={state}
-            data-sel={selected === s.id}
-            data-lit={lit}
-            data-dim={filter !== 'all' && !lit}
-            aria-label={`${s.id} ${s.title}`}
-            style={{ left: `${(SPOTS[i].x / VW) * 100}%`, top: pct(SPOTS[i].y) }}
-          >
-            <span className="medal">
-              <Tower flag={done ? 'red' : 'dark'} wave={unlocked} delay={(i * 0.37) % 1.8} />
-              {!unlocked && <span className="gate-badge gate-badge-lock -bottom-1 left-1/2 -translate-x-1/2"><Lock size={11} /></span>}
-              {front && <span className="gate-badge -right-1.5 -top-1.5"><Swords size={11} /></span>}
-              {lit && slot && <span className="gate-badge -right-1.5 -top-1.5">{SLOT_HAN[slot]}</span>}
-            </span>
-            <span className="plaque">
-              <span>
-                <b>{s.title}</b>
-                <i>{s.id} · 전투력 {shortPower(powers[s.id] ?? 0)}</i>
-              </span>
-            </span>
-          </button>
-        );
-      })}
+      {idxIn(STAGES.length, sec).map((i) => (
+        <Gate key={STAGES[i].id} i={i} cleared={cleared} frontierId={frontierId} frontierRef={frontierRef} filter={filter}
+          selected={selected} powers={powers} onSelect={onSelect}
+          style={{ left: `${(SPOTS[i].x / VW) * 100}%`, top: pct(SPOTS[i].y) }} />
+      ))}
     </Section>
+  );
+}
+
+/** 성 노드 하나 (세로 지도 · 가로 지도 공용) */
+function Gate({ i, cleared, frontierId, frontierRef, filter, selected, powers, onSelect, style }: {
+  i: number; cleared: Record<string, number>; frontierId: string; frontierRef: RefObject<HTMLButtonElement>;
+  filter: GearFilter; selected: string; powers: Record<string, number>; onSelect: (id: string) => void; style: CSSProperties;
+}) {
+  const s = STAGES[i];
+  const unlocked = isUnlocked(s.id, cleared);
+  const done = (cleared[s.id] ?? 0) > 0;
+  const front = frontierId === s.id && !done;
+  const gearId = stageGearId(s.chapter, i);
+  const slot = gearId ? GEAR_MAP[gearId]?.slot : undefined;
+  const lit = filter !== 'all' && slot === filter;
+  const state = !unlocked ? 'locked' : done ? 'done' : front ? 'front' : 'open';
+  return (
+    <button
+      type="button"
+      ref={s.id === frontierId ? frontierRef : undefined}
+      disabled={!unlocked}
+      onClick={() => onSelect(s.id)}
+      className="gate"
+      data-state={state}
+      data-sel={selected === s.id}
+      data-lit={lit}
+      data-dim={filter !== 'all' && !lit}
+      aria-label={`${s.id} ${s.title}`}
+      style={style}
+    >
+      <span className="medal">
+        <Tower flag={done ? 'red' : 'dark'} wave={unlocked} delay={(i * 0.37) % 1.8} />
+        {!unlocked && <span className="gate-badge gate-badge-lock -bottom-1 left-1/2 -translate-x-1/2"><Lock size={11} /></span>}
+        {front && <span className="gate-badge -right-1.5 -top-1.5"><Swords size={11} /></span>}
+        {lit && slot && <span className="gate-badge -right-1.5 -top-1.5">{SLOT_HAN[slot]}</span>}
+      </span>
+      <span className="plaque">
+        <span>
+          <b>{s.title}</b>
+          <i>{s.id} · 전투력 {shortPower(powers[s.id] ?? 0)}</i>
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/* ───────── 가로 지도: 24성이 한 화면에 전부 보인다 (스크롤 없음) ─────────
+   장(章) = 열 8개, 한 열에 3성. 진군로는 열마다 위→아래, 아래→위로 번갈아 가는 뱀 모양.
+   좌표는 지도 상자 기준 % (가로 0~100, 세로 0~100). */
+const LAND_ROWS = [27, 50, 73];
+const LAND_SPOTS: Spot[] = STAGES.map((s, i) => {
+  const c = s.chapter - 1;
+  const j = STAGES.slice(0, i).filter((t) => t.chapter === s.chapter).length;
+  return { x: ((c + 0.5) / 8) * 100 + Math.sin(i * 1.9) * 2.2, y: LAND_ROWS[c % 2 === 0 ? j : 2 - j] + Math.cos(i * 2.3) * 2 };
+});
+/** 퍼센트 좌표를 대략적인 화면 비율(가로 790 : 세로 350)로 바꿔 거리·방향을 잰다 */
+const LAND_PX = { w: 790, h: 350 };
+const LAND_SEGMENTS = LAND_SPOTS.slice(0, -1).map((a, i) => {
+  const b = LAND_SPOTS[i + 1];
+  const horizontal = Math.abs(b.x - a.x) * LAND_PX.w > Math.abs(b.y - a.y) * LAND_PX.h;
+  return horizontal
+    ? `M${a.x} ${a.y}C${(a.x + b.x) / 2} ${a.y} ${(a.x + b.x) / 2} ${b.y} ${b.x} ${b.y}`
+    : `M${a.x} ${a.y}C${a.x} ${(a.y + b.y) / 2} ${b.x} ${(a.y + b.y) / 2} ${b.x} ${b.y}`;
+});
+/** 산 · 나무 장식. 성 자리와 겹치지 않는 곳에만 놓는다 (시드 고정) */
+const LAND_DECOR = (() => {
+  const rand = mulberry32(77);
+  const farFromNodes = (x: number, y: number, r: number) =>
+    LAND_SPOTS.every((p) => Math.hypot((p.x - x) * (LAND_PX.w / 100), (p.y - y) * (LAND_PX.h / 100)) > r);
+  const mts: { id: string; x: number; y: number; s: number }[] = [];
+  const kinds = ['a0', 'c0', 'd0', 'a1', 'c1', 'e0', 'd1'];
+  for (let k = 1; k <= 7; k++) mts.push({ id: `cm-mt-${kinds[k - 1]}`, x: (k / 8) * 100 + (rand() - 0.5) * 3, y: 50 + (rand() - 0.5) * 10, s: 0.42 + rand() * 0.12 });
+  for (let k = 0; k < 8; k++) mts.push({ id: `cm-mt-${kinds[(k + 3) % 7]}`, x: ((k + 0.5) / 8) * 100 + (rand() - 0.5) * 6, y: 97 + rand() * 2, s: 0.4 + rand() * 0.15 });
+  const trees: { id: string; x: number; y: number }[] = [];
+  for (let t = 0; t < 120 && trees.length < 34; t++) {
+    const x = 2 + rand() * 96;
+    const y = 12 + rand() * 86;
+    if (farFromNodes(x, y, 40)) trees.push({ id: rand() < 0.75 ? 'cm-pine' : 'cm-bush', x, y });
+  }
+  return { mts, trees };
+})();
+
+function LandMap({ cleared, frontierId, filter, selected, powers, onSelect }: {
+  cleared: Record<string, number>; frontierId: string; filter: GearFilter; selected: string; powers: Record<string, number>;
+  onSelect: (id: string) => void;
+}) {
+  const noRef = useRef<HTMLButtonElement>(null);
+  return (
+    <div className="land-map absolute bottom-1 left-0 right-14 top-10">
+      <svg width="0" height="0" className="absolute" aria-hidden><MapDefs /></svg>
+      {/* 강: 위에서부터 황하 · 장강 */}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+        {['M-2 38C12 33 24 41 38 37S62 31 76 38S94 36 102 34', 'M-2 61C14 66 26 58 42 62S66 68 80 61S96 60 102 63'].map((d, k) => (
+          <g key={k} fill="none" strokeLinecap="round" vectorEffect="non-scaling-stroke">
+            <path d={d} stroke="#e8dcb8" strokeWidth="11" opacity=".5" vectorEffect="non-scaling-stroke" />
+            <path d={d} stroke="#5b747c" strokeWidth="7" vectorEffect="non-scaling-stroke" />
+            <path d={d} stroke="#a9c0c6" strokeWidth="1.2" strokeDasharray="10 6" opacity=".7" vectorEffect="non-scaling-stroke" />
+          </g>
+        ))}
+      </svg>
+      {LAND_DECOR.mts.map((m, i) => (
+        <svg key={`m${i}`} viewBox="-75 -135 150 150" className="pointer-events-none absolute -translate-x-1/2 -translate-y-full"
+          style={{ left: `${m.x}%`, top: `${m.y}%`, width: 150 * m.s, height: 150 * m.s }} aria-hidden>
+          <use href={`#${m.id}`} />
+        </svg>
+      ))}
+      {LAND_DECOR.trees.map((t, i) => (
+        <svg key={`t${i}`} viewBox="-9 -18 18 20" className="pointer-events-none absolute -translate-x-1/2 -translate-y-full"
+          style={{ left: `${t.x}%`, top: `${t.y}%`, width: 15, height: 17 }} aria-hidden>
+          <use href={`#${t.id}`} />
+        </svg>
+      ))}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+        {LAND_SEGMENTS.map((d, i) => {
+          const id = STAGES[i].id;
+          const st = (cleared[id] ?? 0) > 0 ? 'done' : id === frontierId ? 'front' : 'lock';
+          return (
+            <g key={i} className={`road road-${st}`}>
+              <path className="road-wash" d={d} vectorEffect="non-scaling-stroke" />
+              <path className="road-brush" d={d} vectorEffect="non-scaling-stroke" />
+              <path className="road-gold" d={d} vectorEffect="non-scaling-stroke" />
+            </g>
+          );
+        })}
+      </svg>
+      {HEADS.map((h) => (
+        <div key={h.id} className="chapter-banner" style={{ left: `${((h.id - 0.5) / 8) * 100}%`, top: '7%' }}>
+          <span><b>제{h.id}장</b><i>{h.title}</i></span>
+        </div>
+      ))}
+      {STAGES.map((s, i) => (
+        <Gate key={s.id} i={i} cleared={cleared} frontierId={frontierId} frontierRef={noRef} filter={filter}
+          selected={selected} powers={powers} onSelect={onSelect}
+          style={{ left: `${LAND_SPOTS[i].x}%`, top: `${LAND_SPOTS[i].y}%` }} />
+      ))}
+    </div>
   );
 }
 
@@ -702,9 +804,6 @@ export default function Campaign() {
   const [filter, setFilter] = useState<GearFilter>('all');
   const frontierRef = useRef<HTMLButtonElement>(null);
   const land = useLandscape();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<HTMLDivElement>(null);
-
   const frontier = STAGES.find((s) => isUnlocked(s.id, cleared) && !(cleared[s.id] > 0)) ?? STAGES[STAGES.length - 1];
   const firstOpen = frontier;
   const [selected, setSelectedState] = useState(
@@ -766,16 +865,6 @@ export default function Campaign() {
 
   // 처음에는 지도 맨 위에서 시작한다
   useEffect(() => { window.scrollTo(0, 0); }, []);
-  // 가로: 지도가 길어서, 지금 공략할 성이 화면 가운데 오게 시작한다 (content-visibility 때문에 좌표로 계산)
-  useEffect(() => {
-    const sc = scrollRef.current;
-    const map = mapRef.current;
-    if (!land || !sc || !map) return;
-    const y = map.offsetTop + (SPOTS[STAGES.indexOf(frontier)].y / MAP_H) * map.offsetHeight;
-    sc.scrollTop = y - sc.clientHeight / 2;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [land]);
-
   const clearedCount = STAGES.filter((s) => cleared[s.id]).length;
   const dropId = stageGearId(stage.chapter, stageIndex(stage.id));
   const drop = dropId ? GEAR_MAP[dropId] : undefined;
@@ -783,9 +872,15 @@ export default function Campaign() {
   return (
     <div className={land ? 'relative h-full overflow-hidden'
       : cn(sheet ? 'pb-[20rem]' : 'pb-4', 'lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-4 lg:pb-0')}>
-      {/* 가로: 지도가 화면 전체(스크롤), 그 위에 HUD가 얹힌다 */}
-      <div ref={scrollRef} className={land ? 'war-map absolute inset-0 overflow-x-hidden overflow-y-auto pb-4 pt-11' : 'min-w-0'}>
-        {!land && <div className="mb-3">
+      {/* 가로: 24성이 한 화면에 담긴 지도가 바탕, 그 위에 HUD가 얹힌다 */}
+      {land && (
+        <>
+          <div className="war-map absolute inset-0" aria-hidden />
+          <LandMap cleared={cleared} frontierId={frontier.id} filter={filter} selected={selected} powers={powers} onSelect={setSelected} />
+        </>
+      )}
+      {!land && <div className="min-w-0">
+        <div className="mb-3">
           <DomainBar castles={castles} now={now} />
           <div className="flex items-end justify-between gap-2">
             <h2 className="font-serif text-xl font-black tracking-wide">
@@ -797,10 +892,10 @@ export default function Campaign() {
             <div className="h-full rounded-full transition-[width] duration-500"
               style={{ width: `${(clearedCount / STAGES.length) * 100}%`, background: 'linear-gradient(90deg,#8e2a22,#c4352a 60%,#E3C070)' }} />
           </div>
-        </div>}
+        </div>
 
         {/* 병법서 책갈피(죽간) 탭 */}
-        {!land && <div className="slip-rail">
+        <div className="slip-rail">
           <div className="slip-row grid grid-cols-4 gap-1.5 px-2">
             {FILTERS.map(([id, han, label]) => (
               <button key={id} type="button" onClick={() => setFilter(id)} className="slip" data-on={filter === id} aria-pressed={filter === id}>
@@ -811,12 +906,12 @@ export default function Campaign() {
               </button>
             ))}
           </div>
-        </div>}
+        </div>
 
-        <div className={land ? undefined : 'frame war-map overflow-clip'}>
-          {!land && <Corners size={36} />}
-          {!land && <Compass />}
-          <div ref={mapRef} className={cn('relative mx-auto w-full', land ? 'max-w-[25rem]' : 'max-w-[34rem]')} style={{ aspectRatio: `${VW} / ${MAP_H}` }}>
+        <div className="frame war-map overflow-clip">
+          <Corners size={36} />
+          <Compass />
+          <div className="relative mx-auto w-full max-w-[34rem]" style={{ aspectRatio: `${VW} / ${MAP_H}` }}>
             {/* 정의(<defs>)는 한 번만: 성루 · 산 · 물결 · 그라데이션 · 필터를 모든 섹션이 <use> 로 가져다 쓴다 */}
             <svg width="0" height="0" className="absolute" aria-hidden><MapDefs /></svg>
             {SECTIONS.map((s) => <TerrainSection key={`t${s.id}`} sec={s} />)}
@@ -826,26 +921,25 @@ export default function Campaign() {
             ))}
           </div>
         </div>
-      </div>
+      </div>}
 
       {land && (
         <>
-          {/* 좌상단: 영지 요약 + 장비 드롭 필터 */}
-          <div className="absolute left-[max(0.5rem,env(safe-area-inset-left))] top-12 z-10 w-64 space-y-1.5">
-            <div className="[&>div]:mb-0 [&>div]:border [&>div]:border-[#C6A15B]/50 [&>div]:shadow-lg"><DomainBar castles={castles} now={now} /></div>
-            <div className="flex gap-1">
-              {FILTERS.map(([id, han, label]) => (
-                <button key={id} type="button" onClick={() => setFilter(id)} aria-pressed={filter === id}
-                  className={cn('flex-1 rounded-md border px-1 py-1 text-[11px] font-bold shadow-lg',
-                    filter === id ? 'border-[#F0D58A] bg-[#8e2a22] text-[#fff4d6]' : 'border-[#C6A15B]/50 bg-[#1b1713]/85 text-[#C6A15B]')}>
-                  {han} {label}
-                </button>
-              ))}
-            </div>
+          {/* 위 바 가운데: 영지 요약 한 줄 (바 위에 겹쳐 놓는다) */}
+          <div className="absolute left-[9.5rem] top-1 z-30"><DomainBar castles={castles} now={now} compact /></div>
+          {/* 좌하단: 장비 드롭 필터 */}
+          <div className="absolute bottom-2 left-[max(0.5rem,env(safe-area-inset-left))] z-10 flex gap-1">
+            {FILTERS.map(([id, han, label]) => (
+              <button key={id} type="button" onClick={() => setFilter(id)} aria-pressed={filter === id}
+                className={cn('rounded-md border px-2 py-1 text-[11px] font-bold shadow-lg',
+                  filter === id ? 'border-[#F0D58A] bg-[#8e2a22] text-[#fff4d6]' : 'border-[#C6A15B]/50 bg-[#1b1713]/85 text-[#C6A15B]')}>
+                {han} {label}
+              </button>
+            ))}
           </div>
-          {/* 좌하단: 행군 중인 부대 */}
-          {marches.length > 0 && (
-            <div className="absolute bottom-2 left-[max(0.5rem,env(safe-area-inset-left))] z-10 w-64 rounded-lg border border-[#C6A15B]/60 bg-[#F3ECE0]/95 px-2 pb-2 text-[#1C1612] shadow-lg [&>div]:mt-1.5">
+          {/* 행군 중인 부대 (군령 패널이 닫혀 있을 때만, 열리면 패널 안에 같은 목록이 있다) */}
+          {marches.length > 0 && !sheet && (
+            <div className="absolute bottom-2 right-[calc(3.75rem+env(safe-area-inset-right))] z-10 w-64 rounded-lg border border-[#C6A15B]/60 bg-[#F3ECE0]/95 px-2 pb-2 text-[#1C1612] shadow-lg [&>div]:mt-1.5">
               <MarchList marches={marches} now={now} />
             </div>
           )}
@@ -928,7 +1022,9 @@ function Briefing({
   // 가로: 성을 누르면 오른쪽에 떠오르고 ✕로 닫는다 (오른쪽 메뉴 버튼 열은 피한다)
   if (land && !open) return null;
   return (
-    <div className={land ? 'absolute bottom-2 right-[calc(3.75rem+env(safe-area-inset-right))] top-12 z-10 flex w-72 min-h-0 flex-col'
+    <div className={land ? cn('absolute bottom-2 top-12 z-10 flex min-h-0 w-72 flex-col',
+      // 오른쪽 절반(5장~)의 성을 눌렀을 땐 패널이 왼쪽에 떠서 눌린 성을 가리지 않는다
+      Number(stageId.split('-')[0]) >= 5 ? 'left-[max(0.5rem,env(safe-area-inset-left))]' : 'right-[calc(3.75rem+env(safe-area-inset-right))]')
       : cn(!open && 'max-lg:hidden', "fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto")}>
       <Roller />
       <div className="silk flex min-h-0 flex-1 flex-col">

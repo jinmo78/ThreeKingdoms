@@ -12,13 +12,29 @@ import { cn } from './ui';
 const fmt = (n: number) => Math.floor(n).toLocaleString('ko-KR');
 
 /** 지도 위 영지 요약: 전체 시간당 수입과 지금 징수할 수 있는 금화 */
-export function DomainBar({ castles, now }: { castles: Record<string, Castle>; now: number }) {
+export function DomainBar({ castles, now, compact }: { castles: Record<string, Castle>; now: number; compact?: boolean }) {
   const collectGold = useGame((s) => s.collectGold);
   const [msg, setMsg] = useState('');
   const list = Object.entries(castles);
   if (list.length === 0) return null;
   const income = list.reduce((n, [id, c]) => n + incomePerHour(stageIndex(id), c), 0);
   const stored = list.reduce((n, [id, c]) => n + accrued(stageIndex(id), c, now), 0);
+  if (compact) {
+    // 가로 화면 위 바용 한 줄
+    return (
+      <div className="flex h-8 items-center gap-2 rounded-full border border-[#C6A15B]/50 bg-[#1b1713] py-0.5 pl-3 pr-0.5 text-[11px] text-[#E7DCC8]">
+        <span>🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>금/시</span>
+        <button
+          type="button"
+          disabled={stored < 1}
+          onClick={() => { const got = collectGold(); setMsg(got ? `+${fmt(got)}` : ''); setTimeout(() => setMsg(''), 2000); }}
+          className="tabular flex h-full items-center gap-1 rounded-full bg-[#8e2a22] px-2.5 font-bold text-[#fff4d6] disabled:opacity-40"
+        >
+          <Coins size={11} /> {msg ? <b className="text-emerald-200">{msg}</b> : `받기 ${fmt(stored)}`}
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-[#1b1713]/85 px-3 py-1.5 text-xs text-[#E7DCC8]">
       <span className="min-w-0 leading-snug" title="점령한 성은 가만히 둬도 금화를 만듭니다. 성마다 최대 8시간분까지 쌓입니다.">
