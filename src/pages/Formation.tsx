@@ -1,9 +1,9 @@
-// 부대 편성 — 상대(원정 스테이지 · 천하 토벌전 · 모의전)를 골라 상성 힌트를 보며 편성
+﻿// 부대 편성 — 상대(원정 스테이지 · 천하 토벌전 · 모의전)를 골라 상성 힌트를 보며 편성
 import { useMemo, useState } from 'react';
 import { FormationEditor } from '../components/FormationEditor';
 import { TroopAdviceBox } from '../components/Matchup';
 import { PageHero } from '../components/PageHero';
-import { Btn, Modal } from '../components/ui';
+import { Btn, Modal, useLandscape } from '../components/ui';
 import { isUnlocked, STAGES, STAGE_MAP } from '../data/stages';
 import { practiceOpponent } from '../engine/aiArmy';
 import { conquestFloor } from '../engine/conquest';
@@ -43,9 +43,10 @@ export default function Formation() {
   );
   const enemy = useMemo(() => enemyUnitsToProfiles(enemyUnits), [enemyUnits]);
   const [help, setHelp] = useState(false);
+  const land = useLandscape();
 
   return (
-    <div className="space-y-5">
+    <div className={land ? 'space-y-1.5' : 'space-y-5'}>
       <PageHero image="scene-formation.webp" title="부대 편성" vivid>
         <p className="mt-1 text-xs text-stone-300">
           같은 세력·병과·인연을 맞추면 전투력과 연쇄가 오릅니다.
@@ -53,7 +54,7 @@ export default function Formation() {
         </p>
       </PageHero>
 
-      <div className="space-y-2">
+      <div className={land ? 'flex items-center gap-2' : 'space-y-2'}>
         <label className="flex items-center gap-2 text-xs text-stone-400">
           상대
           <select value={key} onChange={(e) => setFocusStage(e.target.value)}
@@ -65,7 +66,7 @@ export default function Formation() {
             </optgroup>
           </select>
         </label>
-        <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster, gear)} compact />
+        {!land && <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster, gear)} compact />}
       </div>
 
       <FormationEditor

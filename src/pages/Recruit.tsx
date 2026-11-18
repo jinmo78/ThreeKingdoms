@@ -1,10 +1,10 @@
-// 장수 등용(가챠) 화면 — 일일 무료 · 출석 · 금화 등용
+﻿// 장수 등용(가챠) 화면 — 일일 무료 · 출석 · 금화 등용
 import { CalendarCheck, Coins, Flag, Gift, Sparkles } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { GeneralDetail, GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
-import { Btn, cn, Modal, Panel } from '../components/ui';
+import { Btn, cn, Modal, Panel, useLandscape } from '../components/ui';
 import { RECRUITABLE } from '../data/generals';
 import { FACTION, TROOP } from '../data/meta';
 import {
@@ -37,6 +37,7 @@ export default function Recruit() {
   const [detail, setDetail] = useState<GeneralDef | null>(null);
   const [ratesOpen, setRatesOpen] = useState(false);
   const [attendNote, setAttendNote] = useState<string | null>(null);
+  const land = useLandscape();
 
   useEffect(() => {
     refreshDailyFree();
@@ -86,13 +87,17 @@ export default function Recruit() {
   const spentGold = results[0]?.goldSpent ?? 0;
 
   return (
-    <div className="space-y-5">
+    <div className={land ? 'grid h-full grid-cols-2 gap-2' : 'space-y-5'}>
+      <div className={land ? 'min-w-0 space-y-1.5 overflow-y-auto' : 'space-y-5'}>
       <div>
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-serif text-2xl font-black">장수 등용</h2>
-          <span className="shrink-0 text-xs text-stone-400">도감 {ownedCount}/{RECRUITABLE.length}</span>
+          <h2 className={cn('font-serif font-black', land ? 'text-base' : 'text-2xl')}>장수 등용</h2>
+          <span className="shrink-0 text-xs text-stone-400">
+            도감 {ownedCount}/{RECRUITABLE.length}
+            {land && <button type="button" onClick={() => setRatesOpen(true)} className="ml-2 rounded-full border border-stone-700 px-2 py-0.5 font-bold text-stone-300">확률</button>}
+          </span>
         </div>
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-stone-500 land:hidden">
           매일 무료 {FREE_DAILY_PULLS}회가 쌓이고, 출석하면 추가 무료 등용을 받습니다. 무료가 없으면 금화로 이어서 등용할 수 있습니다.
         </p>
       </div>
@@ -104,7 +109,7 @@ export default function Recruit() {
               연속 {attend.claimedToday ? attendStreak : Math.max(0, attend.nextStreak - 1)}일
               {attend.canClaim && <span className="ml-2 text-xs font-normal text-amber-300">출석 시 {attend.nextStreak}일 · 무료 +{attend.reward}</span>}
             </p>
-            <p className="mt-0.5 text-[11px] text-stone-500">하루 한 번. 하루를 비우면 연속이 1일부터 다시 시작합니다.</p>
+            <p className="mt-0.5 text-[11px] text-stone-500 land:hidden">하루 한 번. 하루를 비우면 연속이 1일부터 다시 시작합니다.</p>
             <div className="mt-2 flex flex-wrap gap-1">
               {ATTEND_REWARDS.map((n, i) => {
                 const day = i + 1;
@@ -164,19 +169,21 @@ export default function Recruit() {
         />
       </div>
 
-      <div className="relative flex min-h-[340px] items-center justify-center overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-4">
+      </div>
+
+      <div className={cn('relative flex items-center justify-center overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-4', land ? 'h-full min-h-[12rem]' : 'min-h-[340px]')}>
         <img src={sceneUrl('scene-recruit.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover brightness-[1.85] contrast-[1.05] saturate-[1.08]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
         <div className="relative w-full">
           {phase === 'idle' && (
             <div className="text-center">
-              <div className="relative mx-auto h-32 w-32">
+              <div className={cn('relative mx-auto', land ? 'h-20 w-20' : 'h-32 w-32')}>
                 <div className="absolute inset-0 animate-spin-slow rounded-full border-2 border-dashed border-red-800/60" />
                 <div className="absolute inset-4 flex items-center justify-center rounded-full bg-red-950/60">
-                  <Flag size={44} className="text-red-300" />
+                  <Flag size={land ? 28 : 44} className="text-red-300" />
                 </div>
               </div>
-              <p className="mt-4 font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">천하의 인재를 구하라</p>
+              <p className={cn('font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]', land ? 'mt-1' : 'mt-4')}>천하의 인재를 구하라</p>
               <p className="text-xs text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">누적 등용 {totalPulls}회</p>
             </div>
           )}
@@ -225,11 +232,11 @@ export default function Recruit() {
         document.body,
       )}
 
-      <div className="hidden sm:block">
+      <div className="hidden sm:block land:hidden!">
         <Panel title="등용 확률" icon={<Sparkles size={15} />}><RatesBody /></Panel>
       </div>
       <button type="button" onClick={() => setRatesOpen(true)}
-        className="w-full rounded-xl border border-stone-700 py-2.5 text-xs font-bold text-stone-300 sm:hidden">
+        className="w-full rounded-xl border border-stone-700 py-2.5 text-xs font-bold text-stone-300 sm:hidden land:hidden!">
         등용 확률
       </button>
 

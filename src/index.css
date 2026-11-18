@@ -866,3 +866,4 @@ html.dark .silk { background-blend-mode: normal; }
 .land-map .road-wash { stroke-width: 8px; }
 .land-map .road-brush { stroke-width: 3px; }
 .land-map .road-gold { stroke-width: 2px; }
+@media (orientation: landscape) and (max-height: 500px) { .hslide { grid-auto-columns: 11.5rem !important; } }

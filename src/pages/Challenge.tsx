@@ -1,4 +1,4 @@
-// 도전 — 천하 토벌전(끝없는 도전) · 모의전(연습 전투)
+﻿// 도전 — 천하 토벌전(끝없는 도전) · 모의전(연습 전투)
 import { BarChart3, ChevronRight, Coins, Crown, Dices, Eye, Lock, Mountain, Swords, Target } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
@@ -7,7 +7,7 @@ import { FormationEditor } from '../components/FormationEditor';
 import { TroopAdviceBox } from '../components/Matchup';
 import { PageHero } from '../components/PageHero';
 import { PowerCompare } from '../components/UnitPreview';
-import { Btn, cn, Panel } from '../components/ui';
+import { Btn, cn, Panel, useLandscape } from '../components/ui';
 import { ARMY_THEMES, practiceOpponent, themeLabel } from '../engine/aiArmy';
 import { simulateBattle } from '../engine/battle';
 import { conquestFloor } from '../engine/conquest';
@@ -28,9 +28,10 @@ const MEASURE_SEEDS = Array.from({ length: 100 }, (_, i) => 31 + i * 7919);
 export default function Challenge() {
   const [tab, setTab] = useState<'practice' | 'conquest'>('conquest');
   const conquestOpen = useGame((s) => (s.cleared['4-3'] ?? 0) > 0);
+  const land = useLandscape();
 
   return (
-    <div className="space-y-5">
+    <div className={land ? 'flex h-full flex-col gap-1.5' : 'space-y-5'}>
       <PageHero
         image="scene-challenge.webp"
         title="도전"
@@ -46,7 +47,17 @@ export default function Challenge() {
       >
         <p className="mt-1 hidden text-xs text-stone-300 sm:block">끝없는 토벌전에 도전하거나, 모의전으로 편성을 시험하세요.</p>
       </PageHero>
-      {tab === 'practice' ? <Practice /> : <Conquest />}
+      {land && (
+        <div className="flex shrink-0 gap-1 self-start rounded-xl bg-stone-950/80 p-1">
+          <TabBtn active={tab === 'conquest'} onClick={() => setTab('conquest')}>
+            {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 토벌전
+          </TabBtn>
+          <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>
+        </div>
+      )}
+      <div className={land ? 'min-h-0 flex-1' : undefined}>
+        {tab === 'practice' ? <Practice /> : <Conquest />}
+      </div>
     </div>
   );
 }
@@ -63,6 +74,7 @@ function Practice() {
   const log = useGame((s) => s.practiceLog);
   const addRecord = useGame((s) => s.addPracticeRecord);
   const [measuring, setMeasuring] = useState(false);
+  const land = useLandscape();
 
   const mine = useMemo(() => playerProfiles(formation, roster, gear), [formation, roster, gear]);
   // 상대 레벨 = 출진 장수 평균 레벨 + 강도
@@ -92,9 +104,8 @@ function Practice() {
     }, 30);
   }
 
-  return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="min-w-0 space-y-4">
+  const setupPanels = (
+    <>
         <Panel title="상대 설정" icon={<Target size={15} />}>
           <div className="space-y-3 text-xs">
             <div>
@@ -127,10 +138,10 @@ function Practice() {
           <EnemyLineup units={enemyProf} />
         </Panel>
 
-        <EditorSection enemy={enemyProf} />
-      </div>
-
-      <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
+    </>
+  );
+  const testPanels = (
+    <>
         <Panel title="내 편성 시험" icon={<BarChart3 size={15} />}>
           {mine.length === 0 ? (
             <div className="space-y-2 text-center">
@@ -139,7 +150,7 @@ function Practice() {
             </div>
           ) : (
             <div className="space-y-3">
-              <TroopAdviceBox enemy={enemyProf} mine={mine} />
+              {!land && <TroopAdviceBox enemy={enemyProf} mine={mine} />}
               <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
               <div className="grid grid-cols-2 gap-2">
                 <Btn onClick={() => startPractice(enemies, `모의전 · ${themeLabel(practice.theme)}`)}><Eye size={15} /> 관전</Btn>
@@ -176,6 +187,27 @@ function Practice() {
             </div>
           )}
         </Panel>
+    </>
+  );
+
+  if (land) {
+    return (
+      <div className="grid h-full grid-cols-[17rem_minmax(0,1fr)] gap-2">
+        <div className="min-h-0 min-w-0 space-y-2 overflow-y-auto">{testPanels}{setupPanels}</div>
+        <div className="min-h-0 min-w-0 overflow-y-auto"><EditorSection enemy={enemyProf} /></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="min-w-0 space-y-4">
+        {setupPanels}
+        <EditorSection enemy={enemyProf} />
+      </div>
+
+      <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
+        {testPanels}
       </div>
     </div>
   );
@@ -190,6 +222,7 @@ function Conquest() {
   const roster = useGame((s) => s.roster);
   const gear = useGame((s) => s.gear);
   const startConquest = useGame((s) => s.startConquest);
+  const land = useLandscape();
 
   const floor = useMemo(() => conquestFloor(best + 1), [best]);
   const enemyProf = useMemo(() => enemyUnitsToProfiles(floor.enemies), [floor]);
@@ -210,14 +243,13 @@ function Conquest() {
     );
   }
 
-  return (
-    <div className="space-y-4">
+  const recordBox = (
       <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
         <Crown size={36} className="shrink-0 text-amber-300" />
         <div className="min-w-0 flex-1">
           <div className="text-xs text-stone-400">최고 기록</div>
           <div className="font-serif text-2xl font-black text-amber-200">{best}층</div>
-          <p className="text-[11px] text-stone-500">층마다 위 → 촉 → 오 → 군웅 군단이 번갈아 나오고, 5층마다 정예 혼성군이 지킵니다.</p>
+          <p className="text-[11px] text-stone-500 land:hidden">층마다 위 → 촉 → 오 → 군웅 군단이 번갈아 나오고, 5층마다 정예 혼성군이 지킵니다.</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {upcoming.map((u) => (
@@ -227,17 +259,16 @@ function Conquest() {
           ))}
         </div>
       </div>
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* 적군 + 출진: 모바일에서는 위, PC에서는 오른쪽에 고정 */}
-        <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:order-last lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
+  );
+  const asidePanels = (
+    <>
           <Panel title="출진" icon={<Swords size={15} />}>
             <div className="space-y-3">
               <Btn size="lg" className="w-full" disabled={mine.length === 0} onClick={() => startConquest()}>
                 <Swords size={18} /> {floor.floor}층 도전!
               </Btn>
               {mine.length === 0 && <p className="text-center text-xs text-red-300">아래 편성에서 주장을 1명 이상 배치하세요.</p>}
-              <TroopAdviceBox enemy={enemyProf} mine={mine} />
+              {!land && <TroopAdviceBox enemy={enemyProf} mine={mine} />}
               <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
               <CounterFormationButton
                 enemies={floor.enemies}
@@ -260,6 +291,26 @@ function Conquest() {
             </div>
             <EnemyLineup units={enemyProf} />
           </Panel>
+    </>
+  );
+
+  if (land) {
+    return (
+      <div className="grid h-full grid-cols-[17rem_minmax(0,1fr)] gap-2">
+        <div className="min-h-0 min-w-0 space-y-2 overflow-y-auto">{asidePanels}{recordBox}</div>
+        <div className="min-h-0 min-w-0 overflow-y-auto"><EditorSection enemy={enemyProf} /></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {recordBox}
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+        {/* 적군 + 출진: 모바일에서는 위, PC에서는 오른쪽에 고정 */}
+        <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:order-last lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
+          {asidePanels}
         </div>
 
         <div className="min-w-0">
@@ -272,9 +323,10 @@ function Conquest() {
 
 /** 적군을 보면서 바로 고치는 편성 편집기 */
 function EditorSection({ enemy }: { enemy: UnitProfile[] }) {
+  const land = useLandscape();
   return (
     <section className="space-y-2">
-      <div>
+      <div className={land ? 'hidden' : undefined}>
         <h3 className="flex items-center gap-1.5 font-serif text-lg font-black"><Swords size={16} className="text-red-300" /> 내 부대 편성</h3>
         <p className="hidden text-[11px] text-stone-500 sm:block">
           이 상대를 기준으로 상성 배지와 "주장 상성 유리/불리"가 표시됩니다. 여기서 바꾼 편성은 편성 탭과 같은 편성입니다.

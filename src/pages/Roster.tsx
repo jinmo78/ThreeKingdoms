@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { GearBag } from '../components/GearPanel';
 import { GeneralCard, GeneralDetail, GeneralToken, RarityBadge } from '../components/General';
 import { PageHero } from '../components/PageHero';
-import { Btn, cn, Modal, NameSearch } from '../components/ui';
+import { Btn, cn, Modal, NameSearch, useLandscape } from '../components/ui';
 import { BONDS, bondMembers, type BondDef } from '../data/bonds';
 import { RECRUITABLE } from '../data/generals';
 import { FACTION, FACTIONS } from '../data/meta';
 import { bonusText } from '../engine/synergy';
 import { shownRarity } from '../engine/unit';
 import { useGame } from '../store/gameStore';
-import type { GeneralDef, OwnedGeneral, Rarity } from '../types';
+import type { Faction, GeneralDef, OwnedGeneral, Rarity } from '../types';
 
 type OwnFilter = 'all' | 'owned' | 'missing';
 
@@ -24,10 +24,12 @@ export default function Roster() {
   const [detail, setDetail] = useState<GeneralDef | null>(null);
   const [bondId, setBondId] = useState<string | null>(null);
   const [rules, setRules] = useState(false);
+  const [fac, setFac] = useState<'all' | Faction>('all');
+  const land = useLandscape();
   const openBond = BONDS.find((b) => b.id === bondId);
 
   return (
-    <div className="space-y-5">
+    <div className={land ? 'space-y-1.5' : 'space-y-5'}>
       <PageHero
         image="scene-roster.webp"
         title="장수록"
@@ -42,6 +44,14 @@ export default function Roster() {
       >
         <p className="mt-1 hidden text-xs text-stone-300 sm:block">등용한 장수, 장비, 인연 조합을 확인하세요.</p>
       </PageHero>
+
+      {land && (
+        <div className="flex gap-1 rounded-xl bg-stone-950/80 p-1">
+          <TabBtn active={tab === 'generals'} onClick={() => setTab('generals')}><BookOpen size={14} /> 장수</TabBtn>
+          <TabBtn active={tab === 'gear'} onClick={() => setTab('gear')}><Shield size={14} /> 장비</TabBtn>
+          <TabBtn active={tab === 'bonds'} onClick={() => setTab('bonds')}><Link2 size={14} /> 인연</TabBtn>
+        </div>
+      )}
 
       {tab === 'generals' && (
         <>
@@ -59,8 +69,35 @@ export default function Roster() {
                 {id === 'all' ? '모든 등급' : id}
               </button>
             ))}
+            {land && (['all', ...FACTIONS] as const).map((id) => (
+              <button key={id} type="button" onClick={() => setFac(id)}
+                className={cn('rounded-full px-3 py-1 text-xs font-bold', fac === id ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-900 text-stone-500')}>
+                {id === 'all' ? '모든 세력' : FACTION[id].full}
+              </button>
+            ))}
           </div>
-          {FACTIONS.map((f) => {
+          {land && (
+            <div className="grid auto-cols-[4.25rem] grid-flow-col grid-rows-2 gap-1.5 overflow-x-auto pb-1">
+              {RECRUITABLE.filter((g) => {
+                if (fac !== 'all' && g.faction !== fac) return false;
+                if (ownFilter === 'owned' && !roster[g.id]) return false;
+                if (ownFilter === 'missing' && roster[g.id]) return false;
+                if (rarity !== 'all' && g.rarity !== rarity) return false;
+                return !query.trim() || g.name.includes(query.trim());
+              }).sort((a, b) => FACTIONS.indexOf(a.faction) - FACTIONS.indexOf(b.faction)).map((g) => {
+                const owned = roster[g.id];
+                const rank = shownRarity(g.rarity, owned?.promote);
+                return (
+                  <button key={g.id} type="button" onClick={() => setDetail(g)}
+                    className={cn('flex min-w-0 flex-col items-center gap-0.5 rounded-xl border p-1', owned ? 'border-stone-800 bg-stone-900' : 'border-stone-600 bg-stone-700')}>
+                    <GeneralToken def={g} rarity={rank} size="fill" className="w-full" />
+                    <span className="w-full truncate text-[11px] font-bold text-stone-200">{g.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {!land && FACTIONS.map((f) => {
             const all = RECRUITABLE.filter((g) => g.faction === f);
             const needle = query.trim();
             const list = all.filter((g) => {
@@ -95,7 +132,7 @@ export default function Roster() {
               </section>
             );
           })}
-          {!RECRUITABLE.some((g) => {
+          {!land && !RECRUITABLE.some((g) => {
             if (ownFilter === 'owned' && !roster[g.id]) return false;
             if (ownFilter === 'missing' && roster[g.id]) return false;
             if (rarity !== 'all' && g.rarity !== rarity) return false;

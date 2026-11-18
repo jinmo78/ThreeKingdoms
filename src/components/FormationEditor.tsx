@@ -1,4 +1,4 @@
-// 부대 편성 편집기 — 편성 화면 · 천하 토벌전 · 모의전에서 공용
+﻿// 부대 편성 편집기 — 편성 화면 · 천하 토벌전 · 모의전에서 공용
 // 넓은 화면: 칸을 고른 뒤 아래 목록에서 배치. 모바일: 빈 칸 + → 팝업에서 배치
 // 목록에는 새로 켜지는 시너지와 주장 상성을 미리 표시
 import { Coins, Plus, Save, Sparkles, Trash2, Wand2, X } from 'lucide-react';
@@ -19,7 +19,7 @@ import { GearBag } from './GearPanel';
 import { CounterFormationButton } from './CounterFormation';
 import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from './General';
 import { MatchupBadge } from './Matchup';
-import { Btn, cn, HSlide, Modal, NameSearch } from './ui';
+import { Btn, cn, HSlide, Modal, NameSearch, useLandscape } from './ui';
 
 type Target = { unit: number; slot: Slot };
 type DetailState = { def: GeneralDef; from?: Target };
@@ -90,6 +90,8 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
   const [detail, setDetail] = useState<DetailState | null>(null);
   const [info, setInfo] = useState<number | null>(null);
   const [picker, setPicker] = useState(false);
+  const land = useLandscape();
+  const [presetOpen, setPresetOpen] = useState(false);
   const enemyTroops = enemy?.map((e) => e.troop) ?? [];
 
   // 배치 위치 역참조: 장수 id → "1부대 주장"
@@ -147,11 +149,11 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
 
   function openSlot(unit: number, slot: Slot) {
     setTarget({ unit, slot });
-    if (window.matchMedia('(max-width: 639px)').matches) setPicker(true);
+    if (land || window.matchMedia('(max-width: 639px)').matches) setPicker(true);
   }
 
   return (
-    <div className="space-y-3">
+    <div className={land ? 'space-y-1.5' : 'space-y-3'}>
       <div className="flex flex-wrap items-center gap-2">
         <Btn variant="gold" size="sm" onClick={() => { autoForm(); setAutoNote(true); setTarget({ unit: 0, slot: 'commander' }); }}>
           <Wand2 size={14} /> 자동 편성 <span className="text-[10px] font-normal opacity-80">무료</span>
@@ -159,12 +161,15 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         {counter && (
           <CounterFormationButton enemies={counter.enemies} unlocked={counter.unlocked} lockedNote={counter.lockedNote} size="sm" />
         )}
+        {land && (
+          <Btn variant="ghost" size="sm" onClick={() => setPresetOpen(true)}><Save size={14} /> 저장·불러오기</Btn>
+        )}
         {autoNote && <span className="animate-slide-in text-[10px] text-amber-200/80">시너지를 고려해 3부대를 다시 짰습니다 (적 상성은 미반영)</span>}
       </div>
 
-      <PresetBar onLoaded={() => setTarget({ unit: 0, slot: 'commander' })} />
+      {!land && <PresetBar onLoaded={() => setTarget({ unit: 0, slot: 'commander' })} />}
 
-      <div className={cn('grid gap-3', unitGridClass)}>
+      <div className={cn('grid', land ? 'grid-cols-3 gap-1.5' : cn('gap-3', unitGridClass))}>
         {formation.map((u, ui) => {
           if (!u) return null;
           const p = unitProfile(u, roster, gear);
@@ -172,22 +177,26 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
           const syn = p?.synergy ?? calcSynergy(members);
           const linkedIds = glowingIds(members);
           return (
-            <section key={ui} className={cn('rounded-2xl border-2 p-3 transition-shadow', UNIT_TINT[ui].card,
+            <section key={ui} className={cn('rounded-2xl border-2 transition-shadow', land ? 'min-w-0 p-1.5' : 'p-3', UNIT_TINT[ui].card,
               target.unit === ui && 'ring-2 ring-stone-100')}>
-              <header className="mb-2 flex items-center justify-between gap-2">
+              <header className={cn('flex items-center justify-between gap-2', land ? 'mb-1' : 'mb-2')}>
                 <h3 className={cn('min-w-0 truncate font-serif text-base font-black', UNIT_TINT[ui].title)}>
-                  제{ui + 1}부대 {p && <span className="ml-1 text-xs font-normal text-stone-400">{p.name}</span>}
+                  제{ui + 1}부대 {p && !land && <span className="ml-1 text-xs font-normal text-stone-400">{p.name}</span>}
                 </h3>
-                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold', UNIT_TINT[ui].chip)}>금 {unitGold(u, roster)}</span>
+                {land && p && (
+                  <button type="button" onClick={() => setInfo(ui)} title="전투력 · 시너지"
+                    className="tabular shrink-0 rounded-full bg-stone-950/60 px-1.5 py-0.5 text-[10px] font-bold text-stone-200">⚔ {Math.round(p.power).toLocaleString()}</button>
+                )}
+                {!land && <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold', UNIT_TINT[ui].chip)}>금 {unitGold(u, roster)}</span>}
                 {p && enemy && <MatchupBadge troop={p.troop} enemyTroops={enemyTroops} className="ml-auto mr-2 shrink-0" />}
                 {SLOTS.some((s) => u[s]) && (
                   <button type="button" onClick={() => clearUnit(ui)} className="text-stone-500 hover:text-red-300" title="부대 비우기"><Trash2 size={14} /></button>
                 )}
               </header>
 
-              <div className="space-y-2">
+              <div className={land ? 'space-y-1' : 'space-y-2'}>
                 {FORM_ROWS.map((row) => (
-                <div key={row.join()} className="grid grid-cols-3 items-stretch gap-2">
+                <div key={row.join()} className={cn('grid grid-cols-3 items-stretch', land ? 'gap-1' : 'gap-2')}>
                 {row.map((slot) => {
                   const id = u[slot];
                   const def = id ? GENERAL_MAP[id] ?? null : null;
@@ -196,7 +205,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                   const linked = !!def && linkedIds.has(def.id);
                   const badCommander = !!enemy && slot === 'commander' && def && matchupGrade(matchupVs(def.troop, enemyTroops)) === 'bad';
                   return (
-                    <div key={slot} className={cn('relative flex min-h-24 flex-col items-center gap-1 rounded-xl border-2 p-2',
+                    <div key={slot} className={cn('relative flex flex-col items-center rounded-xl border-2', land ? 'gap-0.5 p-1' : 'min-h-24 gap-1 p-2',
                       slot === 'commander' ? 'border-solid border-[#C6A15B]' : 'border-dashed border-stone-700',
                       linked && 'synergy-glow',
                       active ? 'border-[#B8382E] bg-red-950/40' : badCommander ? 'border-solid border-[#B8382E] bg-stone-950/60' : 'bg-stone-950/60')}>
@@ -207,17 +216,17 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                       {def ? (
                         <button type="button" onClick={() => { setTarget({ unit: ui, slot }); setDetail({ def, from: { unit: ui, slot } }); }}
                           className="flex w-full flex-col items-center gap-1" title="상세 보기">
-                          <GeneralToken def={def} rarity={shownRarity(def.rarity, owned?.promote)} size="fill" className="w-full max-w-[84px]" />
+                          <GeneralToken def={def} rarity={shownRarity(def.rarity, owned?.promote)} size="fill" className={cn('w-full', land ? 'max-w-[38px]' : 'max-w-[84px]')} />
                           <span className="flex flex-wrap items-center justify-center gap-1">
-                            <span className="text-xs font-bold">{def.name}</span>
-                            <RarityBadge rarity={shownRarity(def.rarity, owned?.promote)} />
+                            <span className={cn('font-bold', land ? 'text-[10px]' : 'text-xs')}>{def.name}</span>
+                            {!land && <RarityBadge rarity={shownRarity(def.rarity, owned?.promote)} />}
                           </span>
-                          {badCommander && <span className="text-[9px] font-bold text-red-300">⚠ 상성 열세</span>}
+                          {badCommander && !land && <span className="text-[9px] font-bold text-red-300">⚠ 상성 열세</span>}
                         </button>
                       ) : (
                         <button type="button" onClick={() => openSlot(ui, slot)} className="flex w-full flex-col items-center gap-1">
-                          <div className="flex aspect-square w-full max-w-[84px] items-center justify-center rounded-xl bg-stone-800/60 text-stone-600"><Plus size={20} /></div>
-                          <span className="text-[10px] text-stone-600">{SLOT_LABEL[slot].hint}</span>
+                          <div className={cn('flex aspect-square w-full items-center justify-center rounded-xl bg-stone-800/60 text-stone-600', land ? 'max-w-[38px]' : 'max-w-[84px]')}><Plus size={20} /></div>
+                          {!land && <span className="text-[10px] text-stone-600">{SLOT_LABEL[slot].hint}</span>}
                         </button>
                       )}
                       {def && (
@@ -234,25 +243,26 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
               </div>
 
               <button type="button" onClick={() => setInfo(ui)}
-                className="mt-2 w-full rounded-lg bg-stone-950/60 py-1.5 text-[11px] font-bold text-stone-300 sm:hidden">
+                className={cn('mt-2 w-full rounded-lg bg-stone-950/60 py-1.5 text-[11px] font-bold text-stone-300 sm:hidden', land && 'hidden')}>
                 전투력·시너지
               </button>
-              <div className="mt-3 hidden space-y-2 sm:block">
+              {!land && <div className="mt-3 hidden space-y-2 sm:block">
                 {p ? <UnitStats p={p} /> : <p className="rounded-lg bg-stone-950/50 py-2 text-center text-xs text-stone-500">주장을 배치해야 출진할 수 있습니다</p>}
                 <SynergyList synergy={syn} empty="활성 시너지 없음 — 세력·병과·인연을 맞춰 보세요" />
-              </div>
+              </div>}
             </section>
           );
         })}
       </div>
 
-      <section className="rounded-2xl border border-stone-800 bg-stone-900/60 p-3">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+      <section className={cn('rounded-2xl border border-stone-800 bg-stone-900/60 p-3', land && 'hidden')}>
+        <div className={cn('flex flex-wrap items-center gap-2', land ? 'mb-1.5' : 'mb-3')}>
           <span className="text-sm font-bold">
             보유 장수
-            <span className="ml-2 text-[11px] font-normal text-stone-500">
+            {!land && <span className="ml-2 text-[11px] font-normal text-stone-500">
               {benchOnly ? '부대에 없는 대기 장수' : '등용한 장수 전체'} · 누르면 제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}과 비교
-            </span>
+            </span>}
+            {land && <span className={cn('ml-2 rounded px-1.5 py-px text-[10px]', UNIT_TINT[target.unit].chip)}>제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label} 선택 중</span>}
           </span>
           <button type="button" onClick={() => setBenchOnly((v) => !v)}
             className={cn('rounded-md px-2 py-1 text-xs font-bold', benchOnly ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-800 text-stone-300')}>
@@ -269,7 +279,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
           </div>
         </div>
 
-        <HSlide rows={2}>
+        <HSlide rows={land ? 1 : 2}>
           {listed.map(({ def, owned: o }) => {
             const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
             const rank = shownRarity(def.rarity, o.promote);
@@ -290,9 +300,9 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                   <div className="tabular hidden text-[11px] text-stone-400 sm:block">
                     {STAT_LABEL.war} {st.war} · {STAT_LABEL.int} {st.int} · {STAT_LABEL.lead} {st.lead}
                   </div>
-                  <div className="mt-0.5 hidden flex-wrap gap-1 sm:flex">
+                  {!land && <div className="mt-0.5 hidden flex-wrap gap-1 sm:flex">
                     {def.bonds.map((b) => <BondTag key={b} id={b} />)}
-                  </div>
+                  </div>}
                   {(where || gains || (cmdGrade && cmdGrade !== 'even')) && (
                     <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
                       {where && <span className={cn('rounded px-1.5 py-px', UNIT_TINT[where.unit].chip)}>{where.label}</span>}
@@ -313,10 +323,24 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         )}
       </section>
 
-      <section className="rounded-2xl border border-stone-800 bg-stone-900/60 p-3">
-        <h3 className="mb-2 font-serif text-base font-black">장비</h3>
-        <GearBag />
-      </section>
+      {!land && (
+        <section className="rounded-2xl border border-stone-800 bg-stone-900/60 p-3">
+          <h3 className="mb-2 font-serif text-base font-black">장비</h3>
+          <GearBag />
+        </section>
+      )}
+
+      {land && presetOpen && (
+        <Modal wide onClose={() => setPresetOpen(false)}>
+          <div className="mb-2 flex shrink-0 items-center justify-between">
+            <h3 className="font-serif text-base font-black text-[#C6A15B]">편성 저장 · 불러오기</h3>
+            <button type="button" onClick={() => setPresetOpen(false)} aria-label="닫기" className="rounded-lg p-1 text-stone-400 hover:bg-stone-800"><X size={18} /></button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <PresetBar onLoaded={() => { setTarget({ unit: 0, slot: 'commander' }); setPresetOpen(false); }} />
+          </div>
+        </Modal>
+      )}
 
       {picker && (
         <Modal wide onClose={() => setPicker(false)}>
@@ -337,7 +361,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
               </button>
             ))}
           </div>
-          <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
+          <div className={cn('min-h-0 flex-1 overflow-y-auto', land ? 'grid grid-cols-2 content-start gap-1.5' : 'space-y-1.5')}>
             {matched.map(({ def, owned: o }) => {
               const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
               const rank = shownRarity(def.rarity, o.promote);
