@@ -1,8 +1,8 @@
-import { BookOpen, Coins, Flag, Swords, Target, Users, X, type LucideIcon } from 'lucide-react';
+﻿import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { BannerEmblem } from './components/BannerEmblem';
 import { AccountButton, GameConflict } from './components/CloudAccount';
-import { cn, Modal, ReloadButton, ThemeToggle, useLandscape } from './components/ui';
+import { cn, ReloadButton, ThemeToggle, useLandscape } from './components/ui';
 import BattlePage from './pages/Battle';
 import Campaign from './pages/Campaign';
 import Challenge from './pages/Challenge';
@@ -144,11 +144,12 @@ function LandShell() {
       {/* HUD 오른쪽: 메뉴 버튼 열 (지도가 곧 출진 화면이라 출진 탭은 없다) */}
       {!inBattle && (
         <nav className="absolute right-[max(0.375rem,env(safe-area-inset-right))] top-12 z-20 flex flex-col gap-1.5">
-          {TABS.filter((t) => t.id !== 'campaign').map((t) => {
+          {TABS.filter((t) => t.id !== 'campaign' || modalTab).map((t) => {
             const Icon = t.icon;
             return (
               <button key={t.id} type="button" onClick={() => setView(t.id)}
-                className="flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#C6A15B]/60 bg-[#171513]/85 text-[10px] font-bold text-[#C6A15B] shadow-lg backdrop-blur active:bg-[#B8382E]/40">
+                className={cn('flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-bold shadow-lg backdrop-blur active:bg-[#B8382E]/40',
+                  t.id === view ? 'border-[#F3ECE0]/80 bg-[#B8382E] text-[#F8E7D2]' : 'border-[#C6A15B]/60 bg-[#171513]/85 text-[#C6A15B]')}>
                 <Icon size={18} />
                 {t.label}
               </button>
@@ -157,22 +158,16 @@ function LandShell() {
         </nav>
       )}
 
+      {/* 편성·도전·등용·장수록: 출진처럼 화면 전체를 채우는 페이지 (오른쪽 메뉴 열은 그대로) */}
       {modalTab && (
-        <Modal wide onClose={() => setView('campaign')}>
-          <div className="mb-2 flex shrink-0 items-center justify-between">
-            <h2 className="flex items-center gap-1.5 font-serif text-base font-black text-[#C6A15B]">
-              <modalTab.icon size={16} /> {modalTab.label}
-            </h2>
-            <button type="button" aria-label="닫기" onClick={() => setView('campaign')}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-800/60 text-stone-300"><X size={16} /></button>
-          </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
+        <main className="scroll-sheet absolute bottom-1.5 left-[max(0.375rem,env(safe-area-inset-left))] right-[calc(3.75rem+env(safe-area-inset-right))] top-11 z-10 overflow-hidden rounded-xl p-2">
+          <div className="h-full overflow-y-auto">
             {view === 'formation' && <Formation />}
             {view === 'recruit' && <Recruit />}
             {view === 'roster' && <Roster />}
             {view === 'challenge' && <Challenge />}
           </div>
-        </Modal>
+        </main>
       )}
       <GameConflict />
     </div>
