@@ -1,9 +1,9 @@
 // 장수록(도감) + 인연 목록
 import { BookOpen, Link2, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { Desk, type Slip } from '../components/Desk';
 import { GearBag } from '../components/GearPanel';
 import { GeneralCard, GeneralDetail, GeneralToken, RarityBadge } from '../components/General';
-import { PageHero } from '../components/PageHero';
 import { Btn, cn, Modal, NameSearch, useLandscape } from '../components/ui';
 import { BONDS, bondMembers, type BondDef } from '../data/bonds';
 import { RECRUITABLE } from '../data/generals';
@@ -27,24 +27,15 @@ export default function Roster() {
   const [fac, setFac] = useState<'all' | Faction>('all');
   const land = useLandscape();
   const openBond = BONDS.find((b) => b.id === bondId);
+  const ownedCount = RECRUITABLE.filter((g) => roster[g.id]).length;
+  const slips: Slip[] = [
+    { id: 'generals', han: '將', label: '장수', on: tab === 'generals', onClick: () => setTab('generals') },
+    { id: 'gear', han: '裝', label: '장비', on: tab === 'gear', onClick: () => setTab('gear') },
+    { id: 'bonds', han: '緣', label: '인연', on: tab === 'bonds', onClick: () => setTab('bonds') },
+  ];
 
-  return (
-    <div className={land ? 'space-y-1.5' : 'space-y-5'}>
-      <PageHero
-        image="scene-roster.webp"
-        title="장수록"
-        vivid
-        aside={
-          <div className="flex shrink-0 gap-1 rounded-xl bg-stone-950/80 p-1">
-            <TabBtn active={tab === 'generals'} onClick={() => setTab('generals')}><BookOpen size={14} /> 장수</TabBtn>
-            <TabBtn active={tab === 'gear'} onClick={() => setTab('gear')}><Shield size={14} /> 장비</TabBtn>
-            <TabBtn active={tab === 'bonds'} onClick={() => setTab('bonds')}><Link2 size={14} /> 인연</TabBtn>
-          </div>
-        }
-      >
-        <p className="mt-1 hidden text-xs text-stone-300 sm:block">등용한 장수, 장비, 인연 조합을 확인하세요.</p>
-      </PageHero>
-
+  const page = (
+    <>
       {land && (
         <div className="flex gap-1 rounded-xl bg-stone-950/80 p-1">
           <TabBtn active={tab === 'generals'} onClick={() => setTab('generals')}><BookOpen size={14} /> 장수</TabBtn>
@@ -160,16 +151,20 @@ export default function Roster() {
                 </button>
               );
             })}
-            <button type="button" onClick={() => setRules(true)}
-              className="w-full rounded-xl border border-dashed border-stone-700 py-2.5 text-xs font-bold text-stone-300">
-              기본 시너지 규칙
-            </button>
+            {land && (
+              <button type="button" onClick={() => setRules(true)}
+                className="w-full rounded-xl border border-dashed border-stone-700 py-2.5 text-xs font-bold text-stone-300">
+                기본 시너지 규칙
+              </button>
+            )}
           </div>
           <div className="hidden gap-3 sm:grid md:grid-cols-2">
             {BONDS.map((b) => <BondCard key={b.id} bond={b} roster={roster} onPick={setDetail} />)}
-            <div className="rounded-2xl border border-dashed border-stone-700 p-3 text-xs text-stone-400 md:col-span-2">
-              <RulesBody />
-            </div>
+            {land && (
+              <div className="rounded-2xl border border-dashed border-stone-700 p-3 text-xs text-stone-400 md:col-span-2">
+                <RulesBody />
+              </div>
+            )}
           </div>
         </>
       )}
@@ -194,7 +189,25 @@ export default function Roster() {
           {!roster[detail.id] && <p className="mt-3 text-center text-xs text-stone-500">아직 등용하지 않은 장수입니다.</p>}
         </Modal>
       )}
-    </div>
+    </>
+  );
+
+  if (land) return <div className="space-y-1.5">{page}</div>;
+
+  return (
+    <Desk
+      title="장수록"
+      hanja="將帥錄"
+      slips={slips}
+      seal="圖鑑"
+      scrollTitle={tab === 'generals' ? '장수' : tab === 'gear' ? '장비' : '인연'}
+      meta={<>{ownedCount}/{RECRUITABLE.length}</>}
+      scroll={tab === 'bonds' ? <RulesBody /> : tab === 'gear'
+        ? <p className="text-xs leading-relaxed opacity-80">원정 전리품입니다. 장수에게 무기·갑주·서책을 끼우면 능력이 오릅니다.</p>
+        : <p className="text-xs leading-relaxed opacity-80">등용 {ownedCount}/{RECRUITABLE.length}. 세력별로 모아 두었습니다. 없는 장수는 등용에서 뽑습니다.</p>}
+    >
+      {page}
+    </Desk>
   );
 }
 

@@ -1,8 +1,8 @@
 ﻿// 부대 편성 — 상대(원정 스테이지 · 천하 토벌전 · 모의전)를 골라 상성 힌트를 보며 편성
 import { useMemo, useState } from 'react';
+import { Desk } from '../components/Desk';
 import { FormationEditor } from '../components/FormationEditor';
 import { TroopAdviceBox } from '../components/Matchup';
-import { PageHero } from '../components/PageHero';
 import { Btn, Modal, useLandscape } from '../components/ui';
 import { isUnlocked, STAGES, STAGE_MAP } from '../data/stages';
 import { practiceOpponent } from '../engine/aiArmy';
@@ -45,31 +45,22 @@ export default function Formation() {
   const [help, setHelp] = useState(false);
   const land = useLandscape();
 
-  return (
-    <div className={land ? 'space-y-1.5' : 'space-y-5'}>
-      <PageHero image="scene-formation.webp" title="부대 편성" vivid>
-        <p className="mt-1 text-xs text-stone-300">
-          같은 세력·병과·인연을 맞추면 전투력과 연쇄가 오릅니다.
-          <button type="button" className="ml-2 font-bold text-amber-200 underline-offset-2 hover:underline" onClick={() => setHelp(true)}>칸 설명</button>
-        </p>
-      </PageHero>
+  const opponent = (
+    <label className="flex items-center gap-2 text-xs text-stone-400">
+      상대
+      <select value={key} onChange={(e) => setFocusStage(e.target.value)}
+        className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs text-stone-200">
+        {conquestOpen && <option value="conquest">🏔 천하 토벌전 {conquestBest + 1}층</option>}
+        <option value="practice">🎯 모의전 상대 ({practiceOpp?.label ?? '도전 탭 설정'})</option>
+        <optgroup label="천하 원정">
+          {unlockedStages.map((st) => <option key={st.id} value={st.id}>{st.id} {st.title}{cleared[st.id] ? ' ✓' : ''}</option>)}
+        </optgroup>
+      </select>
+    </label>
+  );
 
-      <div className={land ? 'flex items-center gap-2' : 'space-y-2'}>
-        <label className="flex items-center gap-2 text-xs text-stone-400">
-          상대
-          <select value={key} onChange={(e) => setFocusStage(e.target.value)}
-            className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-900 px-2 py-1.5 text-xs text-stone-200 sm:flex-none">
-            {conquestOpen && <option value="conquest">🏔 천하 토벌전 {conquestBest + 1}층</option>}
-            <option value="practice">🎯 모의전 상대 ({practiceOpp?.label ?? '도전 탭 설정'})</option>
-            <optgroup label="천하 원정">
-              {unlockedStages.map((st) => <option key={st.id} value={st.id}>{st.id} {st.title}{cleared[st.id] ? ' ✓' : ''}</option>)}
-            </optgroup>
-          </select>
-        </label>
-        {!land && <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster, gear)} compact />}
-      </div>
-
-      <FormationEditor
+  const editor = (
+    <FormationEditor
         enemy={enemy}
         counter={{
           enemies: enemyUnits,
@@ -77,20 +68,53 @@ export default function Formation() {
           lockedNote: key === 'conquest' ? '이 층에서 1회 패배 후 개방' : key === 'practice' ? undefined : '첫 전투 후 개방',
         }}
       />
+  );
 
-      {help && (
-        <Modal onClose={() => setHelp(false)}>
-          <h3 className="font-serif text-lg font-black">부대 6칸</h3>
-          <ul className="mt-3 list-inside list-disc space-y-1.5 text-sm text-stone-300">
-            <li>주장 — 병과와 주 전법을 정합니다.</li>
-            <li>부장 2명 — 연쇄 전법 1단·2단.</li>
-            <li>참모 — 연쇄 3단. 발동률이 오릅니다.</li>
-            <li>보좌 2명 — 전법은 없고, 능력 일부와 시너지 인원에 포함됩니다.</li>
-          </ul>
-          <p className="mt-3 text-xs text-stone-400">빈 칸의 +를 눌러 장수를 고릅니다. 넓은 화면에서는 아래 목록에서도 배치할 수 있습니다.</p>
-          <Btn variant="ghost" className="mt-4 w-full" onClick={() => setHelp(false)}>닫기</Btn>
-        </Modal>
-      )}
-    </div>
+  const helpModal = help && (
+    <Modal onClose={() => setHelp(false)}>
+      <h3 className="font-serif text-lg font-black">부대 6칸</h3>
+      <ul className="mt-3 list-inside list-disc space-y-1.5 text-sm text-stone-300">
+        <li>주장 — 병과와 주 전법을 정합니다.</li>
+        <li>부장 2명 — 연쇄 전법 1단·2단.</li>
+        <li>참모 — 연쇄 3단. 발동률이 오릅니다.</li>
+        <li>보좌 2명 — 전법은 없고, 능력 일부와 시너지 인원에 포함됩니다.</li>
+      </ul>
+      <p className="mt-3 text-xs text-stone-400">빈 칸의 +를 눌러 장수를 고릅니다. 넓은 화면에서는 아래 목록에서도 배치할 수 있습니다.</p>
+      <Btn variant="ghost" className="mt-4 w-full" onClick={() => setHelp(false)}>닫기</Btn>
+    </Modal>
+  );
+
+  if (land) {
+    return (
+      <div className="space-y-1.5">
+        {opponent}
+        {editor}
+        {helpModal}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Desk
+        title="부대 편성"
+        hanja="部隊編成"
+        seal="編制"
+        scrollTitle="상성"
+        scroll={(
+          <div className="space-y-3">
+            {opponent}
+            <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster, gear)} compact />
+            <p className="text-[11px] leading-relaxed opacity-80">
+              같은 세력·병과·인연을 맞추면 전투력과 연쇄가 오릅니다.
+              <button type="button" className="ml-1 font-bold text-[#B8382E] underline-offset-2 hover:underline" onClick={() => setHelp(true)}>칸 설명</button>
+            </p>
+          </div>
+        )}
+      >
+        {editor}
+      </Desk>
+      {helpModal}
+    </>
   );
 }

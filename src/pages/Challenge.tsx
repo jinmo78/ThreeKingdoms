@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { EnemyLineup } from '../components/EnemyLineup';
 import { FormationEditor } from '../components/FormationEditor';
+import { Desk, type Slip } from '../components/Desk';
 import { TroopAdviceBox } from '../components/Matchup';
-import { PageHero } from '../components/PageHero';
 import { PowerCompare } from '../components/UnitPreview';
 import { Btn, cn, Panel, useLandscape } from '../components/ui';
 import { ARMY_THEMES, practiceOpponent, themeLabel } from '../engine/aiArmy';
@@ -29,41 +29,32 @@ export default function Challenge() {
   const [tab, setTab] = useState<'practice' | 'conquest'>('conquest');
   const conquestOpen = useGame((s) => (s.cleared['4-3'] ?? 0) > 0);
   const land = useLandscape();
+  const slips: Slip[] = [
+    { id: 'conquest', han: '討', label: '토벌', on: tab === 'conquest', onClick: () => setTab('conquest') },
+    { id: 'practice', han: '模', label: '모의', on: tab === 'practice', onClick: () => setTab('practice') },
+  ];
 
-  return (
-    <div className={land ? 'flex h-full flex-col gap-1.5' : 'space-y-5'}>
-      <PageHero
-        image="scene-challenge.webp"
-        title="도전"
-        vivid
-        aside={
-          <div className="flex shrink-0 gap-1 rounded-xl bg-stone-950/80 p-1">
-            <TabBtn active={tab === 'conquest'} onClick={() => setTab('conquest')}>
-              {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 토벌전
-            </TabBtn>
-            <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>
-          </div>
-        }
-      >
-        <p className="mt-1 hidden text-xs text-stone-300 sm:block">끝없는 토벌전에 도전하거나, 모의전으로 편성을 시험하세요.</p>
-      </PageHero>
-      {land && (
+  if (land) {
+    return (
+      <div className="flex h-full flex-col gap-1.5">
         <div className="flex shrink-0 gap-1 self-start rounded-xl bg-stone-950/80 p-1">
           <TabBtn active={tab === 'conquest'} onClick={() => setTab('conquest')}>
             {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 토벌전
           </TabBtn>
           <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>
         </div>
-      )}
-      <div className={land ? 'min-h-0 flex-1' : undefined}>
-        {tab === 'practice' ? <Practice /> : <Conquest />}
+        <div className="min-h-0 flex-1">
+          {tab === 'practice' ? <Practice /> : <Conquest />}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return tab === 'practice' ? <Practice slips={slips} /> : <Conquest slips={slips} />;
 }
 
 // ---------------- 모의전 ----------------
-function Practice() {
+function Practice({ slips }: { slips?: Slip[] }) {
   const formation = useGame((s) => s.formation);
   const roster = useGame((s) => s.roster);
   const gear = useGame((s) => s.gear);
@@ -200,21 +191,18 @@ function Practice() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="min-w-0 space-y-4">
+    <Desk title="도전" hanja="挑戰" slips={slips} seal="模擬" scrollTitle="모의전" scrollFirst={false}
+      scroll={<div className="space-y-3">{testPanels}</div>}>
+      <div className="space-y-4">
         {setupPanels}
         <EditorSection enemy={enemyProf} />
       </div>
-
-      <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
-        {testPanels}
-      </div>
-    </div>
+    </Desk>
   );
 }
 
 // ---------------- 천하 토벌전 ----------------
-function Conquest() {
+function Conquest({ slips }: { slips?: Slip[] }) {
   const open = useGame((s) => (s.cleared['4-3'] ?? 0) > 0);
   const best = useGame((s) => s.conquestBest);
   const failFloor = useGame((s) => s.conquestFailFloor);
@@ -234,12 +222,19 @@ function Conquest() {
   }), [best]);
 
   if (!open) {
-    return (
+    const locked = (
       <div className="mx-auto max-w-md rounded-2xl border border-stone-800 bg-stone-900/60 p-8 text-center">
         <Lock size={32} className="mx-auto text-stone-500" />
         <p className="mt-3 font-serif text-lg font-black">천하 토벌전</p>
         <p className="mt-1 text-xs text-stone-400">원정 4-3 「적벽」을 클리어하면 열립니다.</p>
       </div>
+    );
+    if (land) return locked;
+    return (
+      <Desk title="도전" hanja="挑戰" slips={slips} seal="討伐" scrollTitle="토벌전"
+        scroll={<p className="text-xs leading-relaxed opacity-80">원정 4-3 「적벽」을 클리어하면 끝없는 토벌이 열립니다.</p>}>
+        {locked}
+      </Desk>
     );
   }
 
@@ -304,20 +299,13 @@ function Conquest() {
   }
 
   return (
-    <div className="space-y-4">
-      {recordBox}
-
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* 적군 + 출진: 모바일에서는 위, PC에서는 오른쪽에 고정 */}
-        <div className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:order-last lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
-          {asidePanels}
-        </div>
-
-        <div className="min-w-0">
-          <EditorSection enemy={enemyProf} />
-        </div>
+    <Desk title="도전" hanja="挑戰" slips={slips} seal="討伐" scrollTitle={`${floor.floor}층`}
+      scroll={<div className="space-y-3">{asidePanels}</div>}>
+      <div className="space-y-4">
+        {recordBox}
+        <EditorSection enemy={enemyProf} />
       </div>
-    </div>
+    </Desk>
   );
 }
 

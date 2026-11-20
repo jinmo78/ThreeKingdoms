@@ -1,7 +1,8 @@
 ﻿// 장수 등용(가챠) 화면 — 일일 무료 · 출석 · 금화 등용
-import { CalendarCheck, Coins, Flag, Gift, Sparkles } from 'lucide-react';
+import { CalendarCheck, Coins, Flag, Gift } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
+import { Desk } from '../components/Desk';
 import { GeneralDetail, GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
 import { Btn, cn, Modal, Panel, useLandscape } from '../components/ui';
@@ -86,22 +87,13 @@ export default function Recruit() {
   const spentFree = results[0]?.freeUsed ?? 0;
   const spentGold = results[0]?.goldSpent ?? 0;
 
-  return (
-    <div className={land ? 'grid h-full grid-cols-2 gap-2' : 'space-y-5'}>
-      <div className={land ? 'min-w-0 space-y-1.5 overflow-y-auto' : 'space-y-5'}>
-      <div>
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className={cn('font-serif font-black', land ? 'text-base' : 'text-2xl')}>장수 등용</h2>
-          <span className="shrink-0 text-xs text-stone-400">
-            도감 {ownedCount}/{RECRUITABLE.length}
-            {land && <button type="button" onClick={() => setRatesOpen(true)} className="ml-2 rounded-full border border-stone-700 px-2 py-0.5 font-bold text-stone-300">확률</button>}
-          </span>
-        </div>
-        <p className="text-xs text-stone-500 land:hidden">
+  const command = (
+    <div className="space-y-3">
+      {!land && (
+        <p className="text-[11px] leading-relaxed opacity-80">
           매일 무료 {FREE_DAILY_PULLS}회가 쌓이고, 출석하면 추가 무료 등용을 받습니다. 무료가 없으면 금화로 이어서 등용할 수 있습니다.
         </p>
-      </div>
-
+      )}
       <Panel title="출석" icon={<CalendarCheck size={15} />}>
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -169,9 +161,17 @@ export default function Recruit() {
         />
       </div>
 
-      </div>
+      {!land && (
+        <div>
+          <div className="mb-1 font-serif text-sm font-black">등용 확률</div>
+          <RatesBody />
+        </div>
+      )}
+    </div>
+  );
 
-      <div className={cn('relative flex items-center justify-center overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-4', land ? 'h-full min-h-[12rem]' : 'min-h-[340px]')}>
+  const stage = (
+      <div className={cn('relative flex items-center justify-center overflow-hidden', land ? 'h-full min-h-[12rem] rounded-2xl border border-stone-800 bg-stone-950 p-4' : 'min-h-[22rem] rounded-lg')}>
         <img src={sceneUrl('scene-recruit.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover brightness-[1.85] contrast-[1.05] saturate-[1.08]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
         <div className="relative w-full">
@@ -189,7 +189,10 @@ export default function Recruit() {
           )}
         </div>
       </div>
+  );
 
+  const overlays = (
+    <>
       {phase === 'reveal' && createPortal(
         <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[#171513]/94">
           <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center px-3 py-4">
@@ -232,14 +235,6 @@ export default function Recruit() {
         document.body,
       )}
 
-      <div className="hidden sm:block land:hidden!">
-        <Panel title="등용 확률" icon={<Sparkles size={15} />}><RatesBody /></Panel>
-      </div>
-      <button type="button" onClick={() => setRatesOpen(true)}
-        className="w-full rounded-xl border border-stone-700 py-2.5 text-xs font-bold text-stone-300 sm:hidden land:hidden!">
-        등용 확률
-      </button>
-
       {ratesOpen && (
         <Modal onClose={() => setRatesOpen(false)}>
           <h3 className="mb-3 font-serif text-lg font-black">등용 확률</h3>
@@ -253,7 +248,42 @@ export default function Recruit() {
           <GeneralDetail def={detail} owned={roster[detail.id]} onClose={() => setDetail(null)} />
         </Modal>
       )}
-    </div>
+    </>
+  );
+
+  if (land) {
+    return (
+      <div className="grid h-full grid-cols-2 gap-2">
+        <div className="min-w-0 space-y-1.5 overflow-y-auto">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-serif text-base font-black">장수 등용</h2>
+            <span className="shrink-0 text-xs text-stone-400">
+              도감 {ownedCount}/{RECRUITABLE.length}
+              <button type="button" onClick={() => setRatesOpen(true)} className="ml-2 rounded-full border border-stone-700 px-2 py-0.5 font-bold text-stone-300">확률</button>
+            </span>
+          </div>
+          {command}
+        </div>
+        {stage}
+        {overlays}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Desk
+        title="장수 등용"
+        hanja="招募"
+        meta={<>도감 {ownedCount}/{RECRUITABLE.length}</>}
+        seal="招募"
+        scrollTitle="등용"
+        scroll={command}
+      >
+        {stage}
+      </Desk>
+      {overlays}
+    </>
   );
 }
 

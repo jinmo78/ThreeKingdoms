@@ -465,6 +465,17 @@ html.dark {
 .frame-sm::before { inset: 2px; border-radius: 7px; }
 html.dark .frame-sm { background: rgba(0, 0, 0, 0.25); }
 
+/* 출진 외 화면의 왼쪽 판: 고지도와 같은 한지. 스크롤 합성은 하지 않는다. */
+.desk-sheet {
+  color: #3a2e22;
+  background-image:
+    var(--tex-stain), var(--tex-fiber1), var(--tex-fiber2), var(--tex-grain),
+    linear-gradient(180deg, var(--map-a), var(--map-b));
+  background-size: 700px 700px, 320px 320px, 320px 320px, 200px 200px, auto;
+  background-blend-mode: multiply, multiply, multiply, multiply, normal;
+}
+html.dark .desk-sheet { color: #e4d7c2; background-blend-mode: normal; }
+
 /* 고지도 본체: 가장자리가 그을린 낡은 한지 */
 .war-map {
   isolation: isolate;
