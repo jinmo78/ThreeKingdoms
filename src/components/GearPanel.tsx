@@ -11,7 +11,7 @@ import {
 import { useGame } from '../store/gameStore';
 import type { GearSlot, Stats } from '../types';
 import { GearArt } from './GearArt';
-import { cn, Hint, HSlide, NameSearch } from './ui';
+import { Btn, cn, Hint, Modal, NameSearch } from './ui';
 
 const SLOT_ORDER: GearSlot[] = ['weapon', 'armor', 'tome'];
 const SLOT_MARK: Record<GearSlot, string> = { weapon: '劍', armor: '甲', tome: '書' };
@@ -30,22 +30,12 @@ function recommendedSlots(stats: Stats): GearSlot[] {
 
 export function GearBag() {
   const bag = useGame((s) => s.gear);
-  const roster = useGame((s) => s.roster);
-  const gold = useGame((s) => s.gold);
-  const equipGear = useGame((s) => s.equipGear);
-  const unequipGear = useGame((s) => s.unequipGear);
-  const gearLevelUp = useGame((s) => s.gearLevelUp);
-  const gearEnhance = useGame((s) => s.gearEnhance);
-  const gearPromote = useGame((s) => s.gearPromote);
+  const [open, setOpen] = useState<string | null>(null);
   const [own, setOwn] = useState<'all' | 'owned' | 'missing'>('all');
   const [slotFilter, setSlotFilter] = useState<GearSlot | 'all'>('all');
   const [query, setQuery] = useState('');
   const ownedCount = GEAR.filter((g) => bag[g.id]).length;
   const needle = query.trim();
-  const generals = Object.keys(roster).flatMap((id) => {
-    const def = GENERAL_MAP[id];
-    return def ? [{ id, name: def.name }] : [];
-  });
 
   return (
     <div className="space-y-3">
@@ -80,93 +70,16 @@ export function GearBag() {
         return (
           <section key={slot}>
             <h3 className="mb-2 text-sm font-black text-stone-300">{GEAR_SLOT_LABEL[slot]}</h3>
-            <HSlide>
-              {list.map((def) => {
-                const item = bag[def.id];
-                if (!item) {
-                  return (
-                    <div key={def.id} className="flex gap-2 rounded-xl border border-dashed border-stone-700 bg-stone-950/40 p-3">
-                      <GearArt id={def.id} dim />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1 font-bold text-stone-400">{def.name} <Hint text={`${def.desc} ${SLOT_FIT[def.slot].who}`} /></div>
-                        <div className="mt-1 text-[11px] text-stone-600">미획득</div>
-                      </div>
-                    </div>
-                  );
-                }
-                const rank = gearRarity(def, item.promote);
-                const bonus = gearBonus(def, item);
-                const skill = gearSkill(def, item);
-                const copies = gearCount(item);
-                const wornBy = wearersOf(roster, def.id);
-                const nextRank = gearPromoteLeft(def, item.promote) > 0 ? gearRarity(def, item.promote + 1) : null;
-                const levelCost = gearLevelCost(item.level);
-                const enhanceCost = gearEnhanceCost(item.enhance);
-                const promoteCost = nextRank === 'SR' || nextRank === 'SSR' ? gearPromoteCost(nextRank) : 0;
-                const ready = item.level >= GEAR_MAX_LEVEL && item.enhance >= GEAR_MAX_ENHANCE;
-                return (
-                  <div key={def.id} className={cn('rounded-xl border p-3', RARITY[rank].border, 'bg-stone-900/70')}>
-                    <div className="flex items-center gap-2">
-                      <GearArt id={def.id} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className={cn('rounded px-1 py-0.5 text-[10px] font-black', RARITY[rank].badge)}>{rank}</span>
-                          <span className="font-bold">{def.name}</span>
-                          <Hint text={`${def.desc} ${SLOT_FIT[def.slot].who}`} />
-                          <span className="ml-auto text-right text-xs font-bold text-amber-300">{effectLabel(def.stat, bonus, skill)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-1 text-[11px] text-stone-400">
-                      보유 {copies} · 장착 {wornBy.length}/{copies} · Lv.{item.level}/{GEAR_MAX_LEVEL} · 강화 +{item.enhance} · 파편 {item.shards}
-                    </div>
-                    {wornBy.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {wornBy.map((id) => (
-                          <button key={id} type="button" onClick={() => unequipGear(id, def.id)}
-                            className="rounded-full bg-stone-800 px-2 py-0.5 text-[10px] text-stone-200">
-                            {GENERAL_MAP[id]?.name ?? id} 해제
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <label className="mt-2 flex items-center gap-2 text-[11px] text-stone-400">
-                      장착
-                      <select
-                        value=""
-                        onChange={(e) => { if (e.target.value) equipGear(e.target.value, def.id); }}
-                        className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-950 px-2 py-1 text-xs text-stone-200"
-                      >
-                        <option value="">{wornBy.length >= copies ? '빈 개수 없음 · 옮길 장수' : '끼울 장수'}</option>
-                        {generals.filter((g) => !wornBy.includes(g.id)).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                      </select>
-                    </label>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      <GrowBtn
-                        label="레벨업"
-                        disabled={item.level >= GEAR_MAX_LEVEL || item.shards < 1 || gold < levelCost}
-                        onClick={() => gearLevelUp(def.id)}
-                        note={item.level >= GEAR_MAX_LEVEL ? '최대' : `파편 1 · 금 ${levelCost}`}
-                      />
-                      <GrowBtn
-                        label="강화"
-                        disabled={item.enhance >= GEAR_MAX_ENHANCE || item.shards < 2 || gold < enhanceCost}
-                        onClick={() => gearEnhance(def.id)}
-                        note={item.enhance >= GEAR_MAX_ENHANCE ? '최대' : `파편 2 · 금 ${enhanceCost}`}
-                      />
-                      {nextRank && (
-                        <GrowBtn
-                          label={`${nextRank} 등급`}
-                          disabled={!ready || item.shards < GEAR_PROMOTE_SHARDS || gold < promoteCost}
-                          onClick={() => gearPromote(def.id)}
-                          note={ready ? `파편 ${GEAR_PROMOTE_SHARDS} · 금 ${promoteCost}` : `Lv.${GEAR_MAX_LEVEL} · +${GEAR_MAX_ENHANCE} 필요`}
-                        />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </HSlide>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2">
+              {list.map((def) => (
+                <button key={def.id} type="button" onClick={() => setOpen(def.id)}
+                  className={cn('flex flex-col items-center gap-1.5 rounded-xl border px-1.5 py-2 text-center',
+                    bag[def.id] ? cn(RARITY[gearRarity(def, bag[def.id].promote)].border, 'bg-stone-900/70') : 'border-dashed border-stone-700 bg-stone-950/40')}>
+                  <GearArt id={def.id} dim={!bag[def.id]} />
+                  <span className={cn('break-keep-all text-sm font-black leading-tight', !bag[def.id] && 'text-stone-500')}>{def.name}</span>
+                </button>
+              ))}
+            </div>
           </section>
         );
       })}
@@ -179,7 +92,89 @@ export function GearBag() {
       }).length === 0) && (
         <p className="py-6 text-center text-xs text-stone-500">없음</p>
       )}
+      {open && <GearSheet id={open} onClose={() => setOpen(null)} />}
     </div>
+  );
+}
+
+function GearSheet({ id, onClose }: { id: string; onClose: () => void }) {
+  const bag = useGame((s) => s.gear);
+  const roster = useGame((s) => s.roster);
+  const gold = useGame((s) => s.gold);
+  const equipGear = useGame((s) => s.equipGear);
+  const unequipGear = useGame((s) => s.unequipGear);
+  const gearLevelUp = useGame((s) => s.gearLevelUp);
+  const gearEnhance = useGame((s) => s.gearEnhance);
+  const gearPromote = useGame((s) => s.gearPromote);
+  const def = GEAR_MAP[id];
+  if (!def) return null;
+  const item = bag[id];
+  const generals = Object.keys(roster).flatMap((gid) => {
+    const g = GENERAL_MAP[gid];
+    return g ? [{ id: gid, name: g.name }] : [];
+  });
+  const rank = item ? gearRarity(def, item.promote) : def.rarity;
+  const bonus = item ? gearBonus(def, item) : 0;
+  const skill = item ? gearSkill(def, item) : { power: 0, rate: 0 };
+  const copies = item ? gearCount(item) : 0;
+  const wornBy = wearersOf(roster, def.id);
+  const nextRank = item && gearPromoteLeft(def, item.promote) > 0 ? gearRarity(def, item.promote + 1) : null;
+  const levelCost = item ? gearLevelCost(item.level) : 0;
+  const enhanceCost = item ? gearEnhanceCost(item.enhance) : 0;
+  const promoteCost = nextRank === 'SR' || nextRank === 'SSR' ? gearPromoteCost(nextRank) : 0;
+  const ready = !!item && item.level >= GEAR_MAX_LEVEL && item.enhance >= GEAR_MAX_ENHANCE;
+  return (
+    <Modal onClose={onClose}>
+      <div className="flex items-center gap-3">
+        <GearArt id={id} dim={!item} />
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className={cn('rounded px-1 py-0.5 text-[10px] font-black', RARITY[rank].badge)}>{rank}</span>
+            <span className="font-serif text-lg font-black">{def.name}</span>
+          </div>
+          {item ? (
+            <div className="mt-1 text-sm font-bold text-amber-300">{effectLabel(def.stat, bonus, skill)}</div>
+          ) : (
+            <div className="mt-1 text-sm text-stone-500">미획득</div>
+          )}
+        </div>
+      </div>
+      <p className="mt-3 text-sm leading-relaxed">{def.desc} · {SLOT_FIT[def.slot].who}</p>
+      {item && (
+        <>
+          <div className="mt-2 text-sm">보유 {copies} · 장착 {wornBy.length}/{copies} · Lv.{item.level}/{GEAR_MAX_LEVEL} · 강화 +{item.enhance} · 파편 {item.shards}</div>
+          {wornBy.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {wornBy.map((gid) => (
+                <button key={gid} type="button" onClick={() => unequipGear(gid, def.id)}
+                  className="rounded-full bg-stone-800 px-2 py-1 text-xs text-stone-200">
+                  {GENERAL_MAP[gid]?.name ?? gid} 해제
+                </button>
+              ))}
+            </div>
+          )}
+          <label className="mt-3 flex items-center gap-2 text-sm">
+            장착
+            <select
+              value=""
+              onChange={(e) => { if (e.target.value) equipGear(e.target.value, def.id); }}
+              className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-950 px-2 py-1.5 text-sm"
+            >
+              <option value="">{wornBy.length >= copies ? '옮길 장수' : '끼울 장수'}</option>
+              {generals.filter((g) => !wornBy.includes(g.id)).map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </label>
+          <div className="mt-3 flex flex-wrap gap-1">
+            <GrowBtn label="레벨업" disabled={item.level >= GEAR_MAX_LEVEL || item.shards < 1 || gold < levelCost} onClick={() => gearLevelUp(def.id)} note={item.level >= GEAR_MAX_LEVEL ? '최대' : `파편 1 · 금 ${levelCost}`} />
+            <GrowBtn label="강화" disabled={item.enhance >= GEAR_MAX_ENHANCE || item.shards < 2 || gold < enhanceCost} onClick={() => gearEnhance(def.id)} note={item.enhance >= GEAR_MAX_ENHANCE ? '최대' : `파편 2 · 금 ${enhanceCost}`} />
+            {nextRank && (
+              <GrowBtn label={`${nextRank} 등급`} disabled={!ready || item.shards < GEAR_PROMOTE_SHARDS || gold < promoteCost} onClick={() => gearPromote(def.id)} note={ready ? `파편 ${GEAR_PROMOTE_SHARDS} · 금 ${promoteCost}` : `Lv.${GEAR_MAX_LEVEL} · +${GEAR_MAX_ENHANCE}`} />
+            )}
+          </div>
+        </>
+      )}
+      <Btn variant="ghost" className="mt-4 w-full" onClick={onClose}>닫기</Btn>
+    </Modal>
   );
 }
 

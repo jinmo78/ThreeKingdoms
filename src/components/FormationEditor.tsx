@@ -1,7 +1,7 @@
 ﻿// 부대 편성 편집기 — 편성 화면 · 천하 토벌전 · 모의전에서 공용
 // 넓은 화면: 칸을 고른 뒤 아래 목록에서 배치. 모바일: 빈 칸 + → 팝업에서 배치
 // 목록에는 새로 켜지는 시너지와 주장 상성을 미리 표시
-import { Coins, Plus, Save, Sparkles, Trash2, Wand2, X } from 'lucide-react';
+import { Coins, Plus, Save, Trash2, Wand2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BOND_MAP } from '../data/bonds';
 import { GENERAL_MAP } from '../data/generals';
@@ -17,9 +17,9 @@ import type { EnemyUnit, Faction, GeneralDef, OwnedGeneral, Slot, Troop, Unit } 
 import { SLOTS } from '../types';
 import { GearBag } from './GearPanel';
 import { CounterFormationButton } from './CounterFormation';
-import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from './General';
+import { GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from './General';
 import { MatchupBadge } from './Matchup';
-import { Btn, cn, Hint, HSlide, Modal, NameSearch, useLandscape } from './ui';
+import { Btn, cn, Hint, Modal, NameSearch, useLandscape } from './ui';
 
 type Target = { unit: number; slot: Slot };
 type DetailState = { def: GeneralDef; from?: Target };
@@ -233,7 +233,6 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                             <span className={cn('font-bold', land ? 'text-[10px]' : 'text-xs')}>{def.name}</span>
                             {!land && <RarityBadge rarity={shownRarity(def.rarity, owned?.promote)} />}
                           </span>
-                          {badCommander && !land && <span className="text-[9px] font-bold text-red-300">⚠ 상성 열세</span>}
                         </button>
                       ) : (
                         <button type="button" onClick={() => openSlot(ui, slot)} className="flex w-full flex-col items-center gap-1">
@@ -287,43 +286,18 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
           </div>
         </div>
 
-        <HSlide rows={land ? 1 : 2}>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-2">
           {listed.map(({ def, owned: o }) => {
-            const st = effectiveStats(def, o.level, o.stars, o.promote ?? 0);
             const rank = shownRarity(def.rarity, o.promote);
-            const where = placed[def.id];
-            const gains = preview[def.id];
-            const cmdGrade = enemy && target.slot === 'commander' ? matchupGrade(matchupVs(def.troop, enemyTroops)) : null;
             return (
-              <div key={def.id} className={cn('flex items-center gap-2.5 rounded-xl border p-2 transition-colors',
-                gains ? 'border-amber-400/40 bg-amber-400/5' : 'border-stone-800 bg-stone-950/40')}>
-                <button type="button" onClick={() => setDetail({ def })} title="비교하며 배치" className="shrink-0"><GeneralToken def={def} rarity={rank} size="md" /></button>
-                <button type="button" onClick={() => setDetail({ def })} className="min-w-0 flex-1 text-left">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold">{def.name}</span>
-                    <RarityBadge rarity={rank} />
-                    <span className="text-[11px] text-stone-500">Lv.{o.level}</span>
-                    <Stars n={o.stars} />
-                  </div>
-                  <div className="tabular hidden text-[11px] text-stone-400 sm:block">
-                    {STAT_LABEL.war} {st.war} · {STAT_LABEL.int} {st.int} · {STAT_LABEL.lead} {st.lead}
-                  </div>
-                  {!land && <div className="mt-0.5 hidden flex-wrap gap-1 sm:flex">
-                    {def.bonds.map((b) => <BondTag key={b} id={b} />)}
-                  </div>}
-                  {(where || gains || (cmdGrade && cmdGrade !== 'even')) && (
-                    <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
-                      {where && <span className={cn('rounded px-1.5 py-px', UNIT_TINT[where.unit].chip)}>{where.label}</span>}
-                      {cmdGrade === 'good' && <span className="rounded bg-emerald-500/15 px-1.5 py-px font-bold text-emerald-300">{TROOP[def.troop].emoji} 유리</span>}
-                      {cmdGrade === 'bad' && <span className="rounded bg-red-500/15 px-1.5 py-px font-bold text-red-300">{TROOP[def.troop].emoji} 불리</span>}
-                      {gains && <span className="flex items-center gap-0.5 text-amber-300"><Sparkles size={10} /> {gains.join(' · ')}</span>}
-                    </div>
-                  )}
-                </button>
-              </div>
+              <button key={def.id} type="button" onClick={() => setDetail({ def })}
+                className="flex flex-col items-center gap-1.5 rounded-xl border border-stone-700 bg-stone-950/40 px-1.5 py-2 text-center">
+                <GeneralToken def={def} rarity={rank} size="lg" />
+                <span className="break-keep-all text-sm font-black leading-tight">{def.name}</span>
+              </button>
             );
           })}
-        </HSlide>
+        </div>
         {listed.length === 0 && (
           <p className="py-6 text-center text-xs text-stone-500">
             없음
