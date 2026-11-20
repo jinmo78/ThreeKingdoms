@@ -178,10 +178,9 @@ function Practice({ slips }: { slips?: Slip[] }) {
   }
 
   return (
-    <Desk title="도전" hanja="挑戰" slips={slips} seal="模擬" scrollTitle="모의전" scrollFirst={false}
-      scroll={<div className="space-y-3">{testPanels}</div>}>
+    <Desk title="도전" hanja="挑戰" slips={slips} seal="模擬">
       <div className="space-y-4">
-        {setupPanels}
+        <div className="grid gap-3 lg:grid-cols-2">{setupPanels}{testPanels}</div>
         <EditorSection enemy={enemyProf} />
       </div>
     </Desk>
@@ -284,10 +283,10 @@ function Conquest({ slips }: { slips?: Slip[] }) {
   }
 
   return (
-    <Desk title="도전" hanja="挑戰" slips={slips} seal="討伐" scrollTitle={`${floor.floor}층`}
-      scroll={<div className="space-y-3">{asidePanels}</div>}>
+    <Desk title="도전" hanja="挑戰" slips={slips} seal="討伐">
       <div className="space-y-4">
         {recordBox}
+        <div className="grid gap-3 lg:grid-cols-2">{asidePanels}</div>
         <EditorSection enemy={enemyProf} />
       </div>
     </Desk>
@@ -302,7 +301,7 @@ function EditorSection({ enemy }: { enemy: UnitProfile[] }) {
       <div className={land ? 'hidden' : undefined}>
         <h3 className="flex items-center gap-1.5 font-serif text-lg font-black"><Swords size={16} className="text-red-300" /> 내 부대 편성</h3>
       </div>
-      <FormationEditor enemy={enemy} unitGridClass="xl:grid-cols-3" />
+      <FormationEditor enemy={enemy} />
     </section>
   );
 }

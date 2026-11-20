@@ -189,8 +189,10 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
             <section key={ui} className={cn('rounded-2xl border-2 transition-shadow', land ? 'min-w-0 p-1.5' : 'p-3', UNIT_TINT[ui].card,
               target.unit === ui && 'ring-2 ring-stone-100')}>
               <header className={cn('flex items-center justify-between gap-2', land ? 'mb-1' : 'mb-2')}>
-                <h3 className={cn('shrink-0 font-serif text-base font-black', UNIT_TINT[ui].title)}>제{ui + 1}부대</h3>
-                {p && !land && <span className="min-w-0 truncate text-xs text-stone-400">{p.name}</span>}
+                <div className="min-w-0">
+                  <h3 className={cn('font-serif text-base font-black', UNIT_TINT[ui].title)}>제{ui + 1}부대</h3>
+                  {p && !land && <div className="truncate text-xs text-stone-400">{p.name}</div>}
+                </div>
                 {land && p && (
                   <button type="button" onClick={() => setInfo(ui)} title="전투력 · 시너지"
                     className="tabular shrink-0 rounded-full bg-stone-950/60 px-1.5 py-0.5 text-[10px] font-bold text-stone-200">⚔ {Math.round(p.power).toLocaleString()}</button>
