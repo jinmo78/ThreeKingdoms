@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { Desk } from '../components/Desk';
 import { GeneralDetail, GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
-import { Btn, cn, Modal, Panel, useLandscape } from '../components/ui';
+import { Btn, cn, Hint, Modal, Panel, useLandscape } from '../components/ui';
 import { RECRUITABLE } from '../data/generals';
 import { FACTION, TROOP } from '../data/meta';
 import {
@@ -89,19 +89,13 @@ export default function Recruit() {
 
   const command = (
     <div className="space-y-3">
-      {!land && (
-        <p className="text-[11px] leading-relaxed opacity-80">
-          매일 무료 {FREE_DAILY_PULLS}회가 쌓이고, 출석하면 추가 무료 등용을 받습니다. 무료가 없으면 금화로 이어서 등용할 수 있습니다.
-        </p>
-      )}
       <Panel title="출석" icon={<CalendarCheck size={15} />}>
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-stone-200">
               연속 {attend.claimedToday ? attendStreak : Math.max(0, attend.nextStreak - 1)}일
-              {attend.canClaim && <span className="ml-2 text-xs font-normal text-amber-300">출석 시 {attend.nextStreak}일 · 무료 +{attend.reward}</span>}
+              {attend.canClaim && <span className="text-amber-300"> · +{attend.reward}</span>}
             </p>
-            <p className="mt-0.5 text-[11px] text-stone-500 land:hidden">하루 한 번. 하루를 비우면 연속이 1일부터 다시 시작합니다.</p>
             <div className="mt-2 flex flex-wrap gap-1">
               {ATTEND_REWARDS.map((n, i) => {
                 const day = i + 1;
@@ -129,20 +123,21 @@ export default function Recruit() {
             </div>
           </div>
           <Btn variant={attend.canClaim ? 'gold' : 'ghost'} disabled={!attend.canClaim} onClick={onAttend} className="shrink-0">
-            <Gift size={15} /> {attend.canClaim ? '출석하기' : '출석 완료'}
+            <Gift size={15} /> {attend.canClaim ? '출석' : '완료'}
           </Btn>
         </div>
         {attendNote && <p className="mt-2 text-xs text-amber-300">{attendNote}</p>}
       </Panel>
 
-      <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs">
-        <span className="font-bold text-amber-200">무료 등용 {freePulls}회</span>
-        <span className="text-stone-500">매일 +{FREE_DAILY_PULLS} · 출석 추가</span>
+      <div className="flex flex-wrap gap-1 text-[10px] font-bold">
+        <span className="rounded bg-amber-400/15 px-1.5 py-0.5 text-amber-200">무료 {freePulls}</span>
+        <span className="rounded bg-stone-800 px-1.5 py-0.5">SSR {Math.round(RATES.SSR * 100)}% · SR {Math.round(RATES.SR * 100)}% · R {Math.round(RATES.R * 100)}%</span>
+        <span className="rounded bg-violet-500/15 px-1.5 py-0.5 text-violet-200">10연 SR확정</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <PullButton
-          label="1회 등용"
+          label="1회"
           free={cost1.freeUsed}
           gold={cost1.gold}
           canAfford={gold >= cost1.gold}
@@ -150,20 +145,20 @@ export default function Recruit() {
           onClick={() => pull(1)}
         />
         <PullButton
-          label="10연 등용"
+          label="10연"
           free={cost10.freeUsed}
           gold={cost10.gold}
           canAfford={gold >= cost10.gold}
           disabled={phase === 'reveal'}
           onClick={() => pull(10)}
-          note="SR 이상 확정"
+          note="SR확정"
           gold10
         />
       </div>
 
       {!land && (
         <div>
-          <div className="mb-1 font-serif text-sm font-black">등용 확률</div>
+          <div className="mb-1 flex items-center gap-1 font-serif text-sm font-black">확률 <Hint text={`매일 무료 ${FREE_DAILY_PULLS}. 1회 ${PULL_COST.single} · 10연 ${PULL_COST.ten}. ★5 이후 환급 SSR ${DUPLICATE_REFUND.SSR} · SR ${DUPLICATE_REFUND.SR} · R ${DUPLICATE_REFUND.R}.`} /></div>
           <RatesBody />
         </div>
       )}
@@ -183,8 +178,7 @@ export default function Recruit() {
                   <Flag size={land ? 28 : 44} className="text-red-300" />
                 </div>
               </div>
-              <p className={cn('font-serif text-lg text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]', land ? 'mt-1' : 'mt-4')}>천하의 인재를 구하라</p>
-              <p className="text-xs text-white/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">누적 등용 {totalPulls}회</p>
+              <p className={cn('text-xs font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]', land ? 'mt-1' : 'mt-4')}>누적 {totalPulls}</p>
             </div>
           )}
         </div>
@@ -360,9 +354,6 @@ function RatesBody() {
           </div>
         ))}
       </div>
-      <p className="mt-2 text-[11px] text-stone-500">
-        매일 무료 {FREE_DAILY_PULLS}회. 1회 {PULL_COST.single} · 10연 {PULL_COST.ten}. 돌파 최대 ★5, 이후 중복은 금화 환급 (SSR {DUPLICATE_REFUND.SSR} · SR {DUPLICATE_REFUND.SR} · R {DUPLICATE_REFUND.R}).
-      </p>
     </>
   );
 }
@@ -381,7 +372,6 @@ function PullButton({ label, free, gold, canAfford, onClick, disabled, note, gol
         {free === 0 && gold === 0 && <span>무료</span>}
       </span>
       {note && !short && <span className="text-[10px] font-normal leading-tight">{note}</span>}
-      {short && <span className="text-[10px] font-normal leading-tight">금화 부족</span>}
     </Btn>
   );
 }

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Desk, type Slip } from '../components/Desk';
 import { GearBag } from '../components/GearPanel';
 import { GeneralCard, GeneralDetail, GeneralToken, RarityBadge } from '../components/General';
-import { Btn, cn, Modal, NameSearch, useLandscape } from '../components/ui';
+import { Btn, cn, Hint, Modal, NameSearch, useLandscape } from '../components/ui';
 import { BONDS, bondMembers, type BondDef } from '../data/bonds';
 import { RECRUITABLE } from '../data/generals';
 import { FACTION, FACTIONS } from '../data/meta';
@@ -202,9 +202,9 @@ export default function Roster() {
       seal="圖鑑"
       scrollTitle={tab === 'generals' ? '장수' : tab === 'gear' ? '장비' : '인연'}
       meta={<>{ownedCount}/{RECRUITABLE.length}</>}
-      scroll={tab === 'bonds' ? <RulesBody /> : tab === 'gear'
-        ? <p className="text-xs leading-relaxed opacity-80">원정 전리품입니다. 장수에게 무기·갑주·서책을 끼우면 능력이 오릅니다.</p>
-        : <p className="text-xs leading-relaxed opacity-80">등용 {ownedCount}/{RECRUITABLE.length}. 세력별로 모아 두었습니다. 없는 장수는 등용에서 뽑습니다.</p>}
+      scroll={tab === 'bonds'
+        ? <span className="inline-flex items-center gap-1 text-xs font-bold">인연 <Hint text={<RulesBody />} /></span>
+        : <p className="text-xs font-bold">{ownedCount}/{RECRUITABLE.length}</p>}
     >
       {page}
     </Desk>

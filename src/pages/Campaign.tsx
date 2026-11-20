@@ -851,8 +851,7 @@ export default function Campaign() {
 
   /** 성 수비대: 점령한 성은 새 수비대, 아니면 지난 공격에서 남은 병력 */
   const captured = (cleared[stage.id] ?? 0) > 0;
-  const fightLabel = picks.size === 0 ? '출정 부대를 고르세요' : gold < TACTICS[tactic].cost ? '금화가 부족합니다'
-    : `출정 (행군 ${Math.round(marchMs(stageIndex(stage.id)) / 1000)}초${tactic !== 'none' ? ' · ' + TACTICS[tactic].name : ''})`;
+  const fightLabel = `${Math.round(marchMs(stageIndex(stage.id)) / 1000)}초${tactic !== 'none' ? ' ' + TACTICS[tactic].name : ''}`;
   const garrison = useMemo(() => stage.enemies
     .map((e, i) => ({ p: enemyUnitsToProfiles([e])[0], r: captured ? 1 : ratioOf(wounds, garrisonKey(stage.id, i), now, GARRISON_RECOVER_MS) }))
     .filter((g) => g.p && g.r > 0.001), [stage, captured, wounds, now]);
@@ -1044,7 +1043,7 @@ function Briefing({
           <div className="mt-2.5">
             {!noSquads ? (
               <button type="button" className="btn-war disabled:opacity-50" disabled={!canFight} onClick={onFight}>
-                <Swords size={18} /> {fightLabel}
+                <Swords size={18} /> 출진 <span className="text-[11px] font-normal opacity-90">{fightLabel}</span>
               </button>
             ) : (
               <button type="button" className="btn-war btn-war-alt" onClick={onFormation}>편성하러 가기</button>

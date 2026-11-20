@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { keepCloudSave, keepLocalSave, signInGoogle, signInGuest, signOutCloud } from '../cloud/sync';
 import { useCloud } from '../cloud/account';
 import { saveSummary } from '../store/saveData';
-import { Btn, cn, Modal } from './ui';
+import { Btn, cn, Hint, Modal } from './ui';
 
 const TITLE_BTN = 'inline-flex w-56 items-center justify-center gap-1.5 rounded-xl px-6 py-3 text-base font-bold transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none';
 const TITLE_COLOR = {
@@ -105,26 +105,24 @@ export function AccountButton() {
       </button>
       {open && (
         <Modal onClose={() => setOpen(false)}>
-          <h3 className="font-serif text-lg font-black text-stone-100">계정</h3>
-          <p className="mt-2 text-sm leading-relaxed text-stone-300">
-            {user
-              ? (user.anonymous
-                ? '이 브라우저의 클라우드 기록입니다. 구글을 연결하면 다른 기기에서도 이어집니다.'
-                : `${user.email ?? user.name ?? '구글 계정'}의 기록으로 이 기기와 다른 기기를 맞춥니다.`)
-              : '구글 계정으로 로그인하면 PC와 모바일에서 같은 진행을 이어갑니다.'}
-          </p>
+          <h3 className="flex items-center gap-1 font-serif text-lg font-black text-stone-100">
+            계정
+            <Hint text={user
+              ? (user.anonymous ? '이 브라우저 기록. 구글을 연결하면 다른 기기와 이어집니다.' : `${user.email ?? user.name ?? '구글'} 기록으로 기기를 맞춥니다.`)
+              : '구글은 기기 간 진행. 익명은 이 브라우저만.'} />
+          </h3>
           {notice && <p className="mt-2 text-xs text-stone-400">{notice}</p>}
           <div className="mt-4 flex flex-wrap gap-2">
             {!user && (
               <button type="button" disabled={busy} onClick={() => { void signInGoogle(); }}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-bold text-[#1c1612] hover:bg-stone-100 disabled:opacity-40">
-                <LogIn size={16} /> 구글 계정으로 로그인
+                <LogIn size={16} /> 구글
               </button>
             )}
             {!user && (
               <button type="button" disabled={busy} onClick={() => { void signInGuest(); }}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-700 px-4 py-2 text-sm font-bold text-white hover:bg-sky-600 disabled:opacity-40">
-                익명으로 로그인
+                익명
               </button>
             )}
             {user?.anonymous && <Btn disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정에 연결</Btn>}

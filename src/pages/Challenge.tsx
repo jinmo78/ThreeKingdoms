@@ -1,5 +1,5 @@
 ﻿// 도전 — 천하 토벌전(끝없는 도전) · 모의전(연습 전투)
-import { BarChart3, ChevronRight, Coins, Crown, Dices, Eye, Lock, Mountain, Swords, Target } from 'lucide-react';
+import { BarChart3, Coins, Crown, Dices, Eye, Lock, Mountain, Swords, Target } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { EnemyLineup } from '../components/EnemyLineup';
@@ -61,7 +61,6 @@ function Practice({ slips }: { slips?: Slip[] }) {
   const practice = useGame((s) => s.practice);
   const setPractice = useGame((s) => s.setPractice);
   const startPractice = useGame((s) => s.startPractice);
-  const setView = useGame((s) => s.setView);
   const log = useGame((s) => s.practiceLog);
   const addRecord = useGame((s) => s.addPracticeRecord);
   const [measuring, setMeasuring] = useState(false);
@@ -117,11 +116,10 @@ function Practice({ slips }: { slips?: Slip[] }) {
                 ))}
               </div>
             </div>
-            <Btn size="sm" variant="ghost" onClick={() => setPractice({ seed: randomSeed() })}><Dices size={13} /> 새 상대 뽑기</Btn>
-            <p className="hidden text-[11px] text-stone-500 sm:block">
-              상대는 해당 세력 장수 18명을 무작위로 뽑아 <b className="text-stone-300">자동 편성으로 시너지를 맞춘 AI 군단</b>입니다.
-              모의전은 보상·경험치가 없습니다.
-            </p>
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="rounded bg-stone-800 px-1.5 py-0.5 text-[10px] font-bold text-stone-300">보상 없음</span>
+              <Btn size="sm" variant="ghost" onClick={() => setPractice({ seed: randomSeed() })}><Dices size={13} /> 새 상대</Btn>
+            </div>
           </div>
         </Panel>
 
@@ -134,32 +132,21 @@ function Practice({ slips }: { slips?: Slip[] }) {
   const testPanels = (
     <>
         <Panel title="내 편성 시험" icon={<BarChart3 size={15} />}>
-          {mine.length === 0 ? (
-            <div className="space-y-2 text-center">
-              <p className="text-xs text-red-300">출진할 부대가 없습니다.</p>
-              <Btn variant="outline" onClick={() => setView('formation')}>편성하러 가기 <ChevronRight size={14} /></Btn>
+          <div className="space-y-3">
+            {!land && mine.length > 0 && <TroopAdviceBox enemy={enemyProf} mine={mine} />}
+            {mine.length > 0 && <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />}
+            <div className="grid grid-cols-2 gap-2">
+              <Btn disabled={mine.length === 0} onClick={() => startPractice(enemies, `모의전 · ${themeLabel(practice.theme)}`)}><Eye size={15} /> 관전</Btn>
+              <Btn variant="gold" onClick={measure} disabled={measuring || mine.length === 0}>
+                <BarChart3 size={15} /> {measuring ? '측정' : '100전'}
+              </Btn>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {!land && <TroopAdviceBox enemy={enemyProf} mine={mine} />}
-              <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
-              <div className="grid grid-cols-2 gap-2">
-                <Btn onClick={() => startPractice(enemies, `모의전 · ${themeLabel(practice.theme)}`)}><Eye size={15} /> 관전</Btn>
-                <Btn variant="gold" onClick={measure} disabled={measuring}>
-                  <BarChart3 size={15} /> {measuring ? '측정 중…' : '100전 승률 측정'}
-                </Btn>
-              </div>
-              <CounterFormationButton enemies={enemies} unlocked className="w-full" />
-            </div>
-          )}
+            <CounterFormationButton enemies={enemies} unlocked className="w-full" />
+          </div>
         </Panel>
 
         <Panel title="측정 기록" icon={<BarChart3 size={15} />}>
-          {log.length === 0 ? (
-            <p className="text-xs text-stone-500">
-              [100전 승률 측정]을 누르면 같은 100가지 전투 조건으로 승률을 재서 여기에 쌓입니다. 편성을 바꿔 가며 비교해 보세요.
-            </p>
-          ) : (
+          {log.length === 0 ? null : (
             <div className="space-y-1.5">
               {log.map((r, i) => (
                 <div key={r.id} className={cn('rounded-lg p-2 text-xs', i === 0 ? 'bg-amber-400/10 ring-1 ring-amber-400/30' : 'bg-stone-950/60')}>
@@ -171,7 +158,7 @@ function Practice({ slips }: { slips?: Slip[] }) {
                   </div>
                   <div className="flex justify-between text-[10px] text-stone-500">
                     <span className="truncate">vs {r.opponent}</span>
-                    <span>평균 연쇄 {r.avgChains.toFixed(1)}회</span>
+                    <span>연쇄 {r.avgChains.toFixed(1)}</span>
                   </div>
                 </div>
               ))}
@@ -225,14 +212,13 @@ function Conquest({ slips }: { slips?: Slip[] }) {
     const locked = (
       <div className="mx-auto max-w-md rounded-2xl border border-stone-800 bg-stone-900/60 p-8 text-center">
         <Lock size={32} className="mx-auto text-stone-500" />
-        <p className="mt-3 font-serif text-lg font-black">천하 토벌전</p>
-        <p className="mt-1 text-xs text-stone-400">원정 4-3 「적벽」을 클리어하면 열립니다.</p>
+        <p className="mt-3 font-serif text-lg font-black">4-3 잠금</p>
       </div>
     );
     if (land) return locked;
     return (
       <Desk title="도전" hanja="挑戰" slips={slips} seal="討伐" scrollTitle="토벌전"
-        scroll={<p className="text-xs leading-relaxed opacity-80">원정 4-3 「적벽」을 클리어하면 끝없는 토벌이 열립니다.</p>}>
+        scroll={<p className="text-xs font-bold">4-3 잠금</p>}>
         {locked}
       </Desk>
     );
@@ -244,7 +230,6 @@ function Conquest({ slips }: { slips?: Slip[] }) {
         <div className="min-w-0 flex-1">
           <div className="text-xs text-stone-400">최고 기록</div>
           <div className="font-serif text-2xl font-black text-amber-200">{best}층</div>
-          <p className="text-[11px] text-stone-500 land:hidden">층마다 위 → 촉 → 오 → 군웅 군단이 번갈아 나오고, 5층마다 정예 혼성군이 지킵니다.</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {upcoming.map((u) => (
@@ -260,9 +245,8 @@ function Conquest({ slips }: { slips?: Slip[] }) {
           <Panel title="출진" icon={<Swords size={15} />}>
             <div className="space-y-3">
               <Btn size="lg" className="w-full" disabled={mine.length === 0} onClick={() => startConquest()}>
-                <Swords size={18} /> {floor.floor}층 도전!
+                <Swords size={18} /> {floor.floor}층
               </Btn>
-              {mine.length === 0 && <p className="text-center text-xs text-red-300">아래 편성에서 주장을 1명 이상 배치하세요.</p>}
               {!land && <TroopAdviceBox enemy={enemyProf} mine={mine} />}
               <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
               <CounterFormationButton
@@ -271,9 +255,10 @@ function Conquest({ slips }: { slips?: Slip[] }) {
                 lockedNote="이 층에서 1회 패배 후 개방"
                 className="w-full"
               />
-              <p className="text-[11px] text-stone-500">
-                같은 층의 적 구성은 고정입니다. 지면 금화 10%·경험치 30%를 받고, 편성을 바꿔 다시 도전할 수 있습니다.
-              </p>
+              <div className="flex flex-wrap gap-1 text-[10px] font-bold">
+                {floor.boss && <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-red-300">{floor.floor}층 정예</span>}
+                <span className="rounded bg-stone-800 px-1.5 py-0.5 text-stone-300">패배 금 10% · 경험 30%</span>
+              </div>
             </div>
           </Panel>
 
@@ -316,9 +301,6 @@ function EditorSection({ enemy }: { enemy: UnitProfile[] }) {
     <section className="space-y-2">
       <div className={land ? 'hidden' : undefined}>
         <h3 className="flex items-center gap-1.5 font-serif text-lg font-black"><Swords size={16} className="text-red-300" /> 내 부대 편성</h3>
-        <p className="hidden text-[11px] text-stone-500 sm:block">
-          이 상대를 기준으로 상성 배지와 "주장 상성 유리/불리"가 표시됩니다. 여기서 바꾼 편성은 편성 탭과 같은 편성입니다.
-        </p>
       </div>
       <FormationEditor enemy={enemy} unitGridClass="xl:grid-cols-3" />
     </section>

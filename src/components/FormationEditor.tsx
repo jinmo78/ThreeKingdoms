@@ -19,7 +19,7 @@ import { GearBag } from './GearPanel';
 import { CounterFormationButton } from './CounterFormation';
 import { BondTag, GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from './General';
 import { MatchupBadge } from './Matchup';
-import { Btn, cn, HSlide, Modal, NameSearch, useLandscape } from './ui';
+import { Btn, cn, Hint, HSlide, Modal, NameSearch, useLandscape } from './ui';
 
 type Target = { unit: number; slot: Slot };
 type DetailState = { def: GeneralDef; from?: Target };
@@ -36,6 +36,15 @@ const FORM_ROWS: Slot[][] = [
   ['vice1', 'commander', 'vice2'],
   ['aide1', 'strategist', 'aide2'],
 ];
+
+const SLOT_FACE: Record<Slot, { icon: string; name: string }> = {
+  commander: { icon: '👑', name: '주장' },
+  vice1: { icon: '⚔️', name: '부장1' },
+  vice2: { icon: '⚔️', name: '부장2' },
+  strategist: { icon: '📜', name: '참모' },
+  aide1: { icon: '🛡️', name: '보좌' },
+  aide2: { icon: '🛡️', name: '보좌' },
+};
 
 /** 지금 켜진 시너지에 들어 있는 장수. 표시용이라 전투 계산은 그대로다. */
 function glowingIds(members: (GeneralDef | null)[]): Set<string> {
@@ -97,7 +106,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
   // 배치 위치 역참조: 장수 id → "1부대 주장"
   const placed = useMemo(() => {
     const m: Record<string, { unit: number; label: string }> = {};
-    formation.forEach((u, i) => SLOTS.forEach((s) => { if (u[s]) m[u[s]!] = { unit: i, label: `${i + 1}부대 ${SLOT_LABEL[s].label}` }; }));
+    formation.forEach((u, i) => SLOTS.forEach((s) => { if (u[s]) m[u[s]!] = { unit: i, label: `${i + 1}부대 · ${SLOT_FACE[s].name}` }; }));
     return m;
   }, [formation]);
 
@@ -164,7 +173,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         {land && (
           <Btn variant="ghost" size="sm" onClick={() => setPresetOpen(true)}><Save size={14} /> 저장·불러오기</Btn>
         )}
-        {autoNote && <span className="animate-slide-in text-[10px] text-amber-200/80">시너지를 고려해 3부대를 다시 짰습니다 (적 상성은 미반영)</span>}
+        {autoNote && <span className="animate-slide-in text-[10px] font-bold text-amber-200/80">재편성</span>}
       </div>
 
       {!land && <PresetBar onLoaded={() => setTarget({ unit: 0, slot: 'commander' })} />}
@@ -209,10 +218,13 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                       slot === 'commander' ? 'border-solid border-[#C6A15B]' : 'border-dashed border-stone-700',
                       linked && 'synergy-glow',
                       active ? 'border-[#B8382E] bg-red-950/40' : badCommander ? 'border-solid border-[#B8382E] bg-stone-950/60' : 'bg-stone-950/60')}>
-                      <button type="button" onClick={() => (def ? setTarget({ unit: ui, slot }) : openSlot(ui, slot))}
-                        className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>
-                        {SLOT_LABEL[slot].label}{active ? ' · 선택' : ''}
-                      </button>
+                      <span className="flex items-center gap-0.5">
+                        <button type="button" onClick={() => (def ? setTarget({ unit: ui, slot }) : openSlot(ui, slot))}
+                          className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>
+                          {SLOT_FACE[slot].icon} {SLOT_FACE[slot].name}{active ? ' ·' : ''}
+                        </button>
+                        <Hint text={SLOT_LABEL[slot].hint} />
+                      </span>
                       {def ? (
                         <button type="button" onClick={() => { setTarget({ unit: ui, slot }); setDetail({ def, from: { unit: ui, slot } }); }}
                           className="flex w-full flex-col items-center gap-1" title="상세 보기">
@@ -226,7 +238,6 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                       ) : (
                         <button type="button" onClick={() => openSlot(ui, slot)} className="flex w-full flex-col items-center gap-1">
                           <div className={cn('flex aspect-square w-full items-center justify-center rounded-xl bg-stone-800/60 text-stone-600', land ? 'max-w-[38px]' : 'max-w-[84px]')}><Plus size={20} /></div>
-                          {!land && <span className="text-[10px] text-stone-600">{SLOT_LABEL[slot].hint}</span>}
                         </button>
                       )}
                       {def && (
@@ -247,7 +258,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                 전투력·시너지
               </button>
               {!land && <div className="mt-3 hidden space-y-2 sm:block">
-                {p ? <UnitStats p={p} /> : <p className="rounded-lg bg-stone-950/50 py-2 text-center text-xs text-stone-500">주장을 배치해야 출진할 수 있습니다</p>}
+                {p && <UnitStats p={p} />}
                 <SynergyList synergy={syn} empty="활성 시너지 없음 — 세력·병과·인연을 맞춰 보세요" />
               </div>}
             </section>
@@ -258,15 +269,12 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
       <section className={cn('rounded-2xl border border-stone-800 bg-stone-900/60 p-3', land && 'hidden')}>
         <div className={cn('flex flex-wrap items-center gap-2', land ? 'mb-1.5' : 'mb-3')}>
           <span className="text-sm font-bold">
-            보유 장수
-            {!land && <span className="ml-2 text-[11px] font-normal text-stone-500">
-              {benchOnly ? '부대에 없는 대기 장수' : '등용한 장수 전체'} · 누르면 제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}과 비교
-            </span>}
-            {land && <span className={cn('ml-2 rounded px-1.5 py-px text-[10px]', UNIT_TINT[target.unit].chip)}>제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label} 선택 중</span>}
+            {benchOnly ? '대기' : '전체'}
+            <span className={cn('ml-2 rounded px-1.5 py-px text-[10px]', UNIT_TINT[target.unit].chip)}>{target.unit + 1}부대 · {SLOT_FACE[target.slot].name}</span>
           </span>
           <button type="button" onClick={() => setBenchOnly((v) => !v)}
             className={cn('rounded-md px-2 py-1 text-xs font-bold', benchOnly ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-800 text-stone-300')}>
-            {benchOnly ? '대기만' : '보유 전체'}
+            {benchOnly ? '대기' : '전체'}
           </button>
           <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
           <div className="ml-auto flex gap-1">
@@ -306,8 +314,8 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                   {(where || gains || (cmdGrade && cmdGrade !== 'even')) && (
                     <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
                       {where && <span className={cn('rounded px-1.5 py-px', UNIT_TINT[where.unit].chip)}>{where.label}</span>}
-                      {cmdGrade === 'good' && <span className="rounded bg-emerald-500/15 px-1.5 py-px font-bold text-emerald-300">{TROOP[def.troop].emoji} 주장 상성 유리</span>}
-                      {cmdGrade === 'bad' && <span className="rounded bg-red-500/15 px-1.5 py-px font-bold text-red-300">{TROOP[def.troop].emoji} 주장 상성 불리</span>}
+                      {cmdGrade === 'good' && <span className="rounded bg-emerald-500/15 px-1.5 py-px font-bold text-emerald-300">{TROOP[def.troop].emoji} 유리</span>}
+                      {cmdGrade === 'bad' && <span className="rounded bg-red-500/15 px-1.5 py-px font-bold text-red-300">{TROOP[def.troop].emoji} 불리</span>}
                       {gains && <span className="flex items-center gap-0.5 text-amber-300"><Sparkles size={10} /> {gains.join(' · ')}</span>}
                     </div>
                   )}
@@ -318,7 +326,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         </HSlide>
         {listed.length === 0 && (
           <p className="py-6 text-center text-xs text-stone-500">
-            {needle ? '찾는 장수가 없습니다.' : benchOnly ? '대기 장수가 없습니다. 보유 전체를 누르면 부대에 넣은 장수도 보입니다.' : '해당 세력의 장수가 없습니다.'}
+            없음
           </p>
         )}
       </section>
@@ -347,7 +355,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
           <div className="flex min-h-0 flex-1 flex-col">
           <div className="mb-3 flex items-start justify-between gap-2">
             <h3 className="font-serif text-lg font-black">
-              <span className={UNIT_TINT[target.unit].title}>제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}</span>
+              <span className={UNIT_TINT[target.unit].title}>{target.unit + 1}부대 · {SLOT_FACE[target.slot].name}</span>
               <span className="mt-0.5 block text-sm font-normal text-stone-400">넣을 장수를 고르세요</span>
             </h3>
             <button type="button" onClick={() => setPicker(false)} className="rounded-lg p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-100" aria-label="닫기"><X size={18} /></button>
@@ -467,7 +475,7 @@ function CompareBoard({
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <h3 className="font-serif text-lg font-black">
-            <span className={UNIT_TINT[target.unit].title}>제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}</span>
+            <span className={UNIT_TINT[target.unit].title}>{target.unit + 1}부대 · {SLOT_FACE[target.slot].name}</span>
             <span className="ml-2 text-sm font-normal text-stone-400">보유 장수와 비교</span>
           </h3>
           <p className="mt-0.5 text-[11px] text-stone-500">목록에서 장수를 눌러 능력치를 비교한 뒤 이 칸에 배치합니다.</p>
@@ -548,7 +556,7 @@ function CompareBoard({
           <Btn variant="ghost" className="flex-1" onClick={onRemove}>이 칸에서 빼기</Btn>
         ) : (
           <Btn className="flex-1" onClick={onPlace}>
-            제{target.unit + 1}부대 {SLOT_LABEL[target.slot].label}로 배치
+            배치
           </Btn>
         )}
         <Btn variant="ghost" onClick={onClose}>닫기</Btn>
@@ -576,7 +584,7 @@ function UnitInfo({ index }: { index: number }) {
   return (
     <>
       <h3 className="mb-3 font-serif text-lg font-black">제{index + 1}부대 {p && <span className="text-sm font-normal text-stone-400">{p.name}</span>}</h3>
-      {p ? <UnitStats p={p} /> : <p className="rounded-lg bg-stone-950/50 py-2 text-center text-xs text-stone-500">주장을 배치해야 출진할 수 있습니다</p>}
+      {p && <UnitStats p={p} />}
       <div className="mt-3">
         <SynergyList synergy={syn} empty="활성 시너지 없음 — 세력·병과·인연을 맞춰 보세요" />
       </div>
@@ -617,8 +625,9 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
         <h3 className="font-serif text-base font-black">편성 저장</h3>
         <span className="flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-bold text-amber-300"><Coins size={12} /> {gold.toLocaleString('ko-KR')}</span>
       </div>
-      <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
-        저장은 배치한 장수 등급만큼 금화를 씁니다. 불러오기는 무료입니다. R {FORMATION_GOLD.R} · SR {FORMATION_GOLD.SR} · SSR {FORMATION_GOLD.SSR}.
+      <p className="mt-1 flex items-center gap-1 text-[11px] text-stone-500">
+        불러오기 무료
+        <Hint text={`저장 비용은 배치 등급만큼. R ${FORMATION_GOLD.R} · SR ${FORMATION_GOLD.SR} · SSR ${FORMATION_GOLD.SSR}. 이름은 비우면 편성 1부터.`} />
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <input
@@ -629,7 +638,7 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
           className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-950 px-2 py-1.5 text-sm text-stone-100"
         />
         <Btn size="sm" disabled={cost === 0 || gold < cost || presets.length >= PRESET_LIMIT} onClick={save}>
-          <Save size={14} /> 저장{cost > 0 ? ` -${cost}` : ''}
+          <Save size={14} /> 저장{cost > 0 ? ` 🪙-${cost}` : ''}
         </Btn>
       </div>
       {note && <p className="mt-2 text-[11px] text-amber-300">{note}</p>}
@@ -668,7 +677,6 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
           );
         })}
       </ul>
-      {presets.length === 0 && <p className="mt-2 text-[11px] text-stone-500">저장된 편성이 없습니다. 이름은 비워 두면 편성 1부터 붙습니다.</p>}
     </section>
   );
 }

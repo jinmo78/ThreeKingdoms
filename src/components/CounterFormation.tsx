@@ -10,7 +10,7 @@ import { useGame } from '../store/gameStore';
 import type { EnemyUnit, Unit } from '../types';
 import { SLOTS } from '../types';
 import { GeneralToken } from './General';
-import { Bar, Btn, cn, Modal } from './ui';
+import { Bar, Btn, cn, Hint, Modal } from './ui';
 
 type Phase =
   | { kind: 'idle' }
@@ -81,25 +81,24 @@ export function CounterFormationButton({ enemies, unlocked, lockedNote, classNam
   return (
     <>
       <Btn variant="outline" size={size} className={className} disabled={!cleared || !canPay} onClick={run}
-        title={cleared ? (canPay ? '이 상대를 수천 번 싸워 보고 승률이 높은 편성을 찾습니다. 더 나은 편성이 없으면 금화를 돌려줍니다.' : '금화가 부족합니다') : undefined}>
+        title={lockedNote}>
         {cleared ? <Brain size={15} /> : <Lock size={14} />}
-        적군 맞춤 편성{cleared ? ` -${COUNTER_GOLD}` : ''}
-        {!cleared && lockedNote && <span className="text-[10px] font-normal opacity-80">({lockedNote})</span>}
+        상성 추천
+        <span className="text-[10px] font-normal opacity-80">{cleared ? `🪙${COUNTER_GOLD}` : '잠금'}</span>
       </Btn>
 
       {phase.kind !== 'idle' && (
         <Modal onClose={close} wide={phase.kind === 'done' && phase.result.improved}>
           <div className="mb-3 flex shrink-0 items-center gap-2 font-serif text-lg font-black">
-            <Brain size={18} className="text-amber-300" /> 적군 맞춤 편성
+            <Brain size={18} className="text-amber-300" /> 상성 추천
           </div>
 
           {phase.kind === 'running' && (
             <div className="space-y-3 py-4 text-center">
               <Loader2 size={32} className="mx-auto animate-spin text-amber-300" />
-              <p className="text-sm text-stone-300">군사들이 전투를 시뮬레이션하는 중…</p>
-              <p className="text-[11px] text-stone-500">금화 {COUNTER_GOLD}을 사용합니다. 더 나은 편성이 없거나 여기서 닫으면 돌려드립니다.</p>
+              <p className="text-sm font-bold text-stone-200">계산 중 · 🪙{COUNTER_GOLD}</p>
               <Bar value={phase.ratio} max={1} color="bg-amber-400" />
-              <p className="text-xs text-stone-500">지금까지 찾은 최고 승률 {Math.round(phase.best * 100)}%</p>
+              <p className="text-xs text-stone-500">최고 {Math.round(phase.best * 100)}%</p>
             </div>
           )}
 
@@ -118,33 +117,33 @@ function ResultView({ result, refunded, onApply, onClose }: { result: CounterRes
     <div className={cn('flex min-h-0 flex-1 flex-col gap-4', result.improved && 'overflow-hidden')}>
       <div className="grid shrink-0 grid-cols-2 gap-2 text-center">
         <div className="rounded-xl bg-stone-950/70 p-3">
-          <div className="text-[11px] text-stone-500">현재 편성 예상 승률</div>
+          <div className="text-[11px] text-stone-500">현재</div>
           <div className="tabular text-2xl font-black text-stone-300">{pct(result.before)}</div>
         </div>
         <div className={cn('rounded-xl p-3', result.improved ? 'bg-emerald-500/10' : 'bg-stone-950/70')}>
-          <div className="text-[11px] text-stone-500">맞춤 편성 예상 승률</div>
+          <div className="text-[11px] text-stone-500">추천</div>
           <div className={cn('tabular text-2xl font-black', result.improved ? 'text-emerald-300' : 'text-stone-300')}>{pct(result.after)}</div>
         </div>
       </div>
 
       {result.improved ? (
         <>
-          <p className="shrink-0 text-xs text-stone-400">
-            금화 {COUNTER_GOLD}을 사용했습니다. 편성 {result.tried.toLocaleString()}가지를 각각 100번씩 싸워 보고, 새 전투 400번으로 다시 검증한 결과입니다.
+          <p className="flex shrink-0 items-center justify-center gap-1 text-xs font-bold text-stone-200">
+            승률 {pct(result.before)} → {pct(result.after)}
+            <Hint text={`🪙${COUNTER_GOLD} · ${result.tried.toLocaleString()}안을 각각 100번, 검증 400번. 더 나은 안이 없거나 닫으면 환불.`} />
           </p>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <FormationPreview units={result.formation} />
           </div>
           <div className="flex shrink-0 gap-2 border-t border-stone-800 pt-3">
-            <Btn className="flex-1" onClick={onApply}>이 편성 적용</Btn>
-            <Btn variant="ghost" onClick={onClose}>취소</Btn>
+            <Btn className="flex-1" onClick={onApply}>적용</Btn>
+            <Btn variant="ghost" onClick={onClose}>유지</Btn>
           </div>
         </>
       ) : (
         <>
-          <p className="text-sm text-stone-300">현재 편성보다 확실히 나은 조합을 찾지 못했습니다. 지금 편성을 유지하세요.</p>
-          {refunded && <p className="text-xs text-amber-300">금화 {COUNTER_GOLD}을 돌려드렸습니다.</p>}
-          <p className="text-xs text-stone-500">새 장수를 등용하거나 레벨을 올린 뒤 다시 시도해 보세요.</p>
+          <p className="text-sm font-bold text-stone-200">더 나은 편성 없음</p>
+          {refunded && <p className="text-xs text-amber-300">환불 🪙{COUNTER_GOLD}</p>}
           <Btn variant="ghost" className="w-full" onClick={onClose}>닫기</Btn>
         </>
       )}

@@ -69,7 +69,6 @@ export function TacticPicker({ stageId, stageIdx, now, gold, tactic, onPick }: {
   const terrain = terrainOf(stageId);
   const weather = weatherAt(now);
   const chance = reinforceChance(stageIdx);
-  const fx = tacticEffect(tactic, terrain, weather);
   return (
     <div className="mt-3 text-xs">
       <div className="mb-1 flex items-baseline justify-between">
@@ -101,8 +100,7 @@ export function TacticPicker({ stageId, stageIdx, now, gold, tactic, onPick }: {
         })}
       </div>
       <p className="mt-1 text-[10px] opacity-70">
-        {tactic === 'none' ? TACTICS.none.desc : fx.note}
-        {tactic !== 'ambush' && <> · 인근 지원군 가능성 {Math.round(chance * 100)}% (기습이면 차단)</>}
+        {tactic !== 'ambush' ? `지원 ${Math.round(chance * 100)}%` : '지원 차단'}
       </p>
     </div>
   );
@@ -117,7 +115,7 @@ export function SiegePanel({ squads, garrison, picks, onToggle }: {
       <div>
         <div className="mb-1 flex items-baseline justify-between">
           <b className="font-serif text-[13px]">出征 출정 부대</b>
-          <span className="text-[10px] opacity-60">나눠 보내도 됩니다</span>
+          <span className="text-[10px] opacity-60">분할 가능</span>
         </div>
         <div className="space-y-1">
           {squads.map(({ idx, p, r, busy }) => {
@@ -156,7 +154,7 @@ export function SiegePanel({ squads, garrison, picks, onToggle }: {
       <div>
         <div className="mb-1 flex items-baseline justify-between">
           <b className="font-serif text-[13px]">守備 성 수비대</b>
-          {wounded && <span className="text-[10px] font-bold text-[#B8382E]">공격받아 약해진 상태 · 시간이 지나면 회복</span>}
+          {wounded && <span className="text-[10px] font-bold text-[#B8382E]">약화</span>}
         </div>
         <div className="grid grid-cols-3 gap-1">
           {garrison.map(({ p, r }, i) => (

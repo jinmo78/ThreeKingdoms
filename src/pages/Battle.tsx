@@ -1,5 +1,5 @@
 // 전투 재생 화면 — 미리 계산된 이벤트를 순서대로 보여 줌
-import { ChevronRight, Coins, FastForward, RotateCcw, SkipForward, Swords, Trophy } from 'lucide-react';
+import { ChevronRight, FastForward, RotateCcw, SkipForward, Swords, Trophy } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
@@ -24,6 +24,7 @@ export default function BattlePage() {
   const setView = useGame((s) => s.setView);
   const [idx, setIdx] = useState(0);
   const [speed, setSpeed] = useState(1);
+  const [rawLog, setRawLog] = useState(false);
   const [seenBattle, setSeenBattle] = useState(battle);
   const logRef = useRef<HTMLDivElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
@@ -134,8 +135,14 @@ export default function BattlePage() {
 
         {/* 전투 기록 */}
         <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-[#C6A15B]/35 bg-[#F3ECE0]/90 p-2 text-xs text-[#3a332c] lg:max-h-[560px] land:max-h-[60dvh] dark:bg-[#221E1A]/90 dark:text-[#E7DCC8]">
+          <div className="mb-1 flex justify-end">
+            <button type="button" aria-pressed={rawLog} onClick={() => setRawLog((v) => !v)}
+              className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold', rawLog ? 'bg-[#8e2a22] text-[#F8E7D2]' : 'bg-[#1b1713]/10')}>
+              기록
+            </button>
+          </div>
           {log.map((e) => (
-            <LogLine key={e.id} e={e} />
+            <LogLine key={e.id} e={e} raw={rawLog} />
           ))}
         </div>
       </div>
@@ -143,7 +150,18 @@ export default function BattlePage() {
   );
 }
 
-function LogLine({ e }: { e: BattleEvent }) {
+function briefLog(e: BattleEvent) {
+  if (e.kind === 'skill') return e.skill ? `${e.skill}!` : '전법';
+  if (e.kind === 'chain') return `${(e.chainStep ?? 0) + 1}단 연쇄!`;
+  if (e.kind === 'attack') return e.hits[0] ? `💥 -${e.hits[0].amount}` : '공격';
+  if (e.kind === 'rout') return '궤멸';
+  if (e.kind === 'start') return '개시';
+  if (e.kind === 'end') return '종료';
+  return e.text;
+}
+
+function LogLine({ e, raw }: { e: BattleEvent; raw: boolean }) {
+  const text = raw ? e.text : briefLog(e);
   if (e.kind === 'skill' || e.kind === 'chain') {
     const chain = e.kind === 'chain';
     const n = (e.chainStep ?? 0) + 1;
@@ -153,14 +171,14 @@ function LogLine({ e }: { e: BattleEvent }) {
           chain ? 'bg-[#B8382E] text-[#F8E7D2]' : 'bg-[#C6A15B] text-[#171513]')}>
           {chain ? `${n}연쇄` : '전법'}
         </span>
-        <span className={chain ? 'font-bold text-[#B8382E]' : 'font-semibold text-[#8A6230]'}>{e.text}</span>
+        <span className={chain ? 'font-bold text-[#B8382E]' : 'font-semibold text-[#8A6230]'}>{text}</span>
       </div>
     );
   }
   const calm = e.kind === 'rout' ? 'text-[#8a8178] line-through decoration-[#B8382E]/50'
     : e.kind === 'end' || e.kind === 'start' ? 'font-bold'
       : 'text-[#4a433c] dark:text-[#C9BBA6]';
-  return <div className={cn('animate-slide-in leading-snug', calm)}>{e.text}</div>;
+  return <div className={cn('animate-slide-in leading-snug', calm)}>{text}</div>;
 }
 
 /** 이번 전법 연쇄에 이름을 올린 장수. 주장 발동부터 현재 단계까지 */
@@ -340,56 +358,35 @@ function ResultOverlay({
       <div className="flex min-h-full items-center justify-center p-4">
       <div className="animate-pop-in w-full max-w-sm rounded-2xl border border-stone-700 bg-stone-900 p-5 text-center">
         {win ? <Trophy size={40} className="mx-auto text-amber-300" /> : <RotateCcw size={36} className="mx-auto text-stone-400" />}
-        <div className={cn('mt-2 font-serif text-3xl font-black', win ? 'text-amber-200' : 'text-stone-300')}>{win ? '승 리' : '패 배'}</div>
-        <div className="mt-1 text-xs text-stone-500">연쇄 발동 {chains}회 · 최대 {maxChain}단 연쇄{maxChain >= 3 && ' 🔥'}</div>
+        <div className={cn('mt-2 font-serif text-3xl font-black', win ? 'text-amber-200' : 'text-stone-300')}>{win ? '승리' : '패배'}</div>
+        <div className="mt-1 text-xs text-stone-500">연쇄 {chains} · 최대 {maxChain}{maxChain >= 3 && ' 🔥'}</div>
 
         {siege && (
-          <p className={cn('mt-3 rounded-lg px-3 py-2 text-xs font-bold', siege.captured ? 'bg-amber-500/15 text-amber-200' : 'bg-stone-950/70 text-stone-300')}>
-            {siege.captured
-              ? '🏯 성을 점령했다!'
-              : `성은 아직 버티고 있다. 수비대 ${siege.left}/${siege.total}부대 남음 — 공격받은 수비대는 시간이 지나면 회복되고, 아군 부대도 약 3분이면 병력이 찬다.`}
+          <p className={cn('mt-3 text-xs font-bold', siege.captured ? 'text-amber-200' : 'text-stone-300')}>
+            {siege.captured ? '점령' : `수비 ${siege.left}/${siege.total}`}
           </p>
         )}
 
         {reward ? (
-          <div className="mt-4 space-y-1.5 rounded-xl bg-stone-950/70 p-3 text-sm">
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5 text-sm font-bold">
             {(reward.gold > 0 || reward.exp > 0) ? (
               <>
-                <div className="flex justify-between"><span className="text-stone-400">금화</span><span className="flex items-center gap-1 font-bold text-amber-300"><Coins size={14} />+{reward.gold}{reward.firstClear && <span className="text-[10px] text-amber-200">(첫 클리어 포함)</span>}</span></div>
-                <div className="flex justify-between"><span className="text-stone-400">출진 장수 경험치</span><span className="font-bold">+{reward.exp}</span></div>
+                <span className="text-amber-300">금 +{reward.gold}</span>
+                <span>경험 +{reward.exp}</span>
               </>
             ) : (
-              <p className="text-xs text-stone-400">금화·경험치는 첫 클리어에만 나옵니다.</p>
+              <span className="text-stone-400">보상 0</span>
             )}
-            {reward.gear && (
-              <div className="flex justify-between border-t border-stone-800 pt-1.5">
-                <span className="text-stone-400">장비</span>
-                <span className="text-right font-bold text-amber-200">{reward.gear.name} {reward.gear.isNew ? '획득' : reward.gear.copy ? '1개 추가' : '파편 +1'}<span className="mt-0.5 block text-[10px] font-normal text-stone-400">편성 화면의 장비에서 확인</span></span>
-              </div>
-            )}
-            {reward.levelUps.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-1.5 border-t border-stone-800 pt-2">
-                {reward.levelUps.map((l) => {
-                  const name = GENERAL_MAP[l.id]?.name;
-                  if (!name) return null;
-                  return (
-                    <span key={l.id} className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-300">
-                      {name} Lv.{l.from}→{l.to}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
+            {reward.gear && <span className="text-amber-200">{reward.gear.isNew ? reward.gear.name : reward.gear.copy ? '장비 +1' : '파편 +1'}</span>}
+            {reward.levelUps.map((l) => {
+              const name = GENERAL_MAP[l.id]?.name;
+              if (!name) return null;
+              return <span key={l.id} className="text-emerald-300">{name} Lv.{l.to}</span>;
+            })}
           </div>
         ) : (
-          <p className="mt-4 rounded-xl bg-stone-950/70 p-3 text-xs text-stone-400">
-            {mode === 'stage'
-              ? '이미 클리어한 전투라 금화·경험치는 없습니다. 이기면 가끔 장비 파편이 나옵니다.'
-              : '모의전이라 보상과 경험치는 없습니다. 편성을 바꿔 가며 다시 시험해 보세요.'}
-          </p>
+          <p className="mt-4 text-xs font-bold text-stone-400">{mode === 'stage' ? '보상 0' : '보상 없음'}</p>
         )}
-
-        {!win && reward && <p className="mt-3 text-xs text-stone-400">시너지를 맞추거나 상성을 고려해 편성을 바꿔 보세요. 다른 스테이지에서 경험치를 쌓는 것도 방법입니다.</p>}
 
         <div className="mt-4 grid gap-2">
           {onNext && <Btn onClick={onNext}>다음: {nextTitle} <ChevronRight size={15} /></Btn>}

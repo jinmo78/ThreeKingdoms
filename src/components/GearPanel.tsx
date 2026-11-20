@@ -11,7 +11,7 @@ import {
 import { useGame } from '../store/gameStore';
 import type { GearSlot, Stats } from '../types';
 import { GearArt } from './GearArt';
-import { cn, HSlide, NameSearch } from './ui';
+import { cn, Hint, HSlide, NameSearch } from './ui';
 
 const SLOT_ORDER: GearSlot[] = ['weapon', 'armor', 'tome'];
 const SLOT_MARK: Record<GearSlot, string> = { weapon: '劍', armor: '甲', tome: '書' };
@@ -49,9 +49,9 @@ export function GearBag() {
 
   return (
     <div className="space-y-3">
-      <p className="text-[11px] leading-relaxed text-stone-500">
-        획득한 종류 {ownedCount}/{GEAR.length}. 같은 장비는 {GEAR_COPY_MAX}개까지 모아 여러 장수에게 나눠 끼웁니다. 장수 한 명은 무기·갑주·서책을 함께 낍니다.
-        개수가 가득 차면 파편입니다. 레벨은 파편 1개, 강화는 파편 2개, 등급은 Lv.{GEAR_MAX_LEVEL}·강화 +{GEAR_MAX_ENHANCE}에서 파편 {GEAR_PROMOTE_SHARDS}개로 올립니다.
+      <p className="flex items-center gap-1 text-[11px] font-bold text-stone-400">
+        {ownedCount}/{GEAR.length}
+        <Hint text={`같은 장비 ${GEAR_COPY_MAX}개. 무기·갑주·서책 동시 장착. 레벨 파편 1, 강화 파편 2, 등급은 Lv.${GEAR_MAX_LEVEL}·+${GEAR_MAX_ENHANCE}에서 파편 ${GEAR_PROMOTE_SHARDS}.`} />
       </p>
       <div className="flex flex-wrap items-center gap-1">
         <NameSearch value={query} onChange={setQuery} placeholder="장비 이름" />
@@ -88,9 +88,8 @@ export function GearBag() {
                     <div key={def.id} className="flex gap-2 rounded-xl border border-dashed border-stone-700 bg-stone-950/40 p-3">
                       <GearArt id={def.id} dim />
                       <div className="min-w-0">
-                        <div className="font-bold text-stone-400">{def.name}</div>
-                        <p className="mt-1 text-[11px] text-stone-500">{def.desc} {SLOT_FIT[def.slot].who}에게 맞습니다.</p>
-                        <div className="mt-1 text-[11px] text-stone-600">미획득 · 원정·토벌전</div>
+                        <div className="flex items-center gap-1 font-bold text-stone-400">{def.name} <Hint text={`${def.desc} ${SLOT_FIT[def.slot].who}`} /></div>
+                        <div className="mt-1 text-[11px] text-stone-600">미획득</div>
                       </div>
                     </div>
                   );
@@ -113,9 +112,9 @@ export function GearBag() {
                         <div className="flex items-center gap-1.5">
                           <span className={cn('rounded px-1 py-0.5 text-[10px] font-black', RARITY[rank].badge)}>{rank}</span>
                           <span className="font-bold">{def.name}</span>
+                          <Hint text={`${def.desc} ${SLOT_FIT[def.slot].who}`} />
                           <span className="ml-auto text-right text-xs font-bold text-amber-300">{effectLabel(def.stat, bonus, skill)}</span>
                         </div>
-                        <p className="mt-1 text-[11px] text-stone-500">{def.desc} {SLOT_FIT[def.slot].who}에게 맞습니다.</p>
                       </div>
                     </div>
                     <div className="mt-1 text-[11px] text-stone-400">
@@ -178,7 +177,7 @@ export function GearBag() {
         if (own === 'missing' && has) return false;
         return !needle || g.name.includes(needle);
       }).length === 0) && (
-        <p className="py-6 text-center text-xs text-stone-500">조건에 맞는 장비가 없습니다.</p>
+        <p className="py-6 text-center text-xs text-stone-500">없음</p>
       )}
     </div>
   );
@@ -216,9 +215,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
   const general = GENERAL_MAP[generalId];
   if (!owned || !general) return null;
   const best = recommendedSlots(general.stats);
-  const advice = best.length === SLOT_ORDER.length
-    ? '무력·통솔·지력이 비슷합니다. 세 칸 모두 도움이 됩니다.'
-    : `먼저 끼울 칸은 ${best.map((slot) => SLOT_FIT[slot].gear).join(' · ')}입니다. ${best.map((slot) => STAT_LABEL[SLOT_FIT[slot].stat]).join(' · ')}을 올립니다.`;
+  const advice = best.map((slot) => SLOT_FIT[slot].gear).join(' · ');
   const ownedIds = Object.keys(bag);
   const openSlot = open;
   const choices = openSlot ? ownedIds.filter((id) => GEAR_MAP[id]?.slot === openSlot) : [];
@@ -296,7 +293,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
           })}
         </div>
       )}
-      <p className="mt-1 text-[10px] text-stone-500">세 칸은 함께 낄 수 있습니다. 레벨·강화·등급은 편성 화면의 장비에서 올립니다.</p>
+      <p className="mt-1 text-[10px] text-stone-500">3칸 동시 · 성장은 장비 탭</p>
     </div>
   );
 }

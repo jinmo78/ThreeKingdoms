@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BOND_MAP, bondMembers } from '../data/bonds';
 import { GEAR_MAP } from '../data/gear';
-import { EFFECT_LABEL, FACTION, RARITY, STAT_LABEL, TROOP } from '../data/meta';
+import { EFFECT_LABEL, FACTION, FACTIONS, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
 import { gearSkill, gearStats, type GearBag } from '../engine/gear';
 import { effectiveStats, expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
@@ -13,7 +13,7 @@ import { useGame } from '../store/gameStore';
 import type { GeneralDef, OwnedGeneral, Stats } from '../types';
 import { portraitFullImageUrl, portraitImageUrl } from '../data/portraitImages';
 import { Portrait } from './Portrait';
-import { Bar, cn } from './ui';
+import { Bar, cn, Hint } from './ui';
 
 const SIZE = {
   xs: { box: 'h-8 w-8 rounded-md border', troop: 'hidden' },
@@ -120,21 +120,36 @@ const SYN_STYLE = {
   sage: 'border-violet-400/40 bg-violet-400/10 text-violet-200',
 } as const;
 
+function shortSynergy(s: ActiveSynergy) {
+  if (s.kind === 'sage') return '명참모';
+  const times = s.label.match(/×(\d+)/)?.[1];
+  if (s.kind === 'faction') {
+    const hit = FACTIONS.find((id) => s.label.startsWith(FACTION[id].full));
+    return `${hit ? FACTION[hit].label : '세력'} ${times ?? ''}`.trim();
+  }
+  if (s.kind === 'troop') {
+    const hit = (Object.keys(TROOP) as (keyof typeof TROOP)[]).find((id) => s.label.includes(TROOP[id].label));
+    return `${hit ? TROOP[hit].label : '병과'} ${times ?? ''}`.trim();
+  }
+  const count = s.label.match(/\((\d+)/)?.[1] ?? '';
+  return `${s.label.split(' (')[0]} ${count}`.trim();
+}
+
 export function SynergyBadge({ s }: { s: ActiveSynergy }) {
+  const [open, setOpen] = useState(false);
   const Icon = SYN_ICON[s.kind];
   return (
-    <span className={cn('animate-slide-in inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold', SYN_STYLE[s.kind], s.maxed && 'ring-1 ring-amber-500/50')}>
+    <button type="button" onClick={() => setOpen((v) => !v)}
+      className={cn('animate-slide-in inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold', SYN_STYLE[s.kind], s.maxed && 'ring-1 ring-amber-500/50')}>
       <Icon size={12} />
-      <span>{s.label}</span>
-      <span className="font-normal opacity-75">{s.detail}</span>
-    </span>
+      <span>{shortSynergy(s)}</span>
+      {open && <span className="font-normal opacity-75">{s.detail.replaceAll('전투력', '공격')}</span>}
+    </button>
   );
 }
 
-export function SynergyList({ synergy, empty }: { synergy: SynergyResult; empty?: string }) {
-  if (synergy.list.length === 0) {
-    return <p className="text-xs text-stone-500">{empty ?? '활성 시너지 없음'}</p>;
-  }
+export function SynergyList({ synergy }: { synergy: SynergyResult; empty?: string }) {
+  if (synergy.list.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5">
       {synergy.list.map((s) => <SynergyBadge key={s.key} s={s} />)}
@@ -305,7 +320,7 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
             <span className="tabular">EXP {owned.exp} / {expToNext(owned.level)}</span>
           </div>
           <Bar value={owned.exp} max={expToNext(owned.level)} color="bg-[#C6A15B]" />
-          <div className="mt-1 text-[10px] text-stone-500">돌파 {owned.stars}/{MAX_STARS} · 중복 등용 시 능력치 +4%{promoted ? ` · 태생 ${def.rarity}에서 승급` : ''}</div>
+          <div className="mt-1 flex items-center gap-1 text-[10px] text-stone-500">★{owned.stars}/{MAX_STARS} · 중복 +4%{promoted ? ` · ${def.rarity}→승급` : ''} <Hint text="같은 장수를 다시 등용하면 돌파가 오르고 능력이 +4%입니다. 최대 ★5." /></div>
         </div>
       )}
 
@@ -319,16 +334,14 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
       />
 
       {owned ? <EquippedGear generalId={def.id} /> : (
-        <p className="text-center text-[11px] text-stone-500">등용하면 무기·갑주·서책 세 칸을 함께 낄 수 있습니다.</p>
+        <p className="text-center text-[11px] text-stone-500">미등용 · 장비 3칸</p>
       )}
 
       <div>
-        <div className="text-xs font-bold text-stone-400">품계</div>
-        <p className="mt-1 text-[11px] text-stone-500">
-          {def.rarity === 'SSR'
-            ? '태생 SSR입니다. R·SR 카드가 따로 없고, 이 장수 한 명이 최고 품계입니다.'
-            : `태생 ${def.rarity}에서 한 단계만 올릴 수 있습니다. 같은 장수의 등급별 카드는 없습니다.`}
-        </p>
+        <div className="flex items-center gap-1 text-xs font-bold text-stone-400">
+          품계
+          <Hint text={def.rarity === 'SSR' ? '태생 SSR. 더 올릴 품계가 없습니다.' : `태생 ${def.rarity}에서 한 단계. 등급별 카드는 따로 없습니다.`} />
+        </div>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {ladder.map((step) => {
             const st = effectiveStats(def, level, owned?.stars ?? 0, step.promote);
@@ -340,9 +353,9 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
                   <span className="font-bold">{step.label}</span>
                   {current && <span className="text-[10px] text-stone-500">현재</span>}
                 </div>
-                <div className="mt-1 text-stone-500">무력 {st.war} · 지력 {st.int} · 통솔 {st.lead}</div>
+                <div className="mt-1 text-stone-500">무 {st.war} · 지 {st.int} · 통 {st.lead}</div>
                 {step.promote > 0 && step.rarity !== 'R' && (
-                  <div className="mt-1 text-[10px] text-stone-500">Lv.{MAX_LEVEL} · 돌파 ★{MAX_STARS} · 금화 {PROMOTE_COST[step.rarity].toLocaleString()} · 능력치 +10%</div>
+                  <div className="mt-1 text-[10px] text-stone-500">Lv.{MAX_LEVEL} · ★{MAX_STARS} · 🪙{PROMOTE_COST[step.rarity].toLocaleString()} · +10%</div>
                 )}
               </div>
             );
@@ -357,16 +370,16 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
           onClick={() => promote(def.id)}
           className="flex w-full flex-col items-center rounded-xl bg-amber-400 px-4 py-3 text-sm font-black text-[#1c1612] disabled:opacity-40"
         >
-          <span>{target}로 승급</span>
+          <span>{target} 승급</span>
           <span className="text-xs font-semibold">
             {ready
-              ? `금화 ${cost.toLocaleString()} · 능력치 +10%${gold < cost ? ' · 금화 부족' : ''}`
-              : `Lv.${MAX_LEVEL}과 돌파 ★${MAX_STARS}를 채워야 합니다 (${owned.level}/${MAX_LEVEL} · ★${owned.stars}/${MAX_STARS})`}
+              ? `🪙${cost.toLocaleString()} · +10%${gold < cost ? ' · 부족' : ''}`
+              : `Lv.${owned.level}/${MAX_LEVEL} · ★${owned.stars}/${MAX_STARS}`}
           </span>
         </button>
       )}
       {owned && !target && def.rarity === 'SSR' && (
-        <p className="text-center text-[11px] text-stone-500">이미 최고의 품계입니다.</p>
+        <p className="text-center text-[11px] text-stone-500">최고 품계</p>
       )}
 
       <section className="rounded-xl border border-[#C6A15B]/45 bg-stone-950/40 p-3">
@@ -375,17 +388,15 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
           <span className="text-[10px] text-stone-500">{EFFECT_LABEL[def.skill.effect]} · {STAT_LABEL[def.skill.scaling]} 기반</span>
         </div>
         <p className="mt-1 text-xs leading-relaxed text-stone-700 dark:text-stone-200">{def.skill.desc}</p>
-        <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-stone-600 dark:text-stone-300">
-          <li>주장 — 직접 발동 {Math.round(def.skill.rate * 100)}%</li>
-          <li>부장 — 연쇄 1단·2단으로 이어집니다</li>
-          <li>참모 — 연쇄 3단. 참모 지력이 높으면 발동률이 오릅니다</li>
-          <li>보좌 — 전법은 쓰지 않고 시너지 인원에 포함됩니다</li>
-        </ul>
+        <div className="mt-1 flex items-center gap-1 text-[11px] text-stone-500">
+          전법 {Math.round((def.skill.rate + (skillAdd.rate ?? 0)) * 100)}%
+          <Hint text="주장 직접 발동. 부장 연쇄 1·2단, 참모 3단, 보좌는 시너지." />
+        </div>
       </section>
 
       <section className="space-y-2">
         <div className="font-serif text-sm font-bold">인연 관계</div>
-        {def.bonds.length === 0 && <p className="text-[11px] text-stone-500">이어진 인연이 없습니다.</p>}
+        {def.bonds.length === 0 && <p className="text-[11px] text-stone-500">인연 없음</p>}
         {def.bonds.map((id) => {
           const bond = BOND_MAP[id];
           const members = bondMembers(id);

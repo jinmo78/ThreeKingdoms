@@ -162,6 +162,24 @@ export function NameSearch({ value, onChange, placeholder }: { value: string; on
   );
 }
 
+/** 기본 화면에서는 숨기고, 눌러야 보이는 짧은 스펙 */
+export function Hint({ text }: { text: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex align-middle">
+      <button type="button" aria-expanded={open} aria-label="설명" onClick={() => setOpen((v) => !v)}
+        className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[#C6A15B]/70 px-1 text-[10px] font-black text-[#8A6230]">
+        ?
+      </button>
+      {open && (
+        <span role="note" className="absolute left-0 top-6 z-30 w-52 rounded-lg border border-[#C6A15B]/70 bg-[#F3ECE0] p-2 text-left text-[11px] font-normal leading-snug text-[#1C1612] shadow-lg dark:bg-[#221E1A] dark:text-[#F3ECE0]">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function Modal({ children, onClose, wide, ink }: { children: ReactNode; onClose: () => void; wide?: boolean; ink?: boolean }) {
   useEffect(() => {
     lockPageScroll();
