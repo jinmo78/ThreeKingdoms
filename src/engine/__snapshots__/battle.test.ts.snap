@@ -1,0 +1,365 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
+{
+  "events": [
+    {
+      "chainStep": null,
+      "hits": [],
+      "hp": [
+        [
+          3190,
+        ],
+        [
+          2752,
+        ],
+      ],
+      "kind": "start",
+      "text": "전투 개시! 아군 1개 부대 vs 적군 1개 부대",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 436,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 1,
+        },
+      ],
+      "hp": [
+        [
+          3190,
+        ],
+        [
+          2316,
+        ],
+      ],
+      "kind": "attack",
+      "text": "관우 부대의 공격 → 여포 부대 -436",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 267,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          2923,
+        ],
+        [
+          2316,
+        ],
+      ],
+      "kind": "attack",
+      "text": "여포 부대의 공격 → 관우 부대 -267",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 477,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 1,
+        },
+      ],
+      "hp": [
+        [
+          2923,
+        ],
+        [
+          1839,
+        ],
+      ],
+      "kind": "attack",
+      "text": "관우 부대의 공격 → 여포 부대 -477",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 260,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          2663,
+        ],
+        [
+          1839,
+        ],
+      ],
+      "kind": "attack",
+      "text": "여포 부대의 공격 → 관우 부대 -260",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 464,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 1,
+        },
+      ],
+      "hp": [
+        [
+          2663,
+        ],
+        [
+          1375,
+        ],
+      ],
+      "kind": "attack",
+      "text": "관우 부대의 공격 → 여포 부대 -464",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 465,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          2198,
+        ],
+        [
+          1375,
+        ],
+      ],
+      "kind": "skill",
+      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -465",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 420,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 1,
+        },
+      ],
+      "hp": [
+        [
+          2198,
+        ],
+        [
+          955,
+        ],
+      ],
+      "kind": "attack",
+      "text": "관우 부대의 공격 → 여포 부대 -420",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 260,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          1938,
+        ],
+        [
+          955,
+        ],
+      ],
+      "kind": "attack",
+      "text": "여포 부대의 공격 → 관우 부대 -260",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 491,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 1,
+        },
+      ],
+      "hp": [
+        [
+          1938,
+        ],
+        [
+          464,
+        ],
+      ],
+      "kind": "attack",
+      "text": "관우 부대의 공격 → 여포 부대 -491",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 435,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          1503,
+        ],
+        [
+          464,
+        ],
+      ],
+      "kind": "skill",
+      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -435",
+    },
+    {
+      "chainStep": 1,
+      "hits": [
+        {
+          "amount": 407,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          1096,
+        ],
+        [
+          464,
+        ],
+      ],
+      "kind": "chain",
+      "text": "⚡연쇄 발동! 진궁의 전법 【하비 수성책】 → 관우 부대 -407",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 421,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 1,
+        },
+      ],
+      "hp": [
+        [
+          1096,
+        ],
+        [
+          43,
+        ],
+      ],
+      "kind": "attack",
+      "text": "관우 부대의 공격 → 여포 부대 -421",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 481,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          615,
+        ],
+        [
+          43,
+        ],
+      ],
+      "kind": "skill",
+      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -481",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 1240,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 1,
+        },
+      ],
+      "hp": [
+        [
+          615,
+        ],
+        [
+          0,
+        ],
+      ],
+      "kind": "skill",
+      "text": "관우의 전법 【청룡참】 → 여포 부대 -1240",
+    },
+    {
+      "chainStep": null,
+      "hits": [],
+      "hp": [
+        [
+          615,
+        ],
+        [
+          0,
+        ],
+      ],
+      "kind": "rout",
+      "text": "여포 부대 궤멸!",
+    },
+    {
+      "chainStep": null,
+      "hits": [],
+      "hp": [
+        [
+          615,
+        ],
+        [
+          0,
+        ],
+      ],
+      "kind": "end",
+      "text": "승리! 적군을 모두 격파했다.",
+    },
+  ],
+  "reason": "rout",
+  "stats": {
+    "chains": 1,
+    "maxChain": 1,
+    "skills": 4,
+  },
+  "win": true,
+}
+`;
