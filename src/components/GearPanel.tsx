@@ -71,14 +71,20 @@ export function GearBag() {
           <section key={slot}>
             <h3 className="mb-2 text-sm font-black text-stone-300">{GEAR_SLOT_LABEL[slot]}</h3>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2">
-              {list.map((def) => (
-                <button key={def.id} type="button" onClick={() => setOpen(def.id)}
-                  className={cn('flex flex-col items-center gap-1.5 rounded-xl border px-1.5 py-2 text-center',
-                    bag[def.id] ? cn(RARITY[gearRarity(def, bag[def.id].promote)].border, 'bg-stone-900/70') : 'border-dashed border-stone-700 bg-stone-950/40')}>
-                  <GearArt id={def.id} dim={!bag[def.id]} />
-                  <span className={cn('break-keep-all text-sm font-black leading-tight', !bag[def.id] && 'text-stone-500')}>{def.name}</span>
-                </button>
-              ))}
+              {list.map((def) => {
+                const item = bag[def.id];
+                const rank = item ? gearRarity(def, item.promote) : def.rarity;
+                return (
+                  <button key={def.id} type="button" onClick={() => setOpen(def.id)}
+                    className={cn('flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2 text-center',
+                      item ? cn(RARITY[rank].border, 'bg-stone-900/70') : 'border-dashed border-stone-700 bg-stone-950/40')}>
+                    <span className={cn('rounded px-1 py-0.5 text-[10px] font-black', RARITY[rank].badge)}>{rank}</span>
+                    <GearArt id={def.id} dim={!item} />
+                    <span className={cn('break-keep-all text-sm font-black leading-tight', !item && 'text-stone-500')}>{def.name}</span>
+                    <span className="text-[11px] font-bold">{item ? `Lv.${item.level}` : '미획득'}</span>
+                  </button>
+                );
+              })}
             </div>
           </section>
         );

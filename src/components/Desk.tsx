@@ -55,13 +55,13 @@ export function Desk({
   slips?: Slip[];
   seal: string;
   scrollTitle?: ReactNode;
-  scroll: ReactNode;
+  scroll?: ReactNode;
   children: ReactNode;
   /** 좁은 화면에서 두루마리를 본문 위에 둔다 */
   scrollFirst?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+    <div className={cn('flex flex-col gap-4', scroll != null && 'lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start')}>
       <div className="min-w-0 lg:col-start-1 lg:row-start-1">
         <div className="mb-3 flex items-end justify-between gap-2">
           <h2 className="font-serif text-xl font-black tracking-wide">
@@ -76,7 +76,7 @@ export function Desk({
         </div>
       </div>
 
-      <div className={cn(
+      {scroll != null && <div className={cn(
         'lg:sticky lg:top-20 lg:col-start-2 lg:row-start-1 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:flex-col',
         scrollFirst && 'max-lg:order-first',
       )}>
@@ -92,7 +92,7 @@ export function Desk({
           </div>
         </div>
         <div className="roller-bar" aria-hidden />
-      </div>
+      </div>}
     </div>
   );
 }

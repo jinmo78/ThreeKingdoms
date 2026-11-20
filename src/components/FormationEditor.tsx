@@ -189,9 +189,8 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
             <section key={ui} className={cn('rounded-2xl border-2 transition-shadow', land ? 'min-w-0 p-1.5' : 'p-3', UNIT_TINT[ui].card,
               target.unit === ui && 'ring-2 ring-stone-100')}>
               <header className={cn('flex items-center justify-between gap-2', land ? 'mb-1' : 'mb-2')}>
-                <h3 className={cn('min-w-0 truncate font-serif text-base font-black', UNIT_TINT[ui].title)}>
-                  제{ui + 1}부대 {p && !land && <span className="ml-1 text-xs font-normal text-stone-400">{p.name}</span>}
-                </h3>
+                <h3 className={cn('shrink-0 font-serif text-base font-black', UNIT_TINT[ui].title)}>제{ui + 1}부대</h3>
+                {p && !land && <span className="min-w-0 truncate text-xs text-stone-400">{p.name}</span>}
                 {land && p && (
                   <button type="button" onClick={() => setInfo(ui)} title="전투력 · 시너지"
                     className="tabular shrink-0 rounded-full bg-stone-950/60 px-1.5 py-0.5 text-[10px] font-bold text-stone-200">⚔ {Math.round(p.power).toLocaleString()}</button>
@@ -291,9 +290,11 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
             const rank = shownRarity(def.rarity, o.promote);
             return (
               <button key={def.id} type="button" onClick={() => setDetail({ def })}
-                className="flex flex-col items-center gap-1.5 rounded-xl border border-stone-700 bg-stone-950/40 px-1.5 py-2 text-center">
+                className="flex flex-col items-center gap-1 rounded-xl border border-stone-700 bg-stone-950/40 px-1.5 py-2 text-center">
+                <RarityBadge rarity={rank} />
                 <GeneralToken def={def} rarity={rank} size="lg" />
                 <span className="break-keep-all text-sm font-black leading-tight">{def.name}</span>
+                <span className="flex items-center gap-1 text-[11px] font-bold">Lv.{o.level} <Stars n={o.stars} /></span>
               </button>
             );
           })}

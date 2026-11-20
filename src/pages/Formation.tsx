@@ -80,18 +80,11 @@ export default function Formation() {
 
   return (
     <>
-      <Desk
-        title="부대 편성"
-        hanja="部隊編成"
-        seal="編制"
-        scrollTitle="상성"
-        scroll={(
-          <div className="space-y-3">
-            {opponent}
-            <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster, gear)} compact />
-          </div>
-        )}
-      >
+      <Desk title="부대 편성" hanja="部隊編成" seal="編制">
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="w-full max-w-xs">{opponent}</div>
+          <TroopAdviceBox enemy={enemy} mine={playerProfiles(formation, roster, gear)} compact />
+        </div>
         {editor}
       </Desk>
     </>
