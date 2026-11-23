@@ -388,13 +388,13 @@ function MapDefs() {
       {/* 먹이 번진 산 · 수풀 · 강의 거친 물가 */}
       <filter id="cm-ink" x="-5%" y="-8%" width="110%" height="116%">
         <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="3" result="n" />
-        <feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G" />
-        <feGaussianBlur stdDeviation="0.45" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="1.1" xChannelSelector="R" yChannelSelector="G" />
+        <feGaussianBlur stdDeviation="0.15" />
       </filter>
       <filter id="cm-bleed" x="-5%" y="-8%" width="110%" height="116%">
         <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="8" result="n" />
-        <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" />
-        <feGaussianBlur stdDeviation="0.7" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="0.8" xChannelSelector="R" yChannelSelector="G" />
+        <feGaussianBlur stdDeviation="0.15" />
       </filter>
       {CLUSTERS}
       <g id="cm-pine" style={{ fill: 'var(--tree)' }}>

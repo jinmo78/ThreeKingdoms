@@ -9,7 +9,7 @@ export function currentTheme(): Theme {
 
 export function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle('dark', theme === 'dark');
-  document.documentElement.style.colorScheme = theme;
+  document.documentElement.style.colorScheme = 'dark';
   localStorage.setItem(KEY, theme);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#171513');
 }

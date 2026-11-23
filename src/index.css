@@ -13,41 +13,41 @@
   Tailwind 색 유틸은 var(--color-*)를 쓰므로, 여기서 변수만 바꾸면 화면 전체가 따라온다.
 */
 :root {
-  color-scheme: light;
-  --color-stone-50: #171513;
-  --color-stone-100: #1c1612;
-  --color-stone-200: #2a241c;
-  --color-stone-300: #4a4036;
-  --color-stone-400: #6b5e50;
-  --color-stone-500: #7a6e60;
-  --color-stone-600: #a89060;
-  --color-stone-700: #c4b396;
-  --color-stone-800: #d4c4a4;
-  --color-stone-900: #efe6d6;
-  --color-stone-950: #f3ece0;
-  --color-red-200: #8e2a22;
-  --color-red-300: #b8382e;
+  color-scheme: dark;
+  --color-stone-50: #f6f1e6;
+  --color-stone-100: #f3ece0;
+  --color-stone-200: #e6d7bc;
+  --color-stone-300: #cbb892;
+  --color-stone-400: #a89068;
+  --color-stone-500: #8c7860;
+  --color-stone-600: #6e6254;
+  --color-stone-700: #3a4c6e;
+  --color-stone-800: #243352;
+  --color-stone-900: #18243a;
+  --color-stone-950: #101826;
+  --color-red-200: #f0b2a8;
+  --color-red-300: #e08a80;
   --color-red-500: #c45a4a;
-  --color-red-600: #a12f27;
+  --color-red-600: #c44a40;
   --color-red-700: #b8382e;
-  --color-red-900: #f3d2cc;
-  --color-red-950: #f8e6e2;
-  --color-amber-200: #6e5220;
-  --color-amber-300: #8c6b2f;
+  --color-red-900: #5c2420;
+  --color-red-950: #3a1816;
+  --color-amber-200: #e4c98a;
+  --color-amber-300: #c6a15b;
   --color-amber-400: #c6a15b;
-  --color-amber-500: #b08a45;
-  --color-sky-200: #1d3a5c;
-  --color-sky-300: #264b77;
-  --color-sky-900: #d5e2ef;
-  --color-sky-950: #e7eef5;
-  --color-emerald-300: #276347;
-  --color-emerald-900: #d5ebe0;
-  --color-emerald-950: #e7f4ec;
-  --color-violet-200: #5b21b6;
-  --color-violet-300: #6d28d9;
-  --color-rose-300: #9b2c2c;
-  --color-orange-200: #7a5c32;
-  --color-orange-300: #7a5c32;
+  --color-amber-500: #a88848;
+  --color-sky-200: #c5d7ea;
+  --color-sky-300: #9bb8d6;
+  --color-sky-900: #1d3a5c;
+  --color-sky-950: #16283d;
+  --color-emerald-300: #8fcead;
+  --color-emerald-900: #1a3d2c;
+  --color-emerald-950: #13291e;
+  --color-violet-200: #ddd6fe;
+  --color-violet-300: #c4b5fd;
+  --color-rose-300: #f0a8a8;
+  --color-orange-200: #e4c9a0;
+  --color-orange-300: #d4b483;
 }
 
 html.dark {
@@ -109,9 +109,9 @@ body,
 
 body {
   background:
-    radial-gradient(900px 420px at 50% -8%, rgba(198, 161, 91, 0.16), transparent 55%),
-    radial-gradient(700px 380px at 100% 100%, rgba(184, 56, 46, 0.12), transparent 50%),
-    #171513;
+    radial-gradient(900px 520px at 50% -10%, rgba(90, 130, 190, 0.22), transparent 58%),
+    radial-gradient(700px 380px at 100% 100%, rgba(184, 56, 46, 0.14), transparent 50%),
+    #101826;
   color: #f3ece0;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
@@ -122,7 +122,7 @@ body {
   background-color: var(--color-stone-950);
   background-image:
     radial-gradient(ellipse at 15% 0%, rgba(198, 161, 91, 0.16), transparent 46%),
-    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(23, 21, 19, 0.03) 4px);
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(232, 208, 160, 0.045) 4px);
   color: var(--color-stone-100);
   border: 1px solid rgba(198, 161, 91, 0.55);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
@@ -415,20 +415,20 @@ body {
 /* ───────── 천하 원정: 고지도 · 군령 두루마리 (Campaign.tsx) ─────────
    한지 질감은 feTurbulence 를 담은 인라인 SVG 를 배경으로 깐 것. 밝은/어두운 테마별로 색만 다르다. */
 :root {
-  --ink: #1b1713;
-  --mt-l: #d9c08c;
-  --mt-r: #4a3b2c;
-  --mt-line: #2b2016;
-  --tree: #3a4531;
-  --map-a: #e8d9b3;
-  --map-b: #d1ba88;
-  --silk-a: #ecdfbd;
-  --silk-b: #d8c594;
-  --silk-hi: rgba(255, 250, 230, 0.5);
-  --tex-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .21 0 0 0 0 .1 1.2 0 0 0 -.42'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
-  --tex-fiber1: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .55' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .38 0 0 0 0 .27 0 0 0 0 .13 1.1 0 0 0 -.5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
-  --tex-fiber2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.5 .014' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .38 0 0 0 0 .27 0 0 0 0 .13 1.0 0 0 0 -.46'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
-  --tex-stain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='700'%3E%3Cfilter id='s' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.007 .009' numOctaves='4' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .33 0 0 0 0 .12 2.6 0 0 0 -1.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+  --ink: #e8d7b0;
+  --mt-l: #5a739c;
+  --mt-r: #152033;
+  --mt-line: #e3c070;
+  --tree: #1d3c34;
+  --map-a: #1a2742;
+  --map-b: #101826;
+  --silk-a: #1c2c4a;
+  --silk-b: #121a2e;
+  --silk-hi: rgba(198, 161, 91, 0.16);
+  --tex-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' seed='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 .25 0 0 0 -.1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --tex-fiber1: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .55' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 .42 0 0 0 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  --tex-fiber2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.5 .014' numOctaves='3' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .65 .39 0 0 0 -.19'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  --tex-stain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='700'%3E%3Cfilter id='s' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.007 .009' numOctaves='4' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .73 0 0 0 -.34'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
 }
 html.dark {
   --mt-l: #9a8864;
@@ -472,7 +472,7 @@ html.dark {
 .frame-sm {
   border-width: 1.5px;
   border-radius: 9px;
-  background: rgba(255, 250, 232, 0.45);
+  background: rgba(16, 24, 38, 0.55);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25), 0 6px 12px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 244, 214, 0.6), inset 0 -2px 6px rgba(90, 60, 20, 0.2);
 }
 .frame-sm::before { inset: 2px; border-radius: 7px; }
@@ -480,34 +480,34 @@ html.dark .frame-sm { background: rgba(0, 0, 0, 0.25); }
 
 /* 출진 외 화면의 왼쪽 판: 고지도와 같은 한지. 스크롤 합성은 하지 않는다. */
 .desk-sheet {
-  color: #3a2e22;
+  color: #f3ece0;
   background-image:
     var(--tex-stain), var(--tex-fiber1), var(--tex-fiber2), var(--tex-grain),
     linear-gradient(180deg, var(--map-a), var(--map-b));
   background-size: 700px 700px, 320px 320px, 320px 320px, 200px 200px, auto;
-  background-blend-mode: multiply, multiply, multiply, multiply, normal;
+  background-blend-mode: normal;
 }
-html.dark .desk-sheet { color: #e4d7c2; background-blend-mode: normal; }
+html.dark .desk-sheet { color: #e4d7c2; }
 
 /* 고지도 본체: 가장자리가 그을린 낡은 한지 */
 .war-map {
   isolation: isolate;
-  color: #3a2e22;
+  color: #f3ece0;
   transform: translateZ(0);
   will-change: transform;
   background-image:
     var(--tex-stain), var(--tex-fiber1), var(--tex-fiber2), var(--tex-grain),
-    radial-gradient(ellipse at 50% 0%, rgba(255, 246, 220, 0.55), transparent 60%),
+    radial-gradient(ellipse at 50% 0%, rgba(120, 160, 210, 0.2), transparent 60%),
     linear-gradient(180deg, var(--map-a), var(--map-b));
   background-size: 700px 700px, 320px 320px, 320px 320px, 200px 200px, auto, auto;
-  background-blend-mode: multiply, multiply, multiply, multiply, normal, normal;
+  background-blend-mode: normal;
   box-shadow:
     0 3px 5px rgba(0, 0, 0, 0.28),
     0 12px 26px rgba(0, 0, 0, 0.32),
     inset 0 0 70px rgba(100, 60, 20, 0.5),
     inset 0 1px 0 rgba(255, 244, 214, 0.55);
 }
-html.dark .war-map { color: #e4d7c2; background-blend-mode: normal; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0 12px 26px rgba(0, 0, 0, 0.45), inset 0 0 70px rgba(0, 0, 0, 0.55); }
+html.dark .war-map { color: #e4d7c2; box-shadow: 0 3px 5px rgba(0, 0, 0, 0.4), 0 12px 26px rgba(0, 0, 0, 0.45), inset 0 0 70px rgba(0, 0, 0, 0.55); }
 
 /* 진군로 */
 .road path { fill: none; stroke-linecap: round; }
@@ -712,8 +712,8 @@ html.dark .war-map { color: #e4d7c2; background-blend-mode: normal; box-shadow: 
   align-items: center;
   justify-content: center;
   padding: 4px 0 11px;
-  color: #3a2e22;
-  background: linear-gradient(180deg, #ecdcae, #cbb37c);
+  color: #f6ead2;
+  background: linear-gradient(180deg, #243656, #152238);
   clip-path: inherit;
 }
 .slip::after {
@@ -772,29 +772,17 @@ html.dark .war-map { color: #e4d7c2; background-blend-mode: normal; box-shadow: 
     radial-gradient(ellipse at 50% 0%, var(--silk-hi), transparent 60%),
     linear-gradient(180deg, var(--silk-a), var(--silk-b));
   background-size: 700px 700px, 320px 320px, 320px 320px, 200px 200px, auto, auto, auto;
-  background-blend-mode: multiply, multiply, multiply, multiply, normal, normal, normal;
+  background-blend-mode: normal;
   box-shadow: inset 0 10px 14px -8px rgba(60, 35, 10, 0.55), inset 0 -10px 14px -8px rgba(60, 35, 10, 0.55);
 }
-html.dark .silk { background-blend-mode: normal; }
-/* 밝은 한지에서 opacity·황갈색 작은 글은 종이에 묻힌다. 먹색으로 고정한다. */
-html:not(.dark) .silk [class*="opacity-6"],
-html:not(.dark) .silk [class*="opacity-7"],
-html:not(.dark) .silk [class*="opacity-8"] {
-  opacity: 1;
-  color: #3a2412;
-}
-html.dark .silk [class*="opacity-6"],
-html.dark .silk [class*="opacity-7"],
-html.dark .silk [class*="opacity-8"] {
+.silk [class*="opacity-6"],
+.silk [class*="opacity-7"],
+.silk [class*="opacity-8"] {
   opacity: 1;
   color: #f6ead2;
 }
-html:not(.dark) .silk [class*="8A6230"],
-html:not(.dark) .silk [class*="8a6230"] {
-  color: #5c320c;
-}
-html.dark .silk [class*="8A6230"],
-html.dark .silk [class*="8a6230"] {
+.silk [class*="8A6230"],
+.silk [class*="8a6230"] {
   color: #f3d7a0;
 }
 .silk [class*="text-[10px]"],
