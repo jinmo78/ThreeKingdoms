@@ -198,6 +198,8 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                     <FormationPicker
                       value={u.formationId}
                       compact={land}
+                      members={p?.members}
+                      synergy={p?.synergy ?? syn}
                       onChange={(id: FormationId) => setUnitFormation(ui, id)}
                     />
                   </div>

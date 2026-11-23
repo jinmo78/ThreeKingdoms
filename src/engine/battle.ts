@@ -122,7 +122,8 @@ export function simulateBattle(
     const p = f.p;
     const base = s.scaling === 'war' ? p.atk : s.scaling === 'int' ? p.intel * 1.25 : p.def * 1.1;
     const caster = p.members.find((m) => m?.def.id === g.id);
-    const mult = s.power * p.synergy.powerMult * CHAIN_MULT[step] * (1 + (caster?.skillPower ?? 0)) * (p.skillPowerMul ?? 1);
+    const formSkill = (p.skillPowerMul ?? 1) * (step > 0 ? (p.chainSkillMul ?? 1) : 1);
+    const mult = s.power * p.synergy.powerMult * CHAIN_MULT[step] * (1 + (caster?.skillPower ?? 0)) * formSkill;
     const magical = s.scaling === 'int';
     const hits: Hit[] = [];
 
@@ -185,7 +186,13 @@ export function simulateBattle(
   }
 
   const lineup = (side: Side) => fighters[side]
-    .map((f) => `${f.p.name.replace(/ 부대$/, '')} [${f.p.formationName ?? '기본진'}]`)
+    .map((f) => {
+      const form = f.p.formationName ?? '기본진';
+      const hook = f.p.formationCondActive && f.p.formationCondLabel
+        ? ` · ${f.p.formationCondLabel} 발동`
+        : '';
+      return `${f.p.name.replace(/ 부대$/, '')} [${form}${hook}]`;
+    })
     .join(', ');
   push({
     kind: 'start',

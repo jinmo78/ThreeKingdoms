@@ -4,6 +4,7 @@
 import { DEFAULT_FORMATION_ID, formationOf, type FormationId } from '../data/formations';
 import type { GeneralDef, Rarity, Slot, StatKey, Stats, Troop } from '../types';
 import { SLOTS, STRATEGIST_INDEX } from '../types';
+import { resolveFormationCombat } from './formationBonus';
 import { calcSynergy, type SynergyResult } from './synergy';
 
 /** 표시 등급별 레벨 상한. R→SR→SSR 품계마다 리셋해 다시 키운다. */
@@ -90,6 +91,14 @@ export interface UnitProfile {
   gaugeBonus: number;
   /** 연쇄 확률 가산 (우결진 = 인연 수 × 비율) */
   chainBonus: number;
+  /** 연쇄 전법(1단+) 위력 배율 — 우결진 인연 2+ */
+  chainSkillMul: number;
+  /** 구성 맞춤 조건 달성 */
+  formationCondActive: boolean;
+  /** 달성 시 로그·배지용 짧은 이름 (세력결속 등) */
+  formationCondLabel: string;
+  /** UI 조건 한 줄 */
+  formationCondHint: string;
 }
 
 /** 토벌 각인 등 전투력 배율을 능력·병력·전투력에 곱한다. */
@@ -158,12 +167,12 @@ export function buildProfile(
     hp += m.stats.lead * w.hp;
   });
 
-  const fx = form.combat;
+  const synergy = calcSynergy(members.map((m) => m?.def ?? null));
+  const fx = resolveFormationCombat(form.id, members, synergy);
   atk *= fx.atkMul;
   def *= fx.defMul;
   hp *= fx.hpMul;
 
-  const synergy = calcSynergy(members.map((m) => m?.def ?? null));
   const troop = commander.def.troop;
   const speed = 10 + intel * 0.02 + (troop === 'cavalry' ? 2 : 0);
   const strategistInt = members[STRATEGIST_INDEX]?.stats.int ?? 0;
@@ -193,5 +202,9 @@ export function buildProfile(
     attackMul: fx.attackMul,
     gaugeBonus: fx.gaugeBonus,
     chainBonus,
+    chainSkillMul: fx.chainSkillMul,
+    formationCondActive: fx.cond.active,
+    formationCondLabel: fx.cond.label,
+    formationCondHint: fx.cond.hint,
   };
 }

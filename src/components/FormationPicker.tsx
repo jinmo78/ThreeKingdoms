@@ -1,32 +1,58 @@
-// 부대 진형 선택 — 카드 헤더용 컴팩트 버튼 + 모달
+// 부대 진형 선택 — 카드 헤더용 컴팩트 버튼 + 모달 (구성 맞춤 달성 표시)
 import { useState } from 'react';
 import { FORMATIONS, formationOf, type FormationId } from '../data/formations';
+import { formationCondHint, formationCondStatus } from '../engine/formationBonus';
+import type { SynergyResult } from '../engine/synergy';
+import type { UnitMember } from '../engine/unit';
 import { Modal, cn } from './ui';
 
 export function FormationPicker({
   value,
   onChange,
   compact,
+  members,
+  synergy,
 }: {
   value: string | undefined;
   onChange: (id: FormationId) => void;
   compact?: boolean;
+  members?: (UnitMember | null)[];
+  synergy?: SynergyResult;
 }) {
   const [open, setOpen] = useState(false);
   const cur = formationOf(value as FormationId);
+  const curCond = members
+    ? formationCondStatus(cur.id, members, synergy)
+    : { hint: '', active: false, label: '' };
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        title={`${cur.hanja} ${cur.name}`}
-        className={cn(
-          'shrink-0 rounded-md border border-[#C6A15B]/45 bg-[#1b1713]/80 font-bold text-[#F3ECE0] hover:border-[#C6A15B]',
-          compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]',
+      <div className="flex min-w-0 flex-wrap items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          title={`${cur.hanja} ${cur.name}`}
+          className={cn(
+            'shrink-0 rounded-md border border-[#C6A15B]/45 bg-[#1b1713]/80 font-bold text-[#F3ECE0] hover:border-[#C6A15B]',
+            compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]',
+          )}
+        >
+          {cur.name}
+        </button>
+        {curCond.hint && (
+          <span
+            className={cn(
+              'rounded px-1.5 py-0.5 text-[9px] font-bold',
+              curCond.active
+                ? 'bg-emerald-950/70 text-emerald-300 ring-1 ring-emerald-500/50'
+                : 'bg-stone-800/80 text-stone-500',
+            )}
+            title={formationCondHint(cur)}
+          >
+            {curCond.hint}{curCond.active ? ' ✓' : ''}
+          </span>
         )}
-      >
-        {cur.name}
-      </button>
+      </div>
       {open && (
         <Modal onClose={() => setOpen(false)} ink>
           <div className="mb-3 flex items-center justify-between gap-2">
@@ -36,6 +62,10 @@ export function FormationPicker({
           <ul className="max-h-[70vh] space-y-2 overflow-y-auto">
             {FORMATIONS.map((f) => {
               const on = f.id === cur.id;
+              const cond = members
+                ? formationCondStatus(f.id, members, synergy)
+                : { hint: '', active: false, label: '' };
+              const condLine = formationCondHint(f);
               return (
                 <li key={f.id}>
                   <button
@@ -66,6 +96,21 @@ export function FormationPicker({
                         {f.debuffs.map((d) => (
                           <span key={d} className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 ring-1 ring-red-700/40">{d}</span>
                         ))}
+                      </div>
+                    )}
+                    {condLine && (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                        <span className="text-stone-400">{condLine}</span>
+                        <span
+                          className={cn(
+                            'rounded px-1.5 py-0.5',
+                            cond.active
+                              ? 'bg-[#C6A15B]/20 text-[#F0D58A] ring-1 ring-[#C6A15B]/60'
+                              : 'bg-stone-800 text-stone-500',
+                          )}
+                        >
+                          {cond.hint || '조건'}{cond.active ? ' 달성 ✓' : ' 미달성'}
+                        </span>
                       </div>
                     )}
                   </button>

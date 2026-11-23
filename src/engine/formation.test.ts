@@ -43,4 +43,23 @@ describe('진형 buildProfile', () => {
     expect(p.synergy.list.some((s) => s.kind === 'bond')).toBe(true);
     expect(p.chainBonus).toBeGreaterThan(0);
   });
+
+  it('봉시진 병과통일 시 선공 게이지가 더 오른다', () => {
+    const cav = [guanyu, GENERAL_MAP.zhaoyun, GENERAL_MAP.machao].map((d) => makeMember(d, 1, 0));
+    const on = buildProfile([cav[0], cav[1], cav[2], null, null, null], 'fengshi')!;
+    const off = buildProfile([cav[0], cav[1], makeMember(zhangfei, 1, 0), null, null, null], 'fengshi')!;
+    expect(on.formationCondActive).toBe(true);
+    expect(off.formationCondActive).toBe(false);
+    expect(on.gaugeBonus).toBe(off.gaugeBonus + 16);
+  });
+
+  it('안행진은 주장 지력>무력일 때 전법 배율이 오른다', () => {
+    const sage = makeMember(GENERAL_MAP.zhugeliang, 1, 0);
+    const warlord = makeMember(guanyu, 1, 0);
+    const on = buildProfile([sage, null, null, null, null, null], 'yanxing')!;
+    const off = buildProfile([warlord, null, null, null, null, null], 'yanxing')!;
+    expect(on.formationCondActive).toBe(true);
+    expect(off.formationCondActive).toBe(false);
+    expect(on.skillPowerMul).toBeGreaterThan(off.skillPowerMul);
+  });
 });
