@@ -13,7 +13,7 @@ export default defineConfig(({ command }) => ({
       registerType: 'autoUpdate',
       // GitHub Pages는 .webmanifest를 JSON이 아닌 타입으로 주는 경우가 있어 설치 기준이 깨진다.
       manifestFilename: 'manifest.json',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'og.png', 'audio/bgm_lobby.wav', 'audio/bgm_battle.wav'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'og.png', 'audio/bgm_lobby.mp3'],
       manifest: {
         name: 'Oath & Banner - 맹세와 깃발',
         short_name: '맹세와 깃발',
@@ -33,9 +33,9 @@ export default defineConfig(({ command }) => ({
       },
       workbox: {
         // 장수 초상·타이틀 아트 포함. Firebase/폰트는 런타임 캐시.
-        // BGM wav(~1MB대)도 precache. 기본 2MiB 한도를 조금 올림.
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-        globPatterns: ['**/*.{js,css,html,ico,svg,png,webp,woff2,wav}'],
+        // BGM mp3(~5MB) precache. 기본 2MiB보다 크게.
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,ico,svg,png,webp,woff2,mp3}'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
