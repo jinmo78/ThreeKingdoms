@@ -49,34 +49,38 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
-      <header className="sticky top-0 z-30 border-b border-[#C6A15B]/45 bg-[#171513]/95 text-[#F3ECE0] backdrop-blur">
-        <div className="flex items-center gap-3 px-4 py-2.5">
-          <button type="button" onClick={goTitle} title="첫 화면" aria-label="첫 화면으로" className="flex min-h-11 items-center gap-2">
-            <BannerEmblem className="h-8 w-8" />
-            <div className="text-left leading-tight">
-              <div className="font-serif text-base font-bold tracking-wide text-[#C6A15B]">{GAME_TITLE}</div>
-              <div className="hidden text-[10px] tracking-[0.3em] text-[#B8382E] sm:block">{GAME_SUBTITLE}</div>
-            </div>
-          </button>
-          {!inBattle && (
+      {!inBattle && (
+        <header className="sticky top-0 z-30 border-b border-[#C6A15B]/45 bg-[#171513]/95 text-[#F3ECE0] backdrop-blur">
+          <div className="flex items-center gap-3 px-4 py-2.5">
+            <button type="button" onClick={goTitle} title="첫 화면" aria-label="첫 화면으로" className="flex min-h-11 items-center gap-2">
+              <BannerEmblem className="h-8 w-8" />
+              <div className="text-left leading-tight">
+                <div className="font-serif text-base font-bold tracking-wide text-[#C6A15B]">{GAME_TITLE}</div>
+                <div className="hidden text-[10px] tracking-[0.3em] text-[#B8382E] sm:block">{GAME_SUBTITLE}</div>
+              </div>
+            </button>
             <nav className="ml-6 hidden gap-1 lg:flex">
               {TABS.map((t) => (
                 <TabButton key={t.id} active={view === t.id} onClick={() => setView(t.id)} icon={t.icon} label={t.label} />
               ))}
             </nav>
-          )}
-          <div className="ml-auto flex items-center gap-2">
-            <AccountButton />
-            <ReloadButton />
-            <div className="flex min-h-9 items-center gap-1.5 rounded-full border border-[#C6A15B]/50 bg-[#C6A15B]/12 px-3 py-1 text-sm font-bold text-[#C6A15B]">
-              <Coins size={15} />
-              <span className="tabular">{gold.toLocaleString()}</span>
+            <div className="ml-auto flex items-center gap-2">
+              <AccountButton />
+              <ReloadButton />
+              <div className="flex min-h-9 items-center gap-1.5 rounded-full border border-[#C6A15B]/50 bg-[#C6A15B]/12 px-3 py-1 text-sm font-bold text-[#C6A15B]">
+                <Coins size={15} />
+                <span className="tabular">{gold.toLocaleString()}</span>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <main className={cn('scroll-sheet mx-3 mt-3 flex-1 rounded-2xl px-4 py-5', !inBattle && 'mb-20 lg:mb-4')}>
+      <main className={cn(
+        inBattle
+          ? 'flex min-h-0 flex-1 flex-col overflow-hidden p-0'
+          : 'scroll-sheet mx-3 mt-3 mb-20 flex-1 rounded-2xl px-4 py-5 lg:mb-4',
+      )}>
         {view === 'campaign' && <Campaign />}
         {view === 'formation' && <Formation />}
         {view === 'recruit' && <Recruit />}
@@ -118,26 +122,28 @@ function LandShell() {
     <div className="fixed inset-0 bg-[#140e0c]">
       {/* 바탕: 원정 지도 전체 화면. 전투 때만 종이 판 위에 전투 화면 */}
       {inBattle ? (
-        <main className="scroll-sheet absolute inset-x-1.5 bottom-1.5 top-11 overflow-hidden rounded-xl p-2"><BattlePage /></main>
+        <main className="absolute inset-0 overflow-hidden"><BattlePage /></main>
       ) : (
         <div className="absolute inset-0"><Campaign /></div>
       )}
 
-      {/* HUD 위: 얇은 반투명 바 */}
-      <header className="absolute inset-x-0 top-0 z-20 flex h-10 items-center gap-2 border-b border-[#C6A15B]/45 bg-[#171513]/85 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-[#F3ECE0] backdrop-blur">
-        <button type="button" onClick={goTitle} aria-label="첫 화면으로" className="flex items-center gap-1.5">
-          <BannerEmblem className="h-6 w-6" />
-          <span className="font-serif text-sm font-bold text-[#C6A15B]">{GAME_TITLE}</span>
-        </button>
-        <div className="ml-auto flex items-center gap-1.5">
-          <AccountButton />
-          <ReloadButton />
-          <div className="flex min-h-8 items-center gap-1 rounded-full border border-[#C6A15B]/50 bg-[#C6A15B]/12 px-2.5 text-sm font-bold text-[#C6A15B]">
-            <Coins size={14} />
-            <span className="tabular">{gold.toLocaleString()}</span>
+      {/* HUD 위: 전투 중에는 숨겨 전장을 극대화 */}
+      {!inBattle && (
+        <header className="absolute inset-x-0 top-0 z-20 flex h-10 items-center gap-2 border-b border-[#C6A15B]/45 bg-[#171513]/85 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-[#F3ECE0] backdrop-blur">
+          <button type="button" onClick={goTitle} aria-label="첫 화면으로" className="flex items-center gap-1.5">
+            <BannerEmblem className="h-6 w-6" />
+            <span className="font-serif text-sm font-bold text-[#C6A15B]">{GAME_TITLE}</span>
+          </button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <AccountButton />
+            <ReloadButton />
+            <div className="flex min-h-8 items-center gap-1 rounded-full border border-[#C6A15B]/50 bg-[#C6A15B]/12 px-2.5 text-sm font-bold text-[#C6A15B]">
+              <Coins size={14} />
+              <span className="tabular">{gold.toLocaleString()}</span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* HUD 오른쪽: 메뉴 버튼 열 (지도가 곧 출진 화면이라 출진 탭은 없다) */}
       {!inBattle && (
