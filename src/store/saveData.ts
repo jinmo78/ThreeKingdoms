@@ -3,6 +3,7 @@ import { GEAR_MAP } from '../data/gear';
 import { GENERAL_MAP } from '../data/generals';
 import { GEAR_COPY_MAX, GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL } from '../engine/gear';
 import { LEGACY_POINT_GOLD, PRESET_LIMIT } from '../engine/formationBook';
+import { DEFAULT_FORMATION_ID, isFormationId } from '../data/formations';
 import { emptyUnit } from '../engine/profiles';
 import { maxLevel, maxPromote, MAX_STARS, shownRarity } from '../engine/unit';
 import { MAX_MARCHES, pruneWounds, type March, type Wounds } from '../engine/siege';
@@ -14,7 +15,7 @@ import { LORDS, THREAT_REPORT_MAX } from '../engine/lords';
 import type { GearSlot, OwnedGear, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 export interface FormationPreset {
   id: string;
@@ -73,7 +74,7 @@ export function freshSave(): SaveData {
     roster,
     // 도원결의(유비·장비)와 촉한의 기틀(유비·미축·간옹)이 바로 보이도록 미리 배치
     formation: [
-      { commander: 'liubei', vice1: 'zhangfei', vice2: 'xuchu', strategist: 'lusu', aide1: 'mizhu', aide2: 'jianyong' },
+      { commander: 'liubei', vice1: 'zhangfei', vice2: 'xuchu', strategist: 'lusu', aide1: 'mizhu', aide2: 'jianyong', formationId: DEFAULT_FORMATION_ID },
       emptyUnit(),
       emptyUnit(),
     ],
@@ -176,6 +177,7 @@ export function sanitizeFormation(raw: unknown, roster: Record<string, OwnedGene
       strategist: take(u.strategist),
       aide1: take(u.aide1),
       aide2: take(u.aide2),
+      formationId: isFormationId(u.formationId) ? u.formationId : DEFAULT_FORMATION_ID,
     });
   }
   return units;
@@ -406,6 +408,9 @@ export function migrateSave(persisted: unknown, version: number): SaveData {
   }
   if (version < 16) {
     if (!Array.isArray(src.threatReports)) src.threatReports = [];
+  }
+  if (version < 17) {
+    // 부대 진형 — sanitizeFormation이 formationId 기본값을 채운다
   }
   return sanitizeSave(src);
 }

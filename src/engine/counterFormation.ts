@@ -43,7 +43,11 @@ const FINAL_SEEDS = Array.from({ length: FINAL_BATTLES }, (_, i) => 500_009 + i 
 type Ids = (string | null)[][];
 
 const toIds = (f: Unit[]): Ids => [0, 1, 2].map((i) => SLOTS.map((s) => f[i]?.[s] ?? null));
-const toUnits = (ids: Ids): Unit[] => ids.map((u) => Object.fromEntries(SLOTS.map((s, i) => [s, u[i]])) as Unit);
+const toUnits = (ids: Ids): Unit[] => ids.map((row) => {
+  const u: Unit = { commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null, formationId: 'basic' };
+  SLOTS.forEach((s, i) => { u[s] = row[i] ?? null; });
+  return u;
+});
 
 function winRate(ids: Ids, roster: Record<string, OwnedGeneral>, enemy: UnitProfile[], seeds: number[], gear: GearBag = {}): number {
   const mine = playerProfiles(toUnits(ids), roster, gear);

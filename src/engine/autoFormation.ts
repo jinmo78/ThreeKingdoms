@@ -106,5 +106,5 @@ export function autoFormation(roster: Record<string, OwnedGeneral>, unitCount = 
 }
 
 function emptyUnit(): Unit {
-  return { commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null };
+  return { commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null, formationId: 'basic' };
 }

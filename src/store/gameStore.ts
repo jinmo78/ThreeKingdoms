@@ -20,6 +20,7 @@ import {
   GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL, GEAR_PROMOTE_SHARDS,
   equipOn, gearCount, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, grantGear, unequipOne,
 } from '../engine/gear';
+import { isFormationId } from '../data/formations';
 import { emptyUnit, enemyUnitsToProfiles, playerProfiles, unitProfile } from '../engine/profiles';
 import { CASTLE_MAX_LEVEL, accrued, newCastle, upgradeCost } from '../engine/domain';
 import {
@@ -115,6 +116,8 @@ interface GameState extends SaveData {
   recruit: (count: 1 | 10) => RecruitResult[] | null;
   assign: (unit: number, slot: Slot, id: string | null) => void;
   clearUnit: (unit: number) => void;
+  /** 부대 진형 변경 */
+  setUnitFormation: (unit: number, formationId: string) => void;
   /** 보유 장수로 3부대를 시너지 고려해 자동 편성 */
   autoForm: () => void;
   /** 태생 등급에서 품계를 한 단계 올린다. 금화가 부족하면 false */
@@ -463,6 +466,12 @@ export const useGame = create<GameState>()(
 
       clearUnit: (unitIdx) => {
         const formation = get().formation.map((u, i) => (i === unitIdx ? emptyUnit() : u));
+        set({ formation });
+      },
+
+      setUnitFormation: (unitIdx, formationId) => {
+        if (!isFormationId(formationId)) return;
+        const formation = get().formation.map((u, i) => (i === unitIdx ? { ...u, formationId } : { ...u }));
         set({ formation });
       },
 

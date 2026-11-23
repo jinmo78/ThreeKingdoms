@@ -75,7 +75,8 @@ export function simulateBattle(
 
   const fighters: Fighter[][] = [player, enemy].map((list, side) =>
     list.map((p, idx) => ({
-      side: side as Side, idx, p, hp: Math.round(p.hp * (startHp?.[side]?.[idx] ?? 1)), gauge: rng() * 30 + (extra?.gauge?.[side] ?? 0), routed: false,
+      side: side as Side, idx, p, hp: Math.round(p.hp * (startHp?.[side]?.[idx] ?? 1)),
+      gauge: rng() * 30 + (extra?.gauge?.[side] ?? 0) + (p.gaugeBonus ?? 0), routed: false,
     })),
   );
   const events: BattleEvent[] = [];
@@ -121,7 +122,7 @@ export function simulateBattle(
     const p = f.p;
     const base = s.scaling === 'war' ? p.atk : s.scaling === 'int' ? p.intel * 1.25 : p.def * 1.1;
     const caster = p.members.find((m) => m?.def.id === g.id);
-    const mult = s.power * p.synergy.powerMult * CHAIN_MULT[step] * (1 + (caster?.skillPower ?? 0));
+    const mult = s.power * p.synergy.powerMult * CHAIN_MULT[step] * (1 + (caster?.skillPower ?? 0)) * (p.skillPowerMul ?? 1);
     const magical = s.scaling === 'int';
     const hits: Hit[] = [];
 
@@ -161,7 +162,7 @@ export function simulateBattle(
       stats.skills++;
       castSkill(f, p.members[0]!.def, 0);
       // 연쇄: 부장1 → 부장2 → 참모 (빈 칸은 건너뜀)
-      let rate = p.synergy.chainRate;
+      let rate = Math.min(0.85, (p.synergy.chainRate ?? 0) + (p.chainBonus ?? 0));
       let step = 0;
       for (const ci of CHAIN_INDEX) {
         const m = p.members[ci];
@@ -176,14 +177,23 @@ export function simulateBattle(
       stats.maxChain = Math.max(stats.maxChain, step);
     } else {
       const t = pickTarget(f);
-      const hit = damage(f, t, p.atk * DMG_K * p.synergy.powerMult, false);
+      const hit = damage(f, t, p.atk * DMG_K * p.synergy.powerMult * (p.attackMul ?? 1), false);
       const tag = hit.matchup === 'adv' ? ' (상성 우위)' : hit.matchup === 'dis' ? ' (상성 열세)' : '';
       push({ kind: 'attack', actor: ref(f), hits: [hit], text: `${p.name}의 공격 → ${t.p.name} -${hit.amount}${tag}` });
       reportRouts([hit]);
     }
   }
 
-  push({ kind: 'start', hits: [], text: `전투 개시! 아군 ${player.length}개 부대 vs 적군 ${enemy.length}개 부대${extra?.note ? ` — ${extra.note}` : ''}` });
+  const lineup = (side: Side) => fighters[side]
+    .map((f) => `${f.p.name.replace(/ 부대$/, '')} [${f.p.formationName ?? '기본진'}]`)
+    .join(', ');
+  push({
+    kind: 'start',
+    hits: [],
+    text: `전투 개시! 아군 ${player.length}개 부대 vs 적군 ${enemy.length}개 부대`
+      + `${extra?.note ? ` — ${extra.note}` : ''}`
+      + ` · ${lineup(0)} 출전!`,
+  });
 
   let actions = 0;
   while (actions < MAX_ACTIONS && alive(0).length > 0 && alive(1).length > 0) {

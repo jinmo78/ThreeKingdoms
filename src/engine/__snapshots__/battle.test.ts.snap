@@ -8,20 +8,20 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       "hits": [],
       "hp": [
         [
-          3190,
+          2966,
         ],
         [
           2752,
         ],
       ],
       "kind": "start",
-      "text": "전투 개시! 아군 1개 부대 vs 적군 1개 부대",
+      "text": "전투 개시! 아군 1개 부대 vs 적군 1개 부대 · 관우 [기본진] 출전!",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 436,
+          "amount": 374,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -30,20 +30,20 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          3190,
+          2966,
         ],
         [
-          2316,
+          2378,
         ],
       ],
       "kind": "attack",
-      "text": "관우 부대의 공격 → 여포 부대 -436",
+      "text": "관우 부대의 공격 → 여포 부대 -374",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 267,
+          "amount": 280,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -52,20 +52,20 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          2923,
+          2686,
         ],
         [
-          2316,
+          2378,
         ],
       ],
       "kind": "attack",
-      "text": "여포 부대의 공격 → 관우 부대 -267",
+      "text": "여포 부대의 공격 → 관우 부대 -280",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 477,
+          "amount": 409,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -74,20 +74,20 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          2923,
+          2686,
         ],
         [
-          1839,
+          1969,
         ],
       ],
       "kind": "attack",
-      "text": "관우 부대의 공격 → 여포 부대 -477",
+      "text": "관우 부대의 공격 → 여포 부대 -409",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 260,
+          "amount": 272,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -96,20 +96,20 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          2663,
+          2414,
         ],
         [
-          1839,
+          1969,
         ],
       ],
       "kind": "attack",
-      "text": "여포 부대의 공격 → 관우 부대 -260",
+      "text": "여포 부대의 공격 → 관우 부대 -272",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 464,
+          "amount": 398,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -118,20 +118,20 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          2663,
+          2414,
         ],
         [
-          1375,
+          1571,
         ],
       ],
       "kind": "attack",
-      "text": "관우 부대의 공격 → 여포 부대 -464",
+      "text": "관우 부대의 공격 → 여포 부대 -398",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 465,
+          "amount": 488,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -140,20 +140,20 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          2198,
+          1926,
         ],
         [
-          1375,
+          1571,
         ],
       ],
       "kind": "skill",
-      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -465",
+      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -488",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 420,
+          "amount": 361,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -162,20 +162,20 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          2198,
+          1926,
         ],
         [
-          955,
+          1210,
         ],
       ],
       "kind": "attack",
-      "text": "관우 부대의 공격 → 여포 부대 -420",
+      "text": "관우 부대의 공격 → 여포 부대 -361",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 260,
+          "amount": 273,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -184,80 +184,14 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          1938,
+          1653,
         ],
         [
-          955,
+          1210,
         ],
       ],
       "kind": "attack",
-      "text": "여포 부대의 공격 → 관우 부대 -260",
-    },
-    {
-      "chainStep": null,
-      "hits": [
-        {
-          "amount": 491,
-          "idx": 0,
-          "kind": "dmg",
-          "matchup": "even",
-          "side": 1,
-        },
-      ],
-      "hp": [
-        [
-          1938,
-        ],
-        [
-          464,
-        ],
-      ],
-      "kind": "attack",
-      "text": "관우 부대의 공격 → 여포 부대 -491",
-    },
-    {
-      "chainStep": null,
-      "hits": [
-        {
-          "amount": 435,
-          "idx": 0,
-          "kind": "dmg",
-          "matchup": "even",
-          "side": 0,
-        },
-      ],
-      "hp": [
-        [
-          1503,
-        ],
-        [
-          464,
-        ],
-      ],
-      "kind": "skill",
-      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -435",
-    },
-    {
-      "chainStep": 1,
-      "hits": [
-        {
-          "amount": 407,
-          "idx": 0,
-          "kind": "dmg",
-          "matchup": "even",
-          "side": 0,
-        },
-      ],
-      "hp": [
-        [
-          1096,
-        ],
-        [
-          464,
-        ],
-      ],
-      "kind": "chain",
-      "text": "⚡연쇄 발동! 진궁의 전법 【하비 수성책】 → 관우 부대 -407",
+      "text": "여포 부대의 공격 → 관우 부대 -273",
     },
     {
       "chainStep": null,
@@ -272,10 +206,10 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          1096,
+          1653,
         ],
         [
-          43,
+          789,
         ],
       ],
       "kind": "attack",
@@ -285,7 +219,7 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       "chainStep": null,
       "hits": [
         {
-          "amount": 481,
+          "amount": 456,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -294,20 +228,42 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          615,
+          1197,
         ],
         [
-          43,
+          789,
         ],
       ],
       "kind": "skill",
-      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -481",
+      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -456",
+    },
+    {
+      "chainStep": 1,
+      "hits": [
+        {
+          "amount": 415,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          782,
+        ],
+        [
+          789,
+        ],
+      ],
+      "kind": "chain",
+      "text": "⚡연쇄 발동! 진궁의 전법 【하비 수성책】 → 관우 부대 -415",
     },
     {
       "chainStep": null,
       "hits": [
         {
-          "amount": 1240,
+          "amount": 362,
           "idx": 0,
           "kind": "dmg",
           "matchup": "even",
@@ -316,21 +272,65 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       ],
       "hp": [
         [
-          615,
+          782,
+        ],
+        [
+          427,
+        ],
+      ],
+      "kind": "attack",
+      "text": "관우 부대의 공격 → 여포 부대 -362",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 504,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 0,
+        },
+      ],
+      "hp": [
+        [
+          278,
+        ],
+        [
+          427,
+        ],
+      ],
+      "kind": "skill",
+      "text": "여포의 전법 【방천화극 난무】 → 관우 부대 -504",
+    },
+    {
+      "chainStep": null,
+      "hits": [
+        {
+          "amount": 1064,
+          "idx": 0,
+          "kind": "dmg",
+          "matchup": "even",
+          "side": 1,
+        },
+      ],
+      "hp": [
+        [
+          278,
         ],
         [
           0,
         ],
       ],
       "kind": "skill",
-      "text": "관우의 전법 【청룡참】 → 여포 부대 -1240",
+      "text": "관우의 전법 【청룡참】 → 여포 부대 -1064",
     },
     {
       "chainStep": null,
       "hits": [],
       "hp": [
         [
-          615,
+          278,
         ],
         [
           0,
@@ -344,7 +344,7 @@ exports[`simulateBattle > 시드 20261120 전투 기록 스냅샷 1`] = `
       "hits": [],
       "hp": [
         [
-          615,
+          278,
         ],
         [
           0,

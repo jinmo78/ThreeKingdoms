@@ -1,4 +1,5 @@
 // 편성(장수 id) → 전투 프로필 변환. 저장소(localStorage)와 무관해서 Web Worker에서도 사용
+import { DEFAULT_FORMATION_ID } from '../data/formations';
 import { GENERAL_MAP } from '../data/generals';
 import { STAGE_MAP } from '../data/stages';
 import type { EnemyUnit, OwnedGeneral, Unit } from '../types';
@@ -6,7 +7,10 @@ import { SLOTS } from '../types';
 import { withGear, type GearBag } from './gear';
 import { applyImprint, buildProfile, makeMember, type UnitProfile } from './unit';
 
-export const emptyUnit = (): Unit => ({ commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null });
+export const emptyUnit = (): Unit => ({
+  commander: null, vice1: null, vice2: null, strategist: null, aide1: null, aide2: null,
+  formationId: DEFAULT_FORMATION_ID,
+});
 
 export function unitProfile(u: Unit, roster: Record<string, OwnedGeneral>, gear: GearBag = {}, imprint = 0): UnitProfile | null {
   if (!u) return null;
@@ -17,6 +21,7 @@ export function unitProfile(u: Unit, roster: Record<string, OwnedGeneral>, gear:
       const def = id ? GENERAL_MAP[id] : undefined;
       return id && owned && def ? withGear(makeMember(def, owned.level, owned.stars, owned.promote ?? 0), owned, gear) : null;
     }),
+    u.formationId ?? DEFAULT_FORMATION_ID,
   );
   return raw ? applyImprint(raw, imprint) : null;
 }

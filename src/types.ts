@@ -84,7 +84,18 @@ export const SLOTS: Slot[] = ['commander', 'vice1', 'vice2', 'strategist', 'aide
 /** 연쇄 전법 순서 */
 export const CHAIN_SLOTS: Slot[] = ['vice1', 'vice2', 'strategist'];
 export const STRATEGIST_INDEX = 3;
-export type Unit = Record<Slot, string | null>;
+
+/** 부대 6칸 + 진형. formationId가 없으면 기본진 */
+export interface Unit {
+  commander: string | null;
+  vice1: string | null;
+  vice2: string | null;
+  strategist: string | null;
+  aide1: string | null;
+  aide2: string | null;
+  /** `src/data/formations.ts` FormationId */
+  formationId?: string;
+}
 
 export interface EnemyUnit {
   /** SLOTS 순서 (주장은 필수) */

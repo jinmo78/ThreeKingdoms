@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { BOND_MAP } from '../data/bonds';
 import { GENERAL_MAP } from '../data/generals';
 import { FACTION, FACTIONS, SLOT_LABEL, STAT_LABEL, TROOP, UNIT_TINT } from '../data/meta';
+import type { FormationId } from '../data/formations';
 import { FORMATION_GOLD, PRESET_LIMIT, formationGold, unitGold } from '../engine/formationBook';
 import { matchupGrade, matchupVs } from '../engine/matchup';
 import { emptyUnit, unitProfile } from '../engine/profiles';
@@ -15,6 +16,7 @@ import { useGame } from '../store/gameStore';
 import { sanitizeFormation } from '../store/saveData';
 import type { EnemyUnit, Faction, GeneralDef, OwnedGeneral, Slot, Troop, Unit } from '../types';
 import { SLOTS } from '../types';
+import { FormationPicker } from './FormationPicker';
 import { GearBag } from './GearPanel';
 import { CounterFormationButton } from './CounterFormation';
 import { GeneralDetail, GeneralToken, RarityBadge, Stars, SynergyList, UnitStats } from './General';
@@ -90,6 +92,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
   const formation = useGame((s) => s.formation);
   const assign = useGame((s) => s.assign);
   const clearUnit = useGame((s) => s.clearUnit);
+  const setUnitFormation = useGame((s) => s.setUnitFormation);
   const autoForm = useGame((s) => s.autoForm);
   const [autoNote, setAutoNote] = useState(false);
   const [target, setTarget] = useState<Target>({ unit: 0, slot: 'commander' });
@@ -190,7 +193,14 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
               target.unit === ui && 'ring-2 ring-stone-100')}>
               <header className={cn('flex items-center justify-between gap-2', land ? 'mb-1' : 'mb-2')}>
                 <div className="min-w-0">
-                  <h3 className={cn('font-serif text-base font-black', UNIT_TINT[ui].title)}>제{ui + 1}부대</h3>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h3 className={cn('font-serif text-base font-black', UNIT_TINT[ui].title)}>제{ui + 1}부대</h3>
+                    <FormationPicker
+                      value={u.formationId}
+                      compact={land}
+                      onChange={(id: FormationId) => setUnitFormation(ui, id)}
+                    />
+                  </div>
                   {p && !land && <div className="truncate text-xs text-stone-400">{p.name}</div>}
                 </div>
                 {land && p && (

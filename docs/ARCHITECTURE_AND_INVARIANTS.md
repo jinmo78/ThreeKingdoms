@@ -1,6 +1,6 @@
 # 아키텍처 의존성 및 절대 불변 규칙
 
-기준: 2026-11-23, `SAVE_VERSION` 16. 기능을 넣을 때 여기의 불변 조건을 먼저 본다. 수치 원본은 `docs/GAME_DESIGN_SPEC.md`.
+기준: 2026-11-23, `SAVE_VERSION` 17. 기능을 넣을 때 여기의 불변 조건을 먼저 본다. 수치 원본은 `docs/GAME_DESIGN_SPEC.md`.
 
 ---
 
@@ -56,6 +56,7 @@ pages, components   화면과 입력만
 | 12~14 | 별도 분기 없이 `sanitizeSave`가 빈 `wounds` / `marches` / `castles`를 채운다 |
 | &lt; 15 | `threats` / `lastThreatAt` / `decreeClaimWeek` 기본값 |
 | &lt; 16 | `threatReports` 빈 배열 |
+| &lt; 17 | 부대 `formationId` — `sanitizeFormation`이 기본진으로 채움 |
 
 점령 성 소급은 `migrate`가 아니라 실행 중 `ensureCastles`다. `since = 지금`이라 과거분 금화가 생기지 않는다. 여기를 점령 시각 추정으로 바꾸면 옛 저장에 금화가 몰린다.
 

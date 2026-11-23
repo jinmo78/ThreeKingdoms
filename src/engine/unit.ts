@@ -1,6 +1,7 @@
 // ============================================================
-// 부대 프로필 — 장수 3명의 능력치를 슬롯 가중치로 합산
+// 부대 프로필 — 장수 능력치를 슬롯·진형 가중치로 합산
 // ============================================================
+import { DEFAULT_FORMATION_ID, formationOf, type FormationId } from '../data/formations';
 import type { GeneralDef, Rarity, Slot, StatKey, Stats, Troop } from '../types';
 import { SLOTS, STRATEGIST_INDEX } from '../types';
 import { calcSynergy, type SynergyResult } from './synergy';
@@ -78,6 +79,17 @@ export interface UnitProfile {
   skillRate: number;
   synergy: SynergyResult;
   power: number;
+  /** 적용된 진형 */
+  formationId: FormationId;
+  formationName: string;
+  /** 전법 위력 배율 (안행진 등) */
+  skillPowerMul: number;
+  /** 일반 공격 피해 배율 */
+  attackMul: number;
+  /** 시작 행동 게이지 보너스 (봉시진 선공) */
+  gaugeBonus: number;
+  /** 연쇄 확률 가산 (우결진 = 인연 수 × 비율) */
+  chainBonus: number;
 }
 
 /** 토벌 각인 등 전투력 배율을 능력·병력·전투력에 곱한다. */
@@ -94,25 +106,43 @@ export function applyImprint(p: UnitProfile, bonus: number): UnitProfile {
   };
 }
 
-// 슬롯별 능력 반영 비율: 주장은 무력·통솔, 참모는 지력 위주
-const AIDE = { war: 0.15, int: 0.15, lead: 0.15, hp: 3 };
-const SLOT_WEIGHT: Record<Slot, Record<StatKey, number> & { hp: number }> = {
+/** 100% 반영 시 역할 모양. 진형 scale을 곱해 실제 가중치가 된다. 참모는 고정. */
+const ROLE_SHAPE = {
   commander: { war: 1.0, int: 0.4, lead: 1.0, hp: 16 },
-  vice1: { war: 0.5, int: 0.25, lead: 0.4, hp: 7 },
-  vice2: { war: 0.5, int: 0.25, lead: 0.4, hp: 7 },
-  strategist: { war: 0.2, int: 1.0, lead: 0.3, hp: 6 },
-  aide1: AIDE,
-  aide2: AIDE,
-};
+  vice: { war: 1.0, int: 0.5, lead: 0.8, hp: 14 },
+  aide: { war: 1.0, int: 1.0, lead: 1.0, hp: 30 },
+} as const;
+const STRATEGIST_WEIGHT = { war: 0.2, int: 1.0, lead: 0.3, hp: 6 };
+
+function slotWeight(slot: Slot, scale: { commander: number; vice: number; aide: number }): Record<StatKey, number> & { hp: number } {
+  if (slot === 'strategist') return STRATEGIST_WEIGHT;
+  if (slot === 'commander') {
+    const s = scale.commander;
+    const sh = ROLE_SHAPE.commander;
+    return { war: sh.war * s, int: sh.int * s, lead: sh.lead * s, hp: sh.hp * s };
+  }
+  if (slot === 'vice1' || slot === 'vice2') {
+    const s = scale.vice;
+    const sh = ROLE_SHAPE.vice;
+    return { war: sh.war * s, int: sh.int * s, lead: sh.lead * s, hp: sh.hp * s };
+  }
+  const s = scale.aide;
+  const sh = ROLE_SHAPE.aide;
+  return { war: sh.war * s, int: sh.int * s, lead: sh.lead * s, hp: sh.hp * s };
+}
 
 export function makeMember(def: GeneralDef, level: number, stars: number, promote = 0): UnitMember {
   return { def, level, stars, promote: promote ?? 0, stats: effectiveStats(def, level, stars, promote) };
 }
 
-/** 주장이 없으면 null */
-export function buildProfile(members: (UnitMember | null)[]): UnitProfile | null {
+/** 주장이 없으면 null. formationId 없으면 기본진. */
+export function buildProfile(
+  members: (UnitMember | null)[],
+  formationId: FormationId | string | null | undefined = DEFAULT_FORMATION_ID,
+): UnitProfile | null {
   const commander = members[0];
   if (!commander) return null;
+  const form = formationOf(formationId as FormationId);
 
   let atk = 0;
   let intel = 0;
@@ -121,20 +151,27 @@ export function buildProfile(members: (UnitMember | null)[]): UnitProfile | null
   SLOTS.forEach((slot, i) => {
     const m = members[i];
     if (!m) return;
-    const w = SLOT_WEIGHT[slot];
+    const w = slotWeight(slot, form.scale);
     atk += m.stats.war * w.war;
     intel += m.stats.int * w.int;
     def += m.stats.lead * w.lead;
     hp += m.stats.lead * w.hp;
   });
 
+  const fx = form.combat;
+  atk *= fx.atkMul;
+  def *= fx.defMul;
+  hp *= fx.hpMul;
+
   const synergy = calcSynergy(members.map((m) => m?.def ?? null));
   const troop = commander.def.troop;
   const speed = 10 + intel * 0.02 + (troop === 'cavalry' ? 2 : 0);
-  // 주장 전법 발동률: 기본 + 참모 지력 + 장비(서책)
   const strategistInt = members[STRATEGIST_INDEX]?.stats.int ?? 0;
   const gearRate = members.reduce((sum, m) => sum + (m?.skillRateAdd ?? 0), 0);
   const skillRate = Math.min(0.7, commander.def.skill.rate + strategistInt * 0.001 + gearRate);
+
+  const bondCount = synergy.list.filter((s) => s.kind === 'bond').length;
+  const chainBonus = fx.chainPerBond > 0 ? bondCount * fx.chainPerBond : 0;
 
   const power = Math.round((atk + intel * 0.8 + def * 0.8) * synergy.powerMult * 2 + hp * 0.2);
 
@@ -150,5 +187,11 @@ export function buildProfile(members: (UnitMember | null)[]): UnitProfile | null
     skillRate,
     synergy,
     power,
+    formationId: form.id,
+    formationName: form.name,
+    skillPowerMul: fx.skillPowerMul,
+    attackMul: fx.attackMul,
+    gaugeBonus: fx.gaugeBonus,
+    chainBonus,
   };
 }

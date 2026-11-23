@@ -159,12 +159,13 @@ export function SynergyList({ synergy }: { synergy: SynergyResult; empty?: strin
 
 /** 부대 요약 수치 */
 export function UnitStats({ p }: { p: UnitProfile }) {
+  const chainPct = Math.round(Math.min(0.85, p.synergy.chainRate + (p.chainBonus ?? 0)) * 100);
   return (
     <div className="grid grid-cols-4 gap-1 text-center text-[11px]">
       <Stat label="전투력" value={p.power.toLocaleString()} strong />
       <Stat label="병력" value={p.hp.toLocaleString()} />
       <Stat label="전법" value={`${Math.round(p.skillRate * 100)}%`} />
-      <Stat label="연쇄" value={`${Math.round(p.synergy.chainRate * 100)}%`} accent />
+      <Stat label="연쇄" value={`${chainPct}%`} accent />
     </div>
   );
 }
