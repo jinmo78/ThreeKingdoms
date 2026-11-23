@@ -134,7 +134,7 @@ export default function BattlePage() {
         </div>
 
         {/* 전투 기록 */}
-        <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-[#C6A15B]/35 bg-[#F3ECE0]/90 p-2 text-xs text-[#3a332c] lg:max-h-[560px] land:h-full land:max-h-none land:overflow-hidden dark:bg-[#221E1A]/90 dark:text-[#E7DCC8]">
+        <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-[#C6A15B]/35 bg-[#18243a]/95 p-2 text-xs text-[#F3ECE0] lg:max-h-[560px] land:h-full land:max-h-none land:overflow-hidden">
           <div className="mb-1 flex justify-end">
             <button type="button" aria-pressed={rawLog} onClick={() => setRawLog((v) => !v)}
               className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold', rawLog ? 'bg-[#8e2a22] text-[#F8E7D2]' : 'bg-[#1b1713]/10')}>
@@ -177,7 +177,7 @@ function LogLine({ e, raw }: { e: BattleEvent; raw: boolean }) {
   }
   const calm = e.kind === 'rout' ? 'text-[#8a8178] line-through decoration-[#B8382E]/50'
     : e.kind === 'end' || e.kind === 'start' ? 'font-bold'
-      : 'text-[#4a433c] dark:text-[#C9BBA6]';
+      : 'text-[#C9BBA6]';
   return <div className={cn('animate-slide-in leading-snug', calm)}>{text}</div>;
 }
 

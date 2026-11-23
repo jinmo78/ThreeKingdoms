@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { startCloudSync } from './cloud/sync';
 import App from './App';
+import { lockTheme } from './theme';
 import './index.css';
 
+lockTheme();
 registerSW({ immediate: true });
 startCloudSync();
 

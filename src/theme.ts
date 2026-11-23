@@ -1,15 +1,11 @@
-export type Theme = 'light' | 'dark';
-
-const KEY = 'oath-banner-theme';
-
-export function currentTheme(): Theme {
-  if (typeof document === 'undefined') return 'light';
-  return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-}
-
-export function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle('dark', theme === 'dark');
+/** 화면은 남색 궁정 톤 하나. 밝/어두 전환 없음. */
+export function lockTheme() {
+  document.documentElement.classList.remove('dark');
   document.documentElement.style.colorScheme = 'dark';
-  localStorage.setItem(KEY, theme);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#171513');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#101826');
+  try {
+    localStorage.removeItem('oath-banner-theme');
+  } catch {
+    /* ignore */
+  }
 }

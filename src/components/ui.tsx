@@ -1,7 +1,6 @@
-import { ChevronLeft, ChevronRight, Moon, RefreshCw, Sun } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { applyTheme, currentTheme, type Theme } from '../theme';
 
 export function cn(...cls: (string | false | null | undefined)[]) {
   return cls.filter(Boolean).join(' ');
@@ -96,31 +95,6 @@ export function ReloadButton({ className }: { className?: string }) {
   );
 }
 
-/** 밝은 화면이 기본. 어두운 화면은 이 버튼으로 바꾼다. */
-export function ThemeToggle({ className }: { className?: string }) {
-  const [theme, setTheme] = useState<Theme>(currentTheme);
-  const dark = theme === 'dark';
-  return (
-    <button
-      type="button"
-      aria-pressed={dark}
-      aria-label={dark ? '밝은 화면으로 전환' : '어두운 화면으로 전환'}
-      title={dark ? '밝은 화면' : '어두운 화면'}
-      onClick={() => {
-        const next: Theme = dark ? 'light' : 'dark';
-        applyTheme(next);
-        setTheme(next);
-      }}
-      className={cn(
-        'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#C6A15B]/50 bg-transparent text-[#F3ECE0]',
-        className,
-      )}
-    >
-      {dark ? <Sun size={16} /> : <Moon size={16} />}
-    </button>
-  );
-}
-
 let scrollLocks = 0;
 let lockedScrollY = 0;
 
@@ -172,7 +146,7 @@ export function Hint({ text }: { text: ReactNode }) {
         ?
       </button>
       {open && (
-        <span role="note" className="absolute left-0 top-6 z-30 w-52 rounded-lg border border-[#C6A15B]/70 bg-[#F3ECE0] p-2 text-left text-[11px] font-normal leading-snug text-[#1C1612] shadow-lg dark:bg-[#221E1A] dark:text-[#F3ECE0]">
+        <span role="note" className="absolute left-0 top-6 z-30 w-52 rounded-lg border border-[#C6A15B]/70 bg-[#18243a] p-2 text-left text-[11px] font-normal leading-snug text-[#F3ECE0] shadow-lg">
           {text}
         </span>
       )}
@@ -191,7 +165,7 @@ export function Modal({ children, onClose, wide, ink }: { children: ReactNode; o
       <div
         className={cn(
           'animate-slide-in flex max-h-[92dvh] w-full flex-col overscroll-contain rounded-t-2xl border border-[#C6A15B]/70 bg-stone-950 p-5 leading-relaxed land:max-h-[calc(100dvh-0.75rem)]! land:p-3 sm:rounded-2xl',
-          ink && 'border-2 border-[#C6A15B] bg-[#F3ECE0] text-[#1C1612] dark:bg-[#221E1A] dark:text-[#F3ECE0]',
+          ink && 'border-2 border-[#C6A15B] bg-[#18243a] text-[#F3ECE0]',
           wide ? 'h-[92dvh] max-w-4xl overflow-hidden land:h-[calc(100dvh-0.75rem)]! land:max-w-none!' : 'max-w-lg overflow-y-auto',
         )}
         onClick={(e) => e.stopPropagation()}

@@ -252,13 +252,13 @@ export function EquippedGear({ generalId }: { generalId: string }) {
               )}
               <span className="relative text-[10px] font-bold text-stone-500">
                 {GEAR_SLOT_LABEL[slot]}
-                {best.includes(slot) && <span className="ml-1 text-[#8C6B2F] dark:text-[#C6A15B]">추천</span>}
+                {best.includes(slot) && <span className="ml-1 text-[#C6A15B]">추천</span>}
               </span>
               {worn && wornItem ? (
                 <>
                   <GearArt id={worn.id} size="sm" />
                   <span className="relative text-[11px] font-bold leading-tight">{worn.name}</span>
-                  <span className="relative text-[10px] leading-tight text-[#8C6B2F] dark:text-[#C6A15B]">{effectLabel(worn.stat, gearBonus(worn, wornItem), gearSkill(worn, wornItem))}</span>
+                  <span className="relative text-[10px] leading-tight text-[#C6A15B]">{effectLabel(worn.stat, gearBonus(worn, wornItem), gearSkill(worn, wornItem))}</span>
                 </>
               ) : (
                 <span className="relative flex items-center gap-0.5 text-xs text-stone-500"><Plus size={14} /> 장착</span>
@@ -290,7 +290,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
                   <span className="font-bold">{piece.name}</span>
                   {others > 0 && <span className="ml-1 text-[10px] text-stone-500">{others}명 장착</span>}
                   {id === currentOpen && <span className="ml-1 text-[10px] text-[#B8382E]">장착 중</span>}
-                  <span className="mt-0.5 block text-[10px] text-[#8C6B2F] dark:text-[#C6A15B]">{effectLabel(piece.stat, gearBonus(piece, item), gearSkill(piece, item))}</span>
+                  <span className="mt-0.5 block text-[10px] text-[#C6A15B]">{effectLabel(piece.stat, gearBonus(piece, item), gearSkill(piece, item))}</span>
                 </span>
               </button>
             );

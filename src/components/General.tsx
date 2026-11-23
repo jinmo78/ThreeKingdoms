@@ -232,7 +232,7 @@ function StatRadar({ stats, bonus, power, powerAdd, rate, rateAdd }: {
           <g key={axis.label}>
             <text x={x} y={y} textAnchor="middle" className="fill-current text-[11px] font-bold">{axis.label}</text>
             <text x={vx} y={vy - 8} textAnchor="middle" className="fill-current text-[10px] font-bold">{axis.text}</text>
-            {addText && <text x={vx} y={vy + 4} textAnchor="middle" className="fill-emerald-700 text-[9px] font-bold dark:fill-emerald-300">{addText}</text>}
+            {addText && <text x={vx} y={vy + 4} textAnchor="middle" className="fill-emerald-300 text-[9px] font-bold">{addText}</text>}
           </g>
         );
       })}
@@ -320,12 +320,12 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
 
       {owned && (
         <div className="rounded-xl border border-[#C6A15B]/35 bg-stone-950/50 px-3 py-2 text-xs">
-          <div className="mb-1 flex justify-between text-stone-500">
+          <div className="mb-1 flex justify-between text-stone-300">
             <span>Lv.{owned.level}/{cap} <Stars n={owned.stars} className="ml-1" /></span>
             <span className="tabular">EXP {owned.exp} / {expToNext(owned.level)}</span>
           </div>
           <Bar value={owned.exp} max={expToNext(owned.level)} color="bg-[#C6A15B]" />
-          <div className="mt-1 flex items-center gap-1 text-[10px] text-stone-500">★{owned.stars}/{MAX_STARS} · 중복 +4%{steps > 0 ? ` · ${def.rarity}→${rank}` : ''} <Hint text="같은 장수를 다시 등용하면 돌파가 오르고 능력이 +4%입니다. 최대 ★5. 품계하면 레벨이 1로 돌아가 새 상한까지 다시 키웁니다." /></div>
+          <div className="mt-1 flex items-center gap-1 text-[10px] text-stone-400">★{owned.stars}/{MAX_STARS} · 중복 +4%{steps > 0 ? ` · ${def.rarity}→${rank}` : ''} <Hint text="같은 장수를 다시 등용하면 돌파가 오르고 능력이 +4%입니다. 최대 ★5. 품계하면 레벨이 1로 돌아가 새 상한까지 다시 키웁니다." /></div>
         </div>
       )}
 
@@ -393,7 +393,7 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
           <span className="font-serif text-base font-bold text-[#B8382E]">【{def.skill.name}】</span>
           <span className="text-[10px] text-stone-500">{EFFECT_LABEL[def.skill.effect]} · {STAT_LABEL[def.skill.scaling]} 기반</span>
         </div>
-        <p className="mt-1 text-xs leading-relaxed text-stone-700 dark:text-stone-200">{def.skill.desc}</p>
+        <p className="mt-1 text-xs leading-relaxed text-stone-200">{def.skill.desc}</p>
         <div className="mt-1 flex items-center gap-1 text-[11px] text-stone-500">
           전법 {Math.round((def.skill.rate + (skillAdd.rate ?? 0)) * 100)}%
           <Hint text="주장 직접 발동. 부장 연쇄 1·2단, 참모 3단, 보좌는 시너지." />
@@ -418,7 +418,7 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
                   return (
                     <span key={g.id} className={cn(
                       'rounded border px-1.5 py-0.5 text-[11px]',
-                      has ? 'border-[#C6A15B] bg-[#C6A15B]/15 font-bold text-stone-800 dark:text-[#F3ECE0]' : 'border-stone-500 text-stone-500 opacity-50 grayscale',
+                      has ? 'border-[#C6A15B] bg-[#C6A15B]/15 font-bold text-[#F3ECE0]' : 'border-stone-500 text-stone-400 opacity-50 grayscale',
                       g.id === def.id && 'ring-1 ring-[#B8382E]',
                     )}>
                       {g.name}

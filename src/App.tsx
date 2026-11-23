@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BannerEmblem } from './components/BannerEmblem';
 import { AccountButton, GameConflict } from './components/CloudAccount';
-import { cn, ReloadButton, ThemeToggle, useLandscape } from './components/ui';
+import { cn, ReloadButton, useLandscape } from './components/ui';
 import BattlePage from './pages/Battle';
 import Campaign from './pages/Campaign';
 import Challenge from './pages/Challenge';
@@ -68,7 +68,6 @@ export default function App() {
           <div className="ml-auto flex items-center gap-2">
             <AccountButton />
             <ReloadButton />
-            <ThemeToggle />
             <div className="flex min-h-9 items-center gap-1.5 rounded-full border border-[#C6A15B]/50 bg-[#C6A15B]/12 px-3 py-1 text-sm font-bold text-[#C6A15B]">
               <Coins size={15} />
               <span className="tabular">{gold.toLocaleString()}</span>
@@ -133,7 +132,6 @@ function LandShell() {
         <div className="ml-auto flex items-center gap-1.5">
           <AccountButton />
           <ReloadButton />
-          <ThemeToggle />
           <div className="flex min-h-8 items-center gap-1 rounded-full border border-[#C6A15B]/50 bg-[#C6A15B]/12 px-2.5 text-sm font-bold text-[#C6A15B]">
             <Coins size={14} />
             <span className="tabular">{gold.toLocaleString()}</span>
