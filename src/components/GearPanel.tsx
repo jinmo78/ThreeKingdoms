@@ -11,7 +11,7 @@ import {
 import { useGame } from '../store/gameStore';
 import type { GearSlot, Stats } from '../types';
 import { GearArt } from './GearArt';
-import { Btn, cn, Hint, Modal, NameSearch } from './ui';
+import { Btn, cn, Hint, Modal, NameSearch, useLandscape } from './ui';
 
 const SLOT_ORDER: GearSlot[] = ['weapon', 'armor', 'tome'];
 const SLOT_MARK: Record<GearSlot, string> = { weapon: '劍', armor: '甲', tome: '書' };
@@ -36,9 +36,10 @@ export function GearBag() {
   const [query, setQuery] = useState('');
   const ownedCount = GEAR.filter((g) => bag[g.id]).length;
   const needle = query.trim();
+  const land = useLandscape();
 
   return (
-    <div className="space-y-3">
+    <div className={land ? 'flex min-h-0 flex-1 flex-col gap-1 overflow-hidden' : 'space-y-3'}>
       <p className="flex items-center gap-1 text-[11px] font-bold text-stone-400">
         {ownedCount}/{GEAR.length}
         <Hint text={`같은 장비 ${GEAR_COPY_MAX}개. 무기·갑주·서책 동시 장착. 레벨 파편 1, 강화 파편 2, 등급은 Lv.${GEAR_MAX_LEVEL}·+${GEAR_MAX_ENHANCE}에서 파편 ${GEAR_PROMOTE_SHARDS}.`} />
@@ -58,6 +59,7 @@ export function GearBag() {
           </button>
         ))}
       </div>
+      <div className={land ? 'flex min-h-0 flex-1 gap-3 overflow-x-auto' : 'contents'}>
       {SLOT_ORDER.map((slot) => {
         const list = GEAR.filter((g) => {
           if (g.slot !== slot || (slotFilter !== 'all' && slot !== slotFilter)) return false;
@@ -68,15 +70,15 @@ export function GearBag() {
         });
         if (list.length === 0) return null;
         return (
-          <section key={slot}>
+          <section key={slot} className={land ? 'shrink-0' : undefined}>
             <h3 className="mb-2 text-sm font-black text-stone-300">{GEAR_SLOT_LABEL[slot]}</h3>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2">
+            <div className={land ? 'flex gap-1.5' : 'grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2'}>
               {list.map((def) => {
                 const item = bag[def.id];
                 const rank = item ? gearRarity(def, item.promote) : def.rarity;
                 return (
                   <button key={def.id} type="button" onClick={() => setOpen(def.id)}
-                    className={cn('flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2 text-center',
+                    className={cn('flex flex-col items-center gap-1 rounded-xl border px-1.5 py-2 text-center', land && 'w-20 shrink-0',
                       item ? cn(RARITY[rank].border, 'bg-stone-900/70') : 'border-dashed border-stone-700 bg-stone-950/40')}>
                     <span className={cn('rounded px-1 py-0.5 text-[10px] font-black', RARITY[rank].badge)}>{rank}</span>
                     <GearArt id={def.id} dim={!item} />
@@ -98,6 +100,7 @@ export function GearBag() {
       }).length === 0) && (
         <p className="py-6 text-center text-xs text-stone-500">없음</p>
       )}
+      </div>
       {open && <GearSheet id={open} onClose={() => setOpen(null)} />}
     </div>
   );

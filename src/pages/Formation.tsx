@@ -71,9 +71,9 @@ export default function Formation() {
 
   if (land) {
     return (
-      <div className="space-y-1.5">
+      <div className="flex h-full min-h-0 flex-col gap-1 overflow-hidden">
         {opponent}
-        {editor}
+        <div className="min-h-0 flex-1 overflow-hidden">{editor}</div>
       </div>
     );
   }

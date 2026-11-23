@@ -88,7 +88,7 @@ export default function Recruit() {
   const spentGold = results[0]?.goldSpent ?? 0;
 
   const command = (
-    <div className="space-y-3">
+    <div className={cn(land ? 'space-y-1.5' : 'space-y-3')}>
       <Panel title="출석" icon={<CalendarCheck size={15} />}>
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -166,7 +166,7 @@ export default function Recruit() {
   );
 
   const stage = (
-      <div className={cn('relative flex items-center justify-center overflow-hidden', land ? 'h-full min-h-[12rem] rounded-2xl border border-stone-800 bg-stone-950 p-4' : 'min-h-[22rem] rounded-lg')}>
+      <div className={cn('relative flex items-center justify-center overflow-hidden', land ? 'h-full min-h-0 rounded-2xl border border-stone-800 bg-stone-950 p-2' : 'min-h-[22rem] rounded-lg')}>
         <img src={sceneUrl('scene-recruit.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover brightness-[1.85] contrast-[1.05] saturate-[1.08]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30" />
         <div className="relative w-full">
@@ -188,8 +188,8 @@ export default function Recruit() {
   const overlays = (
     <>
       {phase === 'reveal' && createPortal(
-        <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[#171513]/94">
-          <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center px-3 py-4">
+        <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[#171513]/94 land:overflow-hidden">
+          <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center px-3 py-4 land:h-full land:min-h-0 land:justify-center land:overflow-hidden land:py-2">
             <div className="mb-3 flex w-full items-center justify-between gap-2">
               <p className="min-w-0 text-xs text-[#E7DCC8]">
                 {spentFree > 0 && `무료 -${spentFree}`}
@@ -205,7 +205,7 @@ export default function Recruit() {
                 </button>
               )}
             </div>
-            <div className={cn('grid w-full items-start gap-3', results.length === 1 ? 'max-w-[16rem] grid-cols-1' : 'max-w-sm grid-cols-2 sm:max-w-none sm:grid-cols-5')}>
+            <div className={cn('grid w-full items-start gap-3', results.length === 1 ? 'max-w-[16rem] grid-cols-1' : 'max-w-sm grid-cols-2 sm:max-w-none sm:grid-cols-5', 'land:flex land:max-w-none land:flex-nowrap land:items-center land:justify-start land:overflow-x-auto land:overflow-y-hidden')}>
               {results.map((r, i) => (
                 <Missive
                   key={`${r.def.id}-${i}`}
@@ -247,8 +247,8 @@ export default function Recruit() {
 
   if (land) {
     return (
-      <div className="grid h-full grid-cols-2 gap-2">
-        <div className="min-w-0 space-y-1.5 overflow-y-auto">
+      <div className="grid h-full min-h-0 grid-cols-2 gap-2 overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-col gap-1.5 overflow-hidden">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="font-serif text-base font-black">장수 등용</h2>
             <span className="shrink-0 text-xs text-stone-400">

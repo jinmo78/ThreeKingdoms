@@ -1,7 +1,6 @@
 import { Download, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { TitleButton } from './CloudAccount';
-import { Hint } from './ui';
+import { TitleIcon } from './CloudAccount';
 
 const DISMISS_KEY = 'oath-banner-pwa-dismiss';
 
@@ -55,23 +54,18 @@ export function InstallPrompt() {
   if (!deferred && !showIos) return null;
 
   return (
-    <div className="mx-auto w-full max-w-md rounded-xl border border-white/15 bg-black/55 px-3 py-3 text-left backdrop-blur-sm">
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1 text-sm font-bold text-stone-100">
-            설치
-            <Hint text={deferred ? '앱처럼 바로 열고, 오프라인에서도 이어집니다.' : 'Safari 공유 → 홈 화면에 추가'} />
-          </p>
-        </div>
-        <button type="button" aria-label="닫기" onClick={dismiss} className="rounded-lg p-1 text-stone-400 hover:bg-white/10 hover:text-stone-200">
-          <X size={16} />
-        </button>
-      </div>
-      {deferred && (
-        <div className="mt-3 flex justify-center">
-          <TitleButton color="white" icon={Download} onClick={() => { void install(); }}>설치</TitleButton>
-        </div>
-      )}
-    </div>
+    <span className="relative">
+      <TitleIcon
+        label="설치"
+        title={deferred ? '홈 화면에 설치' : 'Safari 공유 → 홈 화면에 추가'}
+        onClick={() => { if (deferred) void install(); }}
+      >
+        <Download size={16} />
+      </TitleIcon>
+      <button type="button" aria-label="닫기" onClick={dismiss}
+        className="absolute -right-1 -top-1 rounded-full bg-black/80 p-0.5 text-white/80">
+        <X size={12} />
+      </button>
+    </span>
   );
 }

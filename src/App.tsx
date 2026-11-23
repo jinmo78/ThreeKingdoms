@@ -119,7 +119,7 @@ function LandShell() {
     <div className="fixed inset-0 bg-[#140e0c]">
       {/* 바탕: 원정 지도 전체 화면. 전투 때만 종이 판 위에 전투 화면 */}
       {inBattle ? (
-        <main className="scroll-sheet absolute inset-x-1.5 bottom-1.5 top-11 overflow-y-auto rounded-xl p-2"><BattlePage /></main>
+        <main className="scroll-sheet absolute inset-x-1.5 bottom-1.5 top-11 overflow-hidden rounded-xl p-2"><BattlePage /></main>
       ) : (
         <div className="absolute inset-0"><Campaign /></div>
       )}
@@ -161,7 +161,7 @@ function LandShell() {
       {/* 편성·도전·등용·장수록: 출진처럼 화면 전체를 채우는 페이지 (오른쪽 메뉴 열은 그대로) */}
       {modalTab && (
         <main className="scroll-sheet absolute bottom-1.5 left-[max(0.375rem,env(safe-area-inset-left))] right-[calc(3.75rem+env(safe-area-inset-right))] top-11 z-10 overflow-hidden rounded-xl p-2">
-          <div className="h-full overflow-y-auto">
+          <div className="h-full min-h-0 overflow-hidden">
             {view === 'formation' && <Formation />}
             {view === 'recruit' && <Recruit />}
             {view === 'roster' && <Roster />}

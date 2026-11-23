@@ -36,7 +36,7 @@ export default function Challenge() {
 
   if (land) {
     return (
-      <div className="flex h-full flex-col gap-1.5">
+      <div className="flex h-full min-h-0 flex-col gap-1.5 overflow-hidden">
         <div className="flex shrink-0 gap-1 self-start rounded-xl bg-stone-950/80 p-1">
           <TabBtn active={tab === 'conquest'} onClick={() => setTab('conquest')}>
             {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 토벌전
@@ -170,9 +170,29 @@ function Practice({ slips }: { slips?: Slip[] }) {
 
   if (land) {
     return (
-      <div className="grid h-full grid-cols-[17rem_minmax(0,1fr)] gap-2">
-        <div className="min-h-0 min-w-0 space-y-2 overflow-y-auto">{testPanels}{setupPanels}</div>
-        <div className="min-h-0 min-w-0 overflow-y-auto"><EditorSection enemy={enemyProf} /></div>
+      <div className="grid h-full min-h-0 grid-cols-[13.5rem_minmax(0,1fr)] gap-1.5 overflow-hidden">
+        <div className="flex min-h-0 flex-col gap-1 overflow-hidden">
+          <div className="flex flex-wrap gap-1">
+            {ARMY_THEMES.map((t) => (
+              <Chip key={t} active={practice.theme === t} onClick={() => setPractice({ theme: t })}>{themeLabel(t)}</Chip>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {DIFFS.map((d) => (
+              <Chip key={d.value} active={practice.diff === d.value} onClick={() => setPractice({ diff: d.value })}>{d.label}</Chip>
+            ))}
+            <Btn size="sm" variant="ghost" onClick={() => setPractice({ seed: randomSeed() })}><Dices size={13} /></Btn>
+          </div>
+          {mine.length > 0 && <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />}
+          <div className="grid grid-cols-2 gap-1">
+            <Btn size="sm" disabled={mine.length === 0} onClick={() => startPractice(enemies, `모의전 · ${themeLabel(practice.theme)}`)}><Eye size={14} /> 관전</Btn>
+            <Btn size="sm" variant="gold" onClick={measure} disabled={measuring || mine.length === 0}><BarChart3 size={14} /> {measuring ? '측정' : '100전'}</Btn>
+          </div>
+          <CounterFormationButton enemies={enemies} unlocked size="sm" className="w-full" />
+          <EnemyLineup units={enemyProf} />
+          {log[0] && <p className="truncate text-[11px] font-bold text-stone-300">{Math.round(log[0].winRate * 100)}% · {log[0].commanders}</p>}
+        </div>
+        <div className="min-h-0 overflow-hidden"><EditorSection enemy={enemyProf} /></div>
       </div>
     );
   }
@@ -275,9 +295,30 @@ function Conquest({ slips }: { slips?: Slip[] }) {
 
   if (land) {
     return (
-      <div className="grid h-full grid-cols-[17rem_minmax(0,1fr)] gap-2">
-        <div className="min-h-0 min-w-0 space-y-2 overflow-y-auto">{asidePanels}{recordBox}</div>
-        <div className="min-h-0 min-w-0 overflow-y-auto"><EditorSection enemy={enemyProf} /></div>
+      <div className="grid h-full min-h-0 grid-cols-[13.5rem_minmax(0,1fr)] gap-1.5 overflow-hidden">
+        <div className="flex min-h-0 flex-col gap-1 overflow-hidden">
+          <div className="flex items-center gap-2">
+            <Crown size={18} className="shrink-0 text-amber-300" />
+            <span className="font-serif text-lg font-black text-amber-200">{best}층</span>
+            <span className="truncate text-[10px] text-stone-400">{upcoming.map((u) => `${u.f}${u.boss ? '👑' : ''}`).join(' ')}</span>
+          </div>
+          <Btn size="sm" className="w-full" disabled={mine.length === 0} onClick={() => startConquest()}>
+            <Swords size={15} /> {floor.floor}층
+          </Btn>
+          <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
+          <CounterFormationButton
+            enemies={floor.enemies}
+            unlocked={failFloor === floor.floor}
+            lockedNote="이 층에서 1회 패배 후 개방"
+            size="sm"
+            className="w-full"
+          />
+          <EnemyLineup units={enemyProf} />
+          <p className="truncate text-[10px] font-bold text-stone-400">
+            Lv.{floor.level} · 금 {floor.reward.gold} · EXP {floor.reward.exp}{floor.boss ? ' · 보스' : ''}
+          </p>
+        </div>
+        <div className="min-h-0 overflow-hidden"><EditorSection enemy={enemyProf} /></div>
       </div>
     );
   }
@@ -297,7 +338,7 @@ function Conquest({ slips }: { slips?: Slip[] }) {
 function EditorSection({ enemy }: { enemy: UnitProfile[] }) {
   const land = useLandscape();
   return (
-    <section className="space-y-2">
+    <section className={land ? 'h-full min-h-0 overflow-hidden' : 'space-y-2'}>
       <div className={land ? 'hidden' : undefined}>
         <h3 className="flex items-center gap-1.5 font-serif text-lg font-black"><Swords size={16} className="text-red-300" /> 내 부대 편성</h3>
       </div>

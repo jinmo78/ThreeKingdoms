@@ -80,8 +80,8 @@ export default function BattlePage() {
   const showBanner = ev.kind === 'skill' || ev.kind === 'chain';
 
   return (
-    <div className="mx-auto max-w-5xl space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-5xl space-y-3 land:flex land:h-full land:min-h-0 land:max-w-none land:flex-col land:gap-1.5 land:space-y-0 land:overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between">
         <div>
           <div className="text-xs text-stone-500">{battle.subtitle}</div>
           <h2 className="font-serif text-xl font-black">{battle.title}</h2>
@@ -98,10 +98,10 @@ export default function BattlePage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px] land:grid-cols-[minmax(0,1fr)_12rem]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_300px] land:min-h-0 land:flex-1 land:grid-cols-[minmax(0,1fr)_11rem] land:gap-1.5 land:overflow-hidden">
         {/* 전장. 적군이 위, 아군이 아래, 가운데가 컷인 */}
         <div
-          className="battle-stage relative overflow-hidden rounded-2xl border border-[#C6A15B]/40 bg-[#171513] p-2 sm:p-3"
+          className="battle-stage relative min-h-0 overflow-hidden rounded-2xl border border-[#C6A15B]/40 bg-[#171513] p-2 sm:p-3 land:flex land:flex-col land:justify-center land:p-1.5"
           style={{ '--battle-speed': speed } as CSSProperties}
         >
           <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-80" />
@@ -134,7 +134,7 @@ export default function BattlePage() {
         </div>
 
         {/* 전투 기록 */}
-        <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-[#C6A15B]/35 bg-[#F3ECE0]/90 p-2 text-xs text-[#3a332c] lg:max-h-[560px] land:max-h-[60dvh] dark:bg-[#221E1A]/90 dark:text-[#E7DCC8]">
+        <div ref={logRef} className="max-h-48 space-y-1 overflow-y-auto rounded-2xl border border-[#C6A15B]/35 bg-[#F3ECE0]/90 p-2 text-xs text-[#3a332c] lg:max-h-[560px] land:h-full land:max-h-none land:overflow-hidden dark:bg-[#221E1A]/90 dark:text-[#E7DCC8]">
           <div className="mb-1 flex justify-end">
             <button type="button" aria-pressed={rawLog} onClick={() => setRawLog((v) => !v)}
               className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold', rawLog ? 'bg-[#8e2a22] text-[#F8E7D2]' : 'bg-[#1b1713]/10')}>
@@ -204,7 +204,7 @@ function CenterStage({
   const n = (ev.chainStep ?? 0) + 1;
   const hex = casterHex(units, ev);
   return (
-    <div className="relative my-2 flex min-h-24 items-center justify-center overflow-hidden sm:min-h-28">
+    <div className="relative my-2 flex min-h-24 items-center justify-center overflow-hidden sm:min-h-28 land:my-0.5 land:min-h-8">
       <div className="absolute inset-x-4 top-1/2 h-px bg-gradient-to-r from-transparent via-[#B8382E] to-transparent" />
       {showBanner ? (
         <div key={ev.id} className="ink-cutin relative z-10 w-full max-w-[18rem] px-2 sm:max-w-md">
@@ -354,8 +354,8 @@ function ResultOverlay({
   onRetry: () => void; onNext?: () => void; nextTitle?: string; onFormation: () => void; onCampaign: () => void; backLabel: string;
 }) {
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80">
-      <div className="flex min-h-full items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 land:overflow-hidden">
+      <div className="flex min-h-full items-center justify-center p-4 land:h-full land:min-h-0 land:p-2">
       <div className="animate-pop-in w-full max-w-sm rounded-2xl border border-stone-700 bg-stone-900 p-5 text-center">
         {win ? <Trophy size={40} className="mx-auto text-amber-300" /> : <RotateCcw size={36} className="mx-auto text-stone-400" />}
         <div className={cn('mt-2 font-serif text-3xl font-black', win ? 'text-amber-200' : 'text-stone-300')}>{win ? '승리' : '패배'}</div>

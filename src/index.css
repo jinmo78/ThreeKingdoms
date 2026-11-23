@@ -94,6 +94,19 @@ body,
   min-height: 100%;
 }
 
+/* 폰 가로: 문서 자체가 아래로 늘어나 스크롤되지 않는다 */
+@media (orientation: landscape) and (max-height: 500px) {
+  html, body, #root {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  .missive.is-open .sheet { height: 13.5rem; }
+  .missive.is-solo .sheet { height: 16rem; }
+  .scroll-sheet section > header { padding: 0.35rem 0.65rem; }
+  .scroll-sheet section > div { padding: 0.5rem; }
+}
+
 body {
   background:
     radial-gradient(900px 420px at 50% -8%, rgba(198, 161, 91, 0.16), transparent 55%),

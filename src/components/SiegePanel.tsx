@@ -7,7 +7,7 @@ import {
   TACTICS, TACTIC_LIST, TERRAINS, WEATHERS, reinforceChance, tacticEffect, terrainOf, weatherAt, type Tactic,
 } from '../engine/tactics';
 import type { UnitProfile } from '../engine/unit';
-import { cn } from './ui';
+import { cn, useLandscape } from './ui';
 
 /** busy: 행군 중 · 수비 중 같은 사유 (출정 불가) */
 export interface SquadRow { idx: number; p: UnitProfile; r: number; busy: string | false }
@@ -110,6 +110,7 @@ export function SiegePanel({ squads, garrison, picks, onToggle }: {
   squads: SquadRow[]; garrison: GarrisonRow[]; picks: Set<number>; onToggle: (idx: number) => void;
 }) {
   const wounded = garrison.some((g) => g.r < 0.999);
+  const land = useLandscape();
   return (
     <div className="mt-3 space-y-2.5 text-xs">
       <div>
@@ -117,7 +118,7 @@ export function SiegePanel({ squads, garrison, picks, onToggle }: {
           <b className="font-serif text-[13px]">出征 출정 부대</b>
           <span className="text-[10px] opacity-60">분할 가능</span>
         </div>
-        <div className="space-y-1">
+        <div className={land ? 'grid grid-cols-3 gap-1' : 'space-y-1'}>
           {squads.map(({ idx, p, r, busy }) => {
             const ready = r >= MIN_SORTIE && !busy;
             const on = ready && picks.has(idx);

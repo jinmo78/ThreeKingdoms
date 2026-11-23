@@ -46,7 +46,7 @@ export default function Roster() {
 
       {tab === 'generals' && (
         <>
-          <div className="flex flex-wrap items-center gap-1">
+          <div className="flex shrink-0 flex-wrap items-center gap-1 land:flex-nowrap land:overflow-x-auto">
             <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
             {([['all', '전체'], ['owned', '등용'], ['missing', '미등용']] as const).map(([id, label]) => (
               <button key={id} type="button" onClick={() => setOwnFilter(id)}
@@ -136,13 +136,13 @@ export default function Roster() {
 
       {tab === 'bonds' && (
         <>
-          <div className="space-y-2 sm:hidden">
+          <div className="space-y-2 overflow-x-auto sm:hidden land:flex! land:flex-nowrap land:gap-2 land:space-y-0">
             {BONDS.map((b) => {
               const members = bondMembers(b.id);
               const ownedN = members.filter((g) => roster[g.id]).length;
               return (
                 <button key={b.id} type="button" onClick={() => setBondId(b.id)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-stone-800 bg-stone-900/60 px-3 py-2.5 text-left">
+                  className="flex w-full shrink-0 items-center justify-between gap-3 rounded-xl border border-stone-800 bg-stone-900/60 px-3 py-2.5 text-left land:w-44">
                   <span className="min-w-0">
                     <span className="block truncate font-serif font-black text-amber-200">{b.id}</span>
                     <span className="block truncate text-[11px] text-stone-500">{b.desc}</span>
@@ -158,7 +158,7 @@ export default function Roster() {
               </button>
             )}
           </div>
-          <div className="hidden gap-3 sm:grid md:grid-cols-2">
+          <div className="hidden gap-3 sm:grid land:hidden! md:grid-cols-2">
             {BONDS.map((b) => <BondCard key={b.id} bond={b} roster={roster} onPick={setDetail} />)}
             {land && (
               <div className="rounded-2xl border border-dashed border-stone-700 p-3 text-xs text-stone-400 md:col-span-2">
@@ -192,7 +192,7 @@ export default function Roster() {
     </>
   );
 
-  if (land) return <div className="space-y-1.5">{page}</div>;
+  if (land) return <div className="flex h-full min-h-0 flex-col gap-1 overflow-hidden">{page}</div>;
 
   return (
     <Desk

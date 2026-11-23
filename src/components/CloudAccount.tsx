@@ -15,19 +15,50 @@ const TITLE_COLOR = {
 } as const;
 
 export function TitleButton({
-  color, children, onClick, disabled, icon: Icon,
+  color, children, onClick, disabled, icon: Icon, className,
 }: {
   color: keyof typeof TITLE_COLOR;
   children: ReactNode;
   onClick?: () => void;
   disabled?: boolean;
   icon?: LucideIcon;
+  className?: string;
 }) {
   return (
-    <button type="button" disabled={disabled} onClick={onClick} className={cn(TITLE_BTN, TITLE_COLOR[color])}>
+    <button type="button" disabled={disabled} onClick={onClick} className={cn(TITLE_BTN, TITLE_COLOR[color], className)}>
       {Icon && <Icon size={18} />}
       {children}
     </button>
+  );
+}
+
+/** 첫 화면의 보조 동작. 긴 문장 대신 아이콘과 짧은 단어. */
+export function TitleIcon({
+  label, title, onClick, disabled, children,
+}: {
+  label: string;
+  title?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button type="button" title={title ?? label} aria-label={title ?? label} disabled={disabled} onClick={onClick}
+      className="inline-flex h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-white/25 bg-black/50 px-2 text-[11px] font-bold text-white shadow-[0_6px_16px_-10px_rgba(0,0,0,0.8)] backdrop-blur-sm hover:bg-black/70 disabled:opacity-40">
+      {children}
+      <span className="whitespace-nowrap">{label}</span>
+    </button>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.8 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.2-3.5 5.7-6.7 7.2l6.3 5.3C37.4 38.3 44 33 44 24c0-1.3-.1-2.7-.4-3.5z" />
+    </svg>
   );
 }
 
@@ -72,20 +103,20 @@ export function CloudPanel() {
   if (conflict) return <ConflictBody />;
 
   return (
-    <div className="flex w-full max-w-md flex-col items-center gap-3">
+    <>
       {!user && (
         <>
-          <TitleButton color="white" icon={LogIn} disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정으로 로그인</TitleButton>
-          <TitleButton color="sky" disabled={busy} onClick={() => { void signInGuest(); }}>익명으로 로그인</TitleButton>
+          <TitleIcon label="구글" title="구글 계정으로 로그인" disabled={busy} onClick={() => { void signInGoogle(); }}><GoogleMark /></TitleIcon>
+          <TitleIcon label="익명" title="이 브라우저에만 저장" disabled={busy} onClick={() => { void signInGuest(); }}><UserRound size={16} /></TitleIcon>
         </>
       )}
       {user?.anonymous && (
-        <TitleButton color="white" icon={LogIn} disabled={busy} onClick={() => { void signInGoogle(); }}>구글 계정에 연결</TitleButton>
+        <TitleIcon label="연결" title="구글 계정에 연결" disabled={busy} onClick={() => { void signInGoogle(); }}><GoogleMark /></TitleIcon>
       )}
       {user && (
-        <TitleButton color="ink" icon={LogOut} disabled={busy} onClick={() => { void signOutCloud(); }}>로그아웃</TitleButton>
+        <TitleIcon label="로그아웃" disabled={busy} onClick={() => { void signOutCloud(); }}><LogOut size={16} /></TitleIcon>
       )}
-    </div>
+    </>
   );
 }
 

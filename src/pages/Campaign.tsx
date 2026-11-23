@@ -1021,7 +1021,7 @@ function Briefing({
   // 가로: 성을 누르면 오른쪽에 떠오르고 ✕로 닫는다 (오른쪽 메뉴 버튼 열은 피한다)
   if (land && !open) return null;
   return (
-    <div className={land ? cn('absolute bottom-2 top-12 z-10 flex min-h-0 w-72 flex-col',
+    <div className={land ? cn('absolute bottom-2 top-12 z-10 flex min-h-0 w-[min(46rem,calc(100%-4.75rem))] flex-col',
       // 오른쪽 절반(5장~)의 성을 눌렀을 땐 패널이 왼쪽에 떠서 눌린 성을 가리지 않는다
       Number(stageId.split('-')[0]) >= 5 ? 'left-[max(0.5rem,env(safe-area-inset-left))]' : 'right-[calc(3.75rem+env(safe-area-inset-right))]')
       : cn(!open && 'max-lg:hidden', "fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-h-[46dvh] w-[calc(100%-1.5rem)] max-w-lg flex-col lg:sticky lg:bottom-auto lg:top-20 lg:z-0 lg:mx-0 lg:max-h-[calc(100dvh-6rem)] lg:w-auto")}>
@@ -1051,10 +1051,10 @@ function Briefing({
           </div>
         </div>
 
-        <div key={stageId} className="animate-slide-in min-h-0 flex-1 overflow-y-auto px-6 pb-3">
-          <div className="ornate-rule"><i /></div>
+        <div key={stageId} className="animate-slide-in flex min-h-0 flex-1 flex-col overflow-y-auto px-6 pb-3 land:overflow-hidden land:px-4">
+          <div className="ornate-rule land:hidden"><i /></div>
 
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5 text-xs">
             <span>적 주장 <b className="font-serif">{leadName ?? '—'}</b></span>
             {troop && <span className="seal">{TROOP[troop].seal}</span>}
             <span className="opacity-70">{troop ? TROOP[troop].label : ''} {enemies.length}부대</span>
@@ -1078,9 +1078,10 @@ function Briefing({
             </div>
           )}
 
-          {children}
-
-          <CounterFormationButton enemies={stageEnemies} unlocked={fought} lockedNote="첫 전투 후 개방" className="mt-2 w-full" />
+          <div className="min-h-0 land:mt-2 land:flex land:flex-1 land:items-start land:gap-3 land:overflow-x-auto land:overflow-y-hidden land:[&>*]:mt-0! land:[&>*]:w-60 land:[&>*]:shrink-0 land:[&>*]:overflow-hidden">
+            {children}
+            <CounterFormationButton enemies={stageEnemies} unlocked={fought} lockedNote="첫 전투 후 개방" className="mt-2 w-full" />
+          </div>
         </div>
       </div>
       <Roller />

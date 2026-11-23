@@ -162,7 +162,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
   }
 
   return (
-    <div className={land ? 'space-y-1.5' : 'space-y-3'}>
+    <div className={land ? 'flex h-full min-h-0 flex-col gap-1 overflow-hidden' : 'space-y-3'}>
       <div className="flex flex-wrap items-center gap-2">
         <Btn variant="gold" size="sm" onClick={() => { autoForm(); setAutoNote(true); setTarget({ unit: 0, slot: 'commander' }); }}>
           <Wand2 size={14} /> 자동 편성 <span className="text-[10px] font-normal opacity-80">무료</span>
@@ -178,7 +178,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
 
       {!land && <PresetBar onLoaded={() => setTarget({ unit: 0, slot: 'commander' })} />}
 
-      <div className={cn('grid', land ? 'grid-cols-3 gap-1.5' : cn('gap-3', unitGridClass))}>
+      <div className={cn('grid', land ? 'min-h-0 flex-1 grid-cols-3 content-start gap-1.5 overflow-hidden' : cn('gap-3', unitGridClass))}>
         {formation.map((u, ui) => {
           if (!u) return null;
           const p = unitProfile(u, roster, gear);
