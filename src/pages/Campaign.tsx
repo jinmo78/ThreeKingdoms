@@ -4,7 +4,7 @@ import { Lock, Swords, X } from 'lucide-react';
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { CounterFormationButton } from '../components/CounterFormation';
 import { GearArt } from '../components/GearArt';
-import { DomainBar, DomainPanel } from '../components/DomainPanel';
+import { DomainBar, DomainPanel, ThreatBanner } from '../components/DomainPanel';
 import { MarchList, SiegePanel, TacticPicker } from '../components/SiegePanel';
 import { cn, useLandscape } from '../components/ui';
 import { GENERAL_MAP } from '../data/generals';
@@ -828,7 +828,7 @@ export default function Campaign() {
     const t = setInterval(() => setNow(Date.now()), marching ? 1000 : 4000);
     return () => clearInterval(t);
   }, [marching]);
-  // 도착한 부대·군주 위협이 있으면 전투를 푼다 (전투 화면이 열리면 이 페이지는 닫힌다)
+  // 도착한 아군 행군만 자동 전투. 군주 위협은 목록만 갱신하고 수락/자동 처리는 UI에서.
   useEffect(() => {
     const list = marches ?? [];
     if (list.some((m) => m.eta <= now)) resolveMarches();
@@ -884,6 +884,7 @@ export default function Campaign() {
       )}
       {!land && <div className="min-w-0">
         <div className="mb-3">
+          <ThreatBanner now={now} />
           <DomainBar castles={castles} now={now} />
           <div className="flex items-end justify-between gap-2">
             <h2 className="font-serif text-xl font-black tracking-wide">
@@ -929,7 +930,10 @@ export default function Campaign() {
       {land && (
         <>
           {/* 위 바 가운데: 영지 요약 한 줄 (바 위에 겹쳐 놓는다) */}
-          <div className="absolute left-[9.5rem] top-1 z-30"><DomainBar castles={castles} now={now} compact /></div>
+          <div className="absolute left-[9.5rem] top-1 z-30 flex max-w-[min(28rem,55vw)] flex-col gap-1">
+            <DomainBar castles={castles} now={now} compact />
+            <ThreatBanner now={now} />
+          </div>
           {/* 좌하단: 장비 드롭 필터 */}
           <div className="absolute bottom-3 left-[max(0.5rem,env(safe-area-inset-left))] z-20 flex gap-1">
             {FILTERS.map(([id, han, label]) => (

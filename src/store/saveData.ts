@@ -9,12 +9,12 @@ import { MAX_MARCHES, pruneWounds, type March, type Wounds } from '../engine/sie
 import { STAGE_MAP } from '../data/stages';
 import { TACTIC_LIST } from '../engine/tactics';
 import { CASTLE_MAX_LEVEL, type Castle } from '../engine/domain';
-import type { LordThreat } from '../engine/lords';
-import { LORDS } from '../engine/lords';
+import type { LordThreat, ThreatReport } from '../engine/lords';
+import { LORDS, THREAT_REPORT_MAX } from '../engine/lords';
 import type { GearSlot, OwnedGear, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 
 export interface FormationPreset {
   id: string;
@@ -58,6 +58,8 @@ export interface SaveData {
   lastThreatAt: number;
   /** 주의 군령 보상을 받은 주 키 (YYYY-Www) */
   decreeClaimWeek: string;
+  /** AI 군주 공성 전보 (최근 N건, 전투 로그 없음) */
+  threatReports: ThreatReport[];
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
@@ -92,6 +94,7 @@ export function freshSave(): SaveData {
     threats: [],
     lastThreatAt: 0,
     decreeClaimWeek: '',
+    threatReports: [],
   };
 }
 
@@ -230,7 +233,34 @@ export function sanitizeSave(raw: unknown): SaveData {
     decreeClaimWeek: typeof src.decreeClaimWeek === 'string' && /^[\d]{4}-W[\d]{2}$/.test(src.decreeClaimWeek)
       ? src.decreeClaimWeek
       : '',
+    threatReports: sanitizeThreatReports(src.threatReports),
   };
+}
+
+function sanitizeThreatReports(raw: unknown): ThreatReport[] {
+  if (!Array.isArray(raw)) return [];
+  const lordIds = new Set(LORDS.map((l) => l.id));
+  const out: ThreatReport[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const r = item as Partial<ThreatReport>;
+    if (typeof r.id !== 'string' || !/^[\w-]{1,40}$/.test(r.id)) continue;
+    if (typeof r.stageId !== 'string' || !STAGE_MAP[r.stageId]) continue;
+    if (typeof r.lordId !== 'string' || !lordIds.has(r.lordId)) continue;
+    if (typeof r.win !== 'boolean') continue;
+    if (typeof r.at !== 'number' || !Number.isFinite(r.at)) continue;
+    out.push({
+      id: r.id,
+      stageId: r.stageId,
+      lordId: r.lordId,
+      win: r.win,
+      levelBefore: clampInt(r.levelBefore, 1, CASTLE_MAX_LEVEL, 1),
+      levelAfter: clampInt(r.levelAfter, 1, CASTLE_MAX_LEVEL, 1),
+      at: Math.floor(r.at),
+    });
+    if (out.length >= THREAT_REPORT_MAX) break;
+  }
+  return out;
 }
 
 function sanitizeThreats(raw: unknown, cleared: Record<string, number>): LordThreat[] {
@@ -374,6 +404,9 @@ export function migrateSave(persisted: unknown, version: number): SaveData {
     if (typeof src.lastThreatAt !== 'number') src.lastThreatAt = 0;
     if (typeof src.decreeClaimWeek !== 'string') src.decreeClaimWeek = '';
   }
+  if (version < 16) {
+    if (!Array.isArray(src.threatReports)) src.threatReports = [];
+  }
   return sanitizeSave(src);
 }
 
@@ -400,6 +433,7 @@ export function pickSave(s: SaveData): SaveData {
     threats: s.threats,
     lastThreatAt: s.lastThreatAt,
     decreeClaimWeek: s.decreeClaimWeek,
+    threatReports: s.threatReports,
   };
 }
 

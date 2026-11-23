@@ -1,6 +1,6 @@
 # 아키텍처 의존성 및 절대 불변 규칙
 
-기준: 2026-11-23, `SAVE_VERSION` 15. 기능을 넣을 때 여기의 불변 조건을 먼저 본다. 수치 원본은 `docs/GAME_DESIGN_SPEC.md`.
+기준: 2026-11-23, `SAVE_VERSION` 16. 기능을 넣을 때 여기의 불변 조건을 먼저 본다. 수치 원본은 `docs/GAME_DESIGN_SPEC.md`.
 
 ---
 
@@ -29,7 +29,7 @@ pages, components   화면과 입력만
 
 키 `oath-banner-save`. Zustand `persist` + `saveData.ts`.
 
-`SaveData` 필드: `started`, `gold`, `roster`, `formation`, `cleared`, `fought`, `totalPulls`, `conquestBest`, `conquestFailFloor`, `freePulls`, `freeGrantDay`, `attendDay`, `attendStreak`, `presets`, `gear`, `wounds`, `marches`, `castles`, `threats`, `lastThreatAt`, `decreeClaimWeek`.
+`SaveData` 필드: `started`, `gold`, `roster`, `formation`, `cleared`, `fought`, `totalPulls`, `conquestBest`, `conquestFailFloor`, `freePulls`, `freeGrantDay`, `attendDay`, `attendStreak`, `presets`, `gear`, `wounds`, `marches`, `castles`, `threats`, `lastThreatAt`, `decreeClaimWeek`, `threatReports`.
 
 필드를 추가·이름 변경·의미 변경하면 아래를 **같이** 고친다.
 
@@ -55,6 +55,7 @@ pages, components   화면과 입력만
 | &lt; 11 | 장비 `count: 1` |
 | 12~14 | 별도 분기 없이 `sanitizeSave`가 빈 `wounds` / `marches` / `castles`를 채운다 |
 | &lt; 15 | `threats` / `lastThreatAt` / `decreeClaimWeek` 기본값 |
+| &lt; 16 | `threatReports` 빈 배열 |
 
 점령 성 소급은 `migrate`가 아니라 실행 중 `ensureCastles`다. `since = 지금`이라 과거분 금화가 생기지 않는다. 여기를 점령 시각 추정으로 바꾸면 옛 저장에 금화가 몰린다.
 

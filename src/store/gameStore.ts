@@ -27,7 +27,8 @@ import {
 } from '../engine/siege';
 import { expToNext, maxLevel, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity } from '../engine/unit';
 import {
-  applyThreatResult, ensureThreats, lordArmy, lordById, type LordThreat,
+  appendThreatReport, applyThreatResult, ensureThreats, lordArmy, lordById,
+  type LordThreat, type ThreatReport,
 } from '../engine/lords';
 import { decreeFormationOk, decreeOfWeek, decreeTroopOk } from '../engine/decree';
 
@@ -149,8 +150,12 @@ interface GameState extends SaveData {
   setGarrison: (stageId: string, unitIdx: number | null) => boolean;
   /** 도착한 부대가 있으면 전투를 계산해 전투 화면을 연다 */
   resolveMarches: () => boolean;
-  /** 8-3 이후 군주 위협을 갱신·도착 처리. 전투가 열리면 true */
+  /** 8-3 이후 군주 위협만 갱신(도착해도 전투창을 열지 않음) */
   tickThreats: () => boolean;
+  /** 도착한 위협을 수락해 전투 화면으로 본다 */
+  acceptThreat: (id: string) => boolean;
+  /** 도착한 위협을 자동 처리하고 전보만 남긴다 */
+  autoResolveThreat: (id: string) => boolean;
   /** 모의전 관전 (보상 없음) */
   startPractice: (enemies: EnemyUnit[], title: string) => boolean;
   /** 천하 토벌전 다음 층 도전 */
@@ -161,6 +166,7 @@ interface GameState extends SaveData {
   threats: LordThreat[];
   lastThreatAt: number;
   decreeClaimWeek: string;
+  threatReports: ThreatReport[];
   /** 모의전 설정과 100전 측정 기록 (저장 안 함) */
   practice: PracticeSettings;
   setPractice: (p: Partial<PracticeSettings>) => void;
@@ -287,6 +293,65 @@ function siegeBattle(s: GameState, march: March, now: number): Partial<GameState
   };
 }
 
+/** 도착한 군주 공성 1건을 계산. watch면 전투 화면, 아니면 전보만 */
+function settleThreat(s: GameState, id: string, watch: boolean): Partial<GameState> | null {
+  if (s.battle) return null;
+  const now = Date.now();
+  const due = (s.threats ?? []).find((t) => t.id === id && t.eta <= now);
+  if (!due) return null;
+  const castle = s.castles[due.stageId];
+  const lord = lordById(due.lordId);
+  const imprint = imprintBonus(s.conquestBest);
+  const enemies = lordArmy(due);
+  const enemyProf = enemyUnitsToProfiles(enemies);
+  let win = false;
+  let result: BattleResult;
+  if (castle?.garrison) {
+    const mine = unitProfile(castle.garrison, s.roster, s.gear, imprint);
+    if (mine) {
+      result = simulateBattle([mine], enemyProf, randomSeed());
+      win = result.win;
+    } else {
+      result = { ...simulateBattle(enemyProf.slice(0, 1), enemyProf, randomSeed()), win: false };
+    }
+  } else {
+    result = { ...simulateBattle(enemyProf.slice(0, 1), enemyProf, randomSeed()), win: false };
+  }
+  const levelBefore = castle?.level ?? 1;
+  const nextCastle = castle ? applyThreatResult(castle, win) : null;
+  const castles = nextCastle
+    ? { ...s.castles, [due.stageId]: nextCastle }
+    : s.castles;
+  const report: ThreatReport = {
+    id: `r${now.toString(36)}${due.id}`,
+    stageId: due.stageId,
+    lordId: due.lordId,
+    win,
+    levelBefore,
+    levelAfter: nextCastle?.level ?? levelBefore,
+    at: now,
+  };
+  const base: Partial<GameState> = {
+    threats: (s.threats ?? []).filter((t) => t.id !== due.id),
+    castles,
+    threatReports: appendThreatReport(s.threatReports ?? [], report),
+    focusStage: due.stageId,
+  };
+  if (!watch) return base;
+  return {
+    ...base,
+    battle: {
+      mode: 'practice',
+      title: `${lord?.name ?? '군주'}의 공성`,
+      subtitle: win ? `${due.stageId} 수비 성공` : `${due.stageId} 성 Lv−1`,
+      enemies,
+      result,
+      reward: null,
+    },
+    view: 'battle',
+  };
+}
+
 export const useGame = create<GameState>()(
   persist(
     (set, get) => ({
@@ -311,6 +376,7 @@ export const useGame = create<GameState>()(
       threats: [],
       lastThreatAt: 0,
       decreeClaimWeek: '',
+      threatReports: [],
       view: 'campaign',
       battle: null,
       entered: false,
@@ -603,55 +669,24 @@ export const useGame = create<GameState>()(
         if (s.battle) return false;
         const now = Date.now();
         const planned = ensureThreats(s.cleared ?? {}, s.castles ?? {}, s.threats ?? [], now, s.lastThreatAt ?? 0);
-        let threats = planned.threats;
-        const lastThreatAt = planned.lastThreatAt;
-        const due = threats.filter((t) => t.eta <= now).sort((a, b) => a.eta - b.eta)[0];
-        if (!due) {
-          // 참조만 바뀐 동일 목록은 set하지 않음 (Campaign useEffect 무한 루프 방지)
-          if (threats !== s.threats || lastThreatAt !== s.lastThreatAt) {
-            set({ threats, lastThreatAt });
-          }
-          return false;
+        if (planned.threats !== s.threats || planned.lastThreatAt !== s.lastThreatAt) {
+          set({ threats: planned.threats, lastThreatAt: planned.lastThreatAt });
+          return true;
         }
-        const castle = s.castles[due.stageId];
-        const lord = lordById(due.lordId);
-        const imprint = imprintBonus(s.conquestBest);
-        const enemies = lordArmy(due);
-        const enemyProf = enemyUnitsToProfiles(enemies);
-        let win = false;
-        let result: ReturnType<typeof simulateBattle>;
-        if (castle?.garrison) {
-          const mine = unitProfile(castle.garrison, s.roster, s.gear, imprint);
-          if (mine) {
-            result = simulateBattle([mine], enemyProf, randomSeed());
-            win = result.win;
-          } else {
-            result = simulateBattle(enemyProf.slice(0, 1), enemyProf, randomSeed());
-            result = { ...result, win: false };
-          }
-        } else {
-          result = simulateBattle(enemyProf.slice(0, 1), enemyProf, randomSeed());
-          result = { ...result, win: false };
-        }
-        const castles = castle
-          ? { ...s.castles, [due.stageId]: applyThreatResult(castle, win) }
-          : s.castles;
-        threats = threats.filter((t) => t.id !== due.id);
-        set({
-          threats,
-          lastThreatAt,
-          castles,
-          battle: {
-            mode: 'practice',
-            title: `${lord?.name ?? '군주'}의 공성`,
-            subtitle: win ? `${due.stageId} 수비 성공` : `${due.stageId} 성 Lv−1`,
-            enemies,
-            result,
-            reward: null,
-          },
-          view: 'battle',
-          focusStage: due.stageId,
-        });
+        return false;
+      },
+
+      acceptThreat: (id) => {
+        const fought = settleThreat(get(), id, true);
+        if (!fought) return false;
+        set(fought);
+        return true;
+      },
+
+      autoResolveThreat: (id) => {
+        const fought = settleThreat(get(), id, false);
+        if (!fought) return false;
+        set(fought);
         return true;
       },
 

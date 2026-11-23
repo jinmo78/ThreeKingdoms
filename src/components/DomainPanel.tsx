@@ -1,13 +1,14 @@
 // 내정: 점령한 성의 수입 징수 · 투자 · 수비 부대, 그리고 지도 위쪽의 영지 요약줄
-import { Coins } from 'lucide-react';
+import { Coins, ScrollText, Swords } from 'lucide-react';
 import { useState } from 'react';
-import { stageIndex } from '../data/stages';
+import { STAGE_MAP, stageIndex } from '../data/stages';
 import {
   CASTLE_MAX_LEVEL, STORE_CAP_HOURS, accrued, incomePerHour, upgradeCost, type Castle,
 } from '../engine/domain';
+import { arrivedThreats, lordById } from '../engine/lords';
 import { useGame } from '../store/gameStore';
 import type { SquadRow } from './SiegePanel';
-import { cn } from './ui';
+import { Btn, Modal, cn } from './ui';
 
 const fmt = (n: number) => Math.floor(n).toLocaleString('ko-KR');
 
@@ -15,44 +16,125 @@ const fmt = (n: number) => Math.floor(n).toLocaleString('ko-KR');
 export function DomainBar({ castles, now, compact }: { castles: Record<string, Castle>; now: number; compact?: boolean }) {
   const collectGold = useGame((s) => s.collectGold);
   const threats = useGame((s) => s.threats) ?? [];
+  const reports = useGame((s) => s.threatReports) ?? [];
   const [msg, setMsg] = useState('');
+  const [logOpen, setLogOpen] = useState(false);
   const list = Object.entries(castles ?? {});
   if (list.length === 0) return null;
   const income = list.reduce((n, [id, c]) => n + incomePerHour(stageIndex(id), c), 0);
   const stored = list.reduce((n, [id, c]) => n + accrued(stageIndex(id), c, now), 0);
   const threatN = threats.filter((t) => castles[t.stageId]).length;
+  const dueN = arrivedThreats(threats, now).length;
   if (compact) {
     // 가로 화면 위 바용 한 줄
     return (
-      <div className="flex h-8 items-center gap-2 rounded-full border border-[#C6A15B]/50 bg-[#1b1713] py-0.5 pl-3 pr-0.5 text-[11px] text-[#E7DCC8]">
-        <span>🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>/시{threatN > 0 && <b className="ml-1 text-red-300">⚔{threatN}</b>}</span>
-        <button
-          type="button"
-          disabled={stored < 1}
-          onClick={() => { const got = collectGold(); setMsg(got ? `+${fmt(got)}` : ''); setTimeout(() => setMsg(''), 2000); }}
-          className="tabular flex h-full items-center gap-1 rounded-full bg-[#8e2a22] px-2.5 font-bold text-[#fff4d6] disabled:opacity-40"
-        >
-          <Coins size={11} /> {msg ? <b className="text-emerald-200">{msg}</b> : `징수 ${fmt(stored)}`}
-        </button>
-      </div>
+      <>
+        <div className="flex h-8 items-center gap-2 rounded-full border border-[#C6A15B]/50 bg-[#1b1713] py-0.5 pl-3 pr-0.5 text-[11px] text-[#E7DCC8]">
+          <span>🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>/시{threatN > 0 && <b className="ml-1 text-red-300">⚔{threatN}{dueN > 0 ? `·대기${dueN}` : ''}</b>}</span>
+          {reports.length > 0 && (
+            <button type="button" onClick={() => setLogOpen(true)} className="rounded-full px-1.5 text-amber-200/90" aria-label="공성 전보">
+              <ScrollText size={12} />
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={stored < 1}
+            onClick={() => { const got = collectGold(); setMsg(got ? `+${fmt(got)}` : ''); setTimeout(() => setMsg(''), 2000); }}
+            className="tabular flex h-full items-center gap-1 rounded-full bg-[#8e2a22] px-2.5 font-bold text-[#fff4d6] disabled:opacity-40"
+          >
+            <Coins size={11} /> {msg ? <b className="text-emerald-200">{msg}</b> : `징수 ${fmt(stored)}`}
+          </button>
+        </div>
+        {logOpen && <ThreatLogModal onClose={() => setLogOpen(false)} />}
+      </>
     );
   }
   return (
-    <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-[#1b1713]/85 px-3 py-1.5 text-xs text-[#E7DCC8]">
-      <span className="min-w-0 font-bold">
-        🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>/시
-        {threatN > 0 && <b className="ml-2 text-red-300">군주 위협 {threatN}</b>}
-        {msg && <b className="ml-2 text-emerald-300">{msg}</b>}
-      </span>
-      <button
-        type="button"
-        disabled={stored < 1}
-        onClick={() => { const got = collectGold(); setMsg(got ? `+${fmt(got)}금 징수` : ''); setTimeout(() => setMsg(''), 2500); }}
-        className="tabular flex shrink-0 items-center gap-1 rounded-md bg-[#8e2a22] px-2.5 py-1 font-bold text-[#fff4d6] disabled:opacity-40"
-      >
-        <Coins size={12} /> 징수 {fmt(stored)}
-      </button>
+    <>
+      <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-[#1b1713]/85 px-3 py-1.5 text-xs text-[#E7DCC8]">
+        <span className="min-w-0 font-bold">
+          🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>/시
+          {threatN > 0 && <b className="ml-2 text-red-300">위협 {threatN}{dueN > 0 ? ` · 대기 ${dueN}` : ''}</b>}
+          {msg && <b className="ml-2 text-emerald-300">{msg}</b>}
+        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          {reports.length > 0 && (
+            <button type="button" onClick={() => setLogOpen(true)} className="rounded-md border border-[#C6A15B]/40 px-2 py-1 font-bold text-amber-200/90">
+              전보 {reports.length}
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={stored < 1}
+            onClick={() => { const got = collectGold(); setMsg(got ? `+${fmt(got)}금 징수` : ''); setTimeout(() => setMsg(''), 2500); }}
+            className="tabular flex items-center gap-1 rounded-md bg-[#8e2a22] px-2.5 py-1 font-bold text-[#fff4d6] disabled:opacity-40"
+          >
+            <Coins size={12} /> 징수 {fmt(stored)}
+          </button>
+        </div>
+      </div>
+      {logOpen && <ThreatLogModal onClose={() => setLogOpen(false)} />}
+    </>
+  );
+}
+
+/** 도착한 군주 공성 — 수락(전투) / 자동 처리(전보) */
+export function ThreatBanner({ now }: { now: number }) {
+  const threats = useGame((s) => s.threats) ?? [];
+  const acceptThreat = useGame((s) => s.acceptThreat);
+  const autoResolveThreat = useGame((s) => s.autoResolveThreat);
+  const due = arrivedThreats(threats, now)[0];
+  if (!due) return null;
+  const lord = lordById(due.lordId);
+  const title = STAGE_MAP[due.stageId]?.title ?? due.stageId;
+  const rest = arrivedThreats(threats, now).length - 1;
+  return (
+    <div className="mb-2 rounded-xl border border-red-500/50 bg-[#2a1210]/95 px-3 py-2 text-xs text-[#F3ECE0] shadow-lg">
+      <div className="font-bold text-red-200">
+        {lord?.name ?? '군주'}가 {title}을(를) 공격 중
+        {rest > 0 && <span className="ml-1 font-normal text-stone-400">외 {rest}건</span>}
+      </div>
+      <p className="mt-0.5 text-[11px] text-stone-400">수락하면 전투를 보고, 자동 처리하면 결과만 전보에 남습니다.</p>
+      <div className="mt-2 flex gap-2">
+        <Btn size="sm" className="flex-1" onClick={() => acceptThreat(due.id)}>
+          <Swords size={13} /> 전투 보기
+        </Btn>
+        <Btn size="sm" variant="ghost" className="flex-1" onClick={() => autoResolveThreat(due.id)}>
+          자동 처리
+        </Btn>
+      </div>
     </div>
+  );
+}
+
+function ThreatLogModal({ onClose }: { onClose: () => void }) {
+  const reports = useGame((s) => s.threatReports) ?? [];
+  return (
+    <Modal onClose={onClose} ink>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h3 className="font-serif text-lg font-black">공성 전보</h3>
+        <button type="button" onClick={onClose} className="text-sm text-stone-400">닫기</button>
+      </div>
+      {reports.length === 0 ? (
+        <p className="text-sm text-stone-400">아직 전보가 없습니다.</p>
+      ) : (
+        <ul className="max-h-[60vh] space-y-2 overflow-y-auto text-sm">
+          {reports.map((r) => {
+            const lord = lordById(r.lordId);
+            const title = STAGE_MAP[r.stageId]?.title ?? r.stageId;
+            const when = new Date(r.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            return (
+              <li key={r.id} className={cn('rounded-lg border px-3 py-2', r.win ? 'border-emerald-700/50 bg-emerald-950/30' : 'border-red-800/50 bg-red-950/30')}>
+                <div className="font-bold">{r.win ? '수비 성공' : '성 피해'} · {lord?.name ?? r.lordId}</div>
+                <div className="mt-0.5 text-xs text-stone-400">
+                  {title} · Lv.{r.levelBefore}{r.levelBefore !== r.levelAfter ? `→${r.levelAfter}` : ''} · {when}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Modal>
   );
 }
 

@@ -34,6 +34,28 @@ export interface LordThreat {
   level: number;
 }
 
+/** 자동 처리·전투 관전 후 남기는 공성 전보 (전투 로그는 저장하지 않음) */
+export interface ThreatReport {
+  id: string;
+  stageId: string;
+  lordId: string;
+  win: boolean;
+  levelBefore: number;
+  levelAfter: number;
+  at: number;
+}
+
+export const THREAT_REPORT_MAX = 12;
+
+export function appendThreatReport(list: ThreatReport[], next: ThreatReport): ThreatReport[] {
+  return [next, ...(list ?? [])].slice(0, THREAT_REPORT_MAX);
+}
+
+/** 행군이 끝난 위협 (플레이어 수락/자동 처리 대기) */
+export function arrivedThreats(threats: LordThreat[], now: number): LordThreat[] {
+  return (threats ?? []).filter((t) => t.eta <= now);
+}
+
 /** 동시 위협 상한 */
 export const MAX_THREATS = 2;
 /** 위협 행군 시간 (ms) */
