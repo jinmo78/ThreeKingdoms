@@ -11,15 +11,20 @@ const title = path.join(root, 'public', 'title.webp');
 const W = 1200;
 const H = 630;
 
-// 남색 궁정 톤 바탕 + 타이틀 아트를 가운데에 얹음
-const bg = await sharp({
-  create: {
-    width: W,
-    height: H,
-    channels: 3,
-    background: { r: 16, g: 24, b: 38 },
-  },
-}).png().toBuffer();
+// 양피지·한지 톤 바탕 + 은은한 그라데이션
+const bgSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FAF6EE"/>
+      <stop offset="45%" stop-color="#F4EFE6"/>
+      <stop offset="100%" stop-color="#EAE0D0"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <rect width="100%" height="100%" fill="#D99B26" opacity="0.06"/>
+</svg>`);
+
+const bg = await sharp(bgSvg).png().toBuffer();
 
 const art = await sharp(title)
   .resize(980, 520, { fit: 'inside', withoutEnlargement: false })
