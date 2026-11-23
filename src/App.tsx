@@ -46,6 +46,7 @@ export default function App() {
 
   useEffect(() => {
     if (!hydrated) return;
+    // AudioGate에서 unlock된 뒤에만 실제 재생. 같은 곡이면 매니저가 무시.
     if (!started || !entered || view !== 'battle') audioManager.playBgm('lobby');
     else audioManager.playBgm('battle');
   }, [hydrated, started, entered, view]);

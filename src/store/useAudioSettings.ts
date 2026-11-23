@@ -16,7 +16,7 @@ export const useAudioSettings = create<AudioSettings>()(
   persist(
     (set) => ({
       bgmOn: true,
-      bgmVolume: 0.4,
+      bgmVolume: 0.6,
       set: (partial) => set((s) => ({
         bgmOn: partial.bgmOn ?? s.bgmOn,
         bgmVolume: partial.bgmVolume !== undefined ? clampVolume(partial.bgmVolume) : s.bgmVolume,

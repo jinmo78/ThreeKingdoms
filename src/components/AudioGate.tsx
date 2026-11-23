@@ -22,8 +22,9 @@ export function AudioGate({ children }: { children: ReactNode }) {
         type="button"
         className="fixed inset-0 z-[100] flex h-dvh w-full flex-col items-center justify-center gap-3 bg-[#181310] px-6 text-center"
         onClick={() => {
-          setUnlocked(true);
+          audioManager.unlock();
           audioManager.playBgm('lobby');
+          setUnlocked(true);
         }}
       >
         <span className="font-serif text-2xl font-black tracking-wide text-[#F5E6C8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] sm:text-3xl">
