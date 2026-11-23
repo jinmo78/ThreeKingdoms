@@ -7,7 +7,7 @@ import { GEAR_MAP } from '../data/gear';
 import { EFFECT_LABEL, FACTION, FACTIONS, RARITY, STAT_LABEL, TROOP } from '../data/meta';
 import type { ActiveSynergy, SynergyResult } from '../engine/synergy';
 import { gearSkill, gearStats, type GearBag } from '../engine/gear';
-import { effectiveStats, expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
+import { effectiveStats, expToNext, maxLevel, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity, type UnitProfile } from '../engine/unit';
 import { EquippedGear } from './GearPanel';
 import { useGame } from '../store/gameStore';
 import type { GeneralDef, OwnedGeneral, Stats } from '../types';
@@ -246,17 +246,22 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
   const promote = useGame((s) => s.promote);
   const roster = useGame((s) => s.roster);
   const level = owned?.level ?? 1;
-  const promoted = (owned?.promote ?? 0) > 0;
-  const rank = shownRarity(def.rarity, owned?.promote);
-  const target = owned && !promoted ? promoteTarget(def.rarity) : null;
+  const steps = owned?.promote ?? 0;
+  const rank = shownRarity(def.rarity, steps);
+  const target = owned ? promoteTarget(def.rarity, steps) : null;
   const cost = target ? PROMOTE_COST[target] : 0;
   const gearBag = useGame((s) => s.gear);
-  const stats = effectiveStats(def, level, owned?.stars ?? 0, owned?.promote ?? 0);
+  const stats = effectiveStats(def, level, owned?.stars ?? 0, steps);
   const bonus = owned ? gearStats(owned, gearBag) : { war: 0, int: 0, lead: 0 };
   const skillAdd = wornSkill(owned, gearBag);
-  const ready = !!owned && owned.level >= MAX_LEVEL && owned.stars >= MAX_STARS;
+  const cap = maxLevel(rank);
+  const ready = !!owned && !!target && owned.level >= cap && owned.stars >= MAX_STARS;
   const ladder = def.rarity === 'R'
-    ? [{ rarity: 'R' as const, promote: 0, label: '태생' }, { rarity: 'SR' as const, promote: 1, label: '승급' }]
+    ? [
+      { rarity: 'R' as const, promote: 0, label: '태생' },
+      { rarity: 'SR' as const, promote: 1, label: '1차 승급' },
+      { rarity: 'SSR' as const, promote: 2, label: '2차 승급' },
+    ]
     : def.rarity === 'SR'
       ? [{ rarity: 'SR' as const, promote: 0, label: '태생' }, { rarity: 'SSR' as const, promote: 1, label: '승급' }]
       : [{ rarity: 'SSR' as const, promote: 0, label: '태생' }];
@@ -316,11 +321,11 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
       {owned && (
         <div className="rounded-xl border border-[#C6A15B]/35 bg-stone-950/50 px-3 py-2 text-xs">
           <div className="mb-1 flex justify-between text-stone-500">
-            <span>Lv.{owned.level} <Stars n={owned.stars} className="ml-1" /></span>
+            <span>Lv.{owned.level}/{cap} <Stars n={owned.stars} className="ml-1" /></span>
             <span className="tabular">EXP {owned.exp} / {expToNext(owned.level)}</span>
           </div>
           <Bar value={owned.exp} max={expToNext(owned.level)} color="bg-[#C6A15B]" />
-          <div className="mt-1 flex items-center gap-1 text-[10px] text-stone-500">★{owned.stars}/{MAX_STARS} · 중복 +4%{promoted ? ` · ${def.rarity}→승급` : ''} <Hint text="같은 장수를 다시 등용하면 돌파가 오르고 능력이 +4%입니다. 최대 ★5." /></div>
+          <div className="mt-1 flex items-center gap-1 text-[10px] text-stone-500">★{owned.stars}/{MAX_STARS} · 중복 +4%{steps > 0 ? ` · ${def.rarity}→${rank}` : ''} <Hint text="같은 장수를 다시 등용하면 돌파가 오르고 능력이 +4%입니다. 최대 ★5. 품계하면 레벨이 1로 돌아가 새 상한까지 다시 키웁니다." /></div>
         </div>
       )}
 
@@ -340,12 +345,13 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
       <div>
         <div className="flex items-center gap-1 text-xs font-bold text-stone-400">
           품계
-          <Hint text={def.rarity === 'SSR' ? '태생 SSR. 더 올릴 품계가 없습니다.' : `태생 ${def.rarity}에서 한 단계. 등급별 카드는 따로 없습니다.`} />
+          <Hint text={def.rarity === 'SSR' ? '태생 SSR. 더 올릴 품계가 없습니다. 레벨 상한 150.' : '만렙·★5에서 승급하면 레벨이 1로 돌아가 다음 등급 상한까지 다시 키웁니다. 태생 R는 SR·SSR 두 번 승급합니다.'} />
         </div>
-        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div className={cn('mt-2 grid gap-2', ladder.length > 2 ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
           {ladder.map((step) => {
-            const st = effectiveStats(def, level, owned?.stars ?? 0, step.promote);
-            const current = (owned?.promote ?? 0) === step.promote;
+            const stepCap = maxLevel(step.rarity);
+            const current = steps === step.promote;
+            const st = effectiveStats(def, current && owned ? owned.level : stepCap, owned?.stars ?? 0, step.promote);
             return (
               <div key={step.rarity} className={cn('rounded-xl border p-2 text-xs', current ? 'border-amber-400/70 bg-amber-400/10' : 'border-stone-800')}>
                 <div className="flex items-center gap-1.5">
@@ -353,9 +359,9 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
                   <span className="font-bold">{step.label}</span>
                   {current && <span className="text-[10px] text-stone-500">현재</span>}
                 </div>
-                <div className="mt-1 text-stone-500">무 {st.war} · 지 {st.int} · 통 {st.lead}</div>
+                <div className="mt-1 text-stone-500">상한 Lv.{stepCap} · 무 {st.war} · 지 {st.int} · 통 {st.lead}</div>
                 {step.promote > 0 && step.rarity !== 'R' && (
-                  <div className="mt-1 text-[10px] text-stone-500">Lv.{MAX_LEVEL} · ★{MAX_STARS} · 🪙{PROMOTE_COST[step.rarity].toLocaleString()} · +10%</div>
+                  <div className="mt-1 text-[10px] text-stone-500">만렙·★{MAX_STARS} · 🪙{PROMOTE_COST[step.rarity].toLocaleString()} · Lv.1</div>
                 )}
               </div>
             );
@@ -373,13 +379,13 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
           <span>{target} 승급</span>
           <span className="text-xs font-semibold">
             {ready
-              ? `🪙${cost.toLocaleString()} · +10%${gold < cost ? ' · 부족' : ''}`
-              : `Lv.${owned.level}/${MAX_LEVEL} · ★${owned.stars}/${MAX_STARS}`}
+              ? `🪙${cost.toLocaleString()} · Lv.1 리셋 · 상한 ${maxLevel(target)}${gold < cost ? ' · 부족' : ''}`
+              : `Lv.${owned.level}/${cap} · ★${owned.stars}/${MAX_STARS}`}
           </span>
         </button>
       )}
-      {owned && !target && def.rarity === 'SSR' && (
-        <p className="text-center text-[11px] text-stone-500">최고 품계</p>
+      {owned && !target && (
+        <p className="text-center text-[11px] text-stone-500">최고 품계 · 상한 Lv.{cap}</p>
       )}
 
       <section className="rounded-xl border border-[#C6A15B]/45 bg-stone-950/40 p-3">

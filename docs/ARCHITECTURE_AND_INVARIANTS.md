@@ -1,6 +1,6 @@
 # 아키텍처 의존성 및 절대 불변 규칙
 
-기준: 2026-11-20, `SAVE_VERSION` 14. 기능을 넣을 때 여기의 불변 조건을 먼저 본다. 수치 원본은 `docs/GAME_DESIGN_SPEC.md`.
+기준: 2026-11-23, `SAVE_VERSION` 15. 기능을 넣을 때 여기의 불변 조건을 먼저 본다. 수치 원본은 `docs/GAME_DESIGN_SPEC.md`.
 
 ---
 
@@ -29,7 +29,7 @@ pages, components   화면과 입력만
 
 키 `oath-banner-save`. Zustand `persist` + `saveData.ts`.
 
-`SaveData` 필드: `started`, `gold`, `roster`, `formation`, `cleared`, `fought`, `totalPulls`, `conquestBest`, `conquestFailFloor`, `freePulls`, `freeGrantDay`, `attendDay`, `attendStreak`, `presets`, `gear`, `wounds`, `marches`, `castles`.
+`SaveData` 필드: `started`, `gold`, `roster`, `formation`, `cleared`, `fought`, `totalPulls`, `conquestBest`, `conquestFailFloor`, `freePulls`, `freeGrantDay`, `attendDay`, `attendStreak`, `presets`, `gear`, `wounds`, `marches`, `castles`, `threats`, `lastThreatAt`, `decreeClaimWeek`.
 
 필드를 추가·이름 변경·의미 변경하면 아래를 **같이** 고친다.
 
@@ -54,10 +54,11 @@ pages, components   화면과 입력만
 | &lt; 10 | `gear: {}` |
 | &lt; 11 | 장비 `count: 1` |
 | 12~14 | 별도 분기 없이 `sanitizeSave`가 빈 `wounds` / `marches` / `castles`를 채운다 |
+| &lt; 15 | `threats` / `lastThreatAt` / `decreeClaimWeek` 기본값 |
 
 점령 성 소급은 `migrate`가 아니라 실행 중 `ensureCastles`다. `since = 지금`이라 과거분 금화가 생기지 않는다. 여기를 점령 시각 추정으로 바꾸면 옛 저장에 금화가 몰린다.
 
-`sanitize`가 지키는 범위: 레벨 1~40, 돌파 0~5, 품계 0/1, 금화 0~10억, 성 레벨 1~5, 장비 레벨 1~10 · 강화 0~5 · 복제 1~18, 행군 최대 3, 프리셋 최대 6. 편성은 보유 장수만, 전체에서 id 중복 제거. 옛 `vice` 칸은 `vice1`로 읽는다.
+`sanitize`가 지키는 범위: 레벨은 표시 등급 상한(R50·SR100·SSR150), 돌파 0~5, 품계 0~`maxPromote`(R는 2), 금화 0~10억, 성 레벨 1~5, 장비 레벨 1~10 · 강화 0~5 · 복제 1~18, 행군 최대 3, 위협 최대 3, 프리셋 최대 6. 편성은 보유 장수만, 전체에서 id 중복 제거. 옛 `vice` 칸은 `vice1`로 읽는다.
 
 클라우드 (`src/cloud/reconcile.ts`): 원격 없음 → 업로드, 시그니처 동일 → 유지, 로컬이 새 게임 그대로 → 다운로드, 아니면 충돌. `applySaveState`는 저장 본문만 바꾸고 전투 화면은 닫는다.
 
@@ -107,7 +108,7 @@ UI가 엔진을 import해서 **호출**하는 것은 정상이다. 도전 탭의
 9. **주장 없는 부대는 출진하지 않는다.** 빈 연쇄 칸은 확률을 소모하지 않고 건너뛴다. 실패한 연쇄는 뒤 칸을 시도하지 않는다.
 10. **명참모는 태생 지력 90이다.** 유효 지력(레벨·돌파·장비)으로 바꾸면 기존 참모 평가가 바뀐다. 발동률만 참모의 유효 지력을 쓴다 (`× 0.001`, 상한 0.70).
 11. **시너지 단계는 최고 단계 하나.** 3명 보너스에 6명 보너스를 더하지 않는다. 여러 세력·여러 인연은 서로 더한다.
-12. **성장 배율은 곱연산, 장비는 그 다음 합연산.** 레벨 `(1+(L-1)×0.04)`, 돌파 `(1+★×0.04)`, 품계 1이면 `×1.10`.
+12. **성장 배율은 곱연산, 장비는 그 다음 합연산.** 레벨 `(1+(L-1)×0.04)`, 돌파 `(1+★×0.04)`. 품계는 배율 없이 상한만 연다(승급 시 레벨 리셋). 토벌 각인은 프로필에 별도 곱.
 13. **원정 금화·경험치는 첫 점령 전에만.** 점령 후 재도전은 0. 첫 승리는 `reward.gold + firstClearGold`. 미점령 패배는 금화 20%·경험치 30% (반올림). 토벌 패배는 금화 10%·경험치 30%. 이 비율은 `gameStore`에 있다.
 14. **장비 드랍은 승리만.** 원정 재도전이고 이미 있으면 40% (`Math.random`, 시드 고정 아님). 토벌은 승리 시 항상 `grantGear`.
 15. **부상 키는 주장 id와 `c:성:인덱스`.** 편성 칸 번호로 바꾸면 칸을 바꿀 때마다 부상이 사라진다. 점령한 성 수비는 항상 만피로 시작하고 패배 부상을 남기지 않는다. 승리 시 그 성 수비 키는 삭제한다.

@@ -14,16 +14,18 @@ const fmt = (n: number) => Math.floor(n).toLocaleString('ko-KR');
 /** 지도 위 영지 요약: 전체 시간당 수입과 지금 징수할 수 있는 금화 */
 export function DomainBar({ castles, now, compact }: { castles: Record<string, Castle>; now: number; compact?: boolean }) {
   const collectGold = useGame((s) => s.collectGold);
+  const threats = useGame((s) => s.threats);
   const [msg, setMsg] = useState('');
   const list = Object.entries(castles);
   if (list.length === 0) return null;
   const income = list.reduce((n, [id, c]) => n + incomePerHour(stageIndex(id), c), 0);
   const stored = list.reduce((n, [id, c]) => n + accrued(stageIndex(id), c, now), 0);
+  const threatN = threats.filter((t) => castles[t.stageId]).length;
   if (compact) {
     // 가로 화면 위 바용 한 줄
     return (
       <div className="flex h-8 items-center gap-2 rounded-full border border-[#C6A15B]/50 bg-[#1b1713] py-0.5 pl-3 pr-0.5 text-[11px] text-[#E7DCC8]">
-        <span>🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>/시</span>
+        <span>🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>/시{threatN > 0 && <b className="ml-1 text-red-300">⚔{threatN}</b>}</span>
         <button
           type="button"
           disabled={stored < 1}
@@ -39,6 +41,7 @@ export function DomainBar({ castles, now, compact }: { castles: Record<string, C
     <div className="mb-2 flex items-center justify-between gap-2 rounded-lg bg-[#1b1713]/85 px-3 py-1.5 text-xs text-[#E7DCC8]">
       <span className="min-w-0 font-bold">
         🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>/시
+        {threatN > 0 && <b className="ml-2 text-red-300">군주 위협 {threatN}</b>}
         {msg && <b className="ml-2 text-emerald-300">{msg}</b>}
       </span>
       <button

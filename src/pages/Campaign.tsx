@@ -793,7 +793,9 @@ export default function Campaign() {
   const wounds = useGame((s) => s.wounds);
   const startMarch = useGame((s) => s.startMarch);
   const resolveMarches = useGame((s) => s.resolveMarches);
+  const tickThreats = useGame((s) => s.tickThreats);
   const marches = useGame((s) => s.marches);
+  const threats = useGame((s) => s.threats);
   const castles = useGame((s) => s.castles);
   const ensureCastles = useGame((s) => s.ensureCastles);
   const gold = useGame((s) => s.gold);
@@ -826,10 +828,11 @@ export default function Campaign() {
     const t = setInterval(() => setNow(Date.now()), marching ? 1000 : 4000);
     return () => clearInterval(t);
   }, [marching]);
-  // 도착한 부대가 있으면 전투를 푼다 (전투 화면이 열리면 이 페이지는 닫힌다)
+  // 도착한 부대·군주 위협이 있으면 전투를 푼다 (전투 화면이 열리면 이 페이지는 닫힌다)
   useEffect(() => {
     if (marches.some((m) => m.eta <= now)) resolveMarches();
-  }, [now, marches, resolveMarches]);
+    else tickThreats();
+  }, [now, marches, threats, resolveMarches, tickThreats]);
 
   /** 출정 부대(편성 번호 · 병력 비율)와 지금 고른 부대. picked가 null이면 출정 가능한 부대 전부 */
   const squads = useMemo(() => {

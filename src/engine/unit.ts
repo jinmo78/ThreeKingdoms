@@ -5,30 +5,43 @@ import type { GeneralDef, Rarity, Slot, StatKey, Stats, Troop } from '../types';
 import { SLOTS, STRATEGIST_INDEX } from '../types';
 import { calcSynergy, type SynergyResult } from './synergy';
 
-export const MAX_LEVEL = 40;
+/** 표시 등급별 레벨 상한. R→SR→SSR 품계마다 리셋해 다시 키운다. */
+export const LEVEL_CAP: Record<Rarity, number> = { R: 50, SR: 100, SSR: 150 };
+/** @deprecated 호환용. 상한은 maxLevel(shownRarity(...))를 쓴다. */
+export const MAX_LEVEL = LEVEL_CAP.SSR;
 export const MAX_STARS = 5;
-/** 품계를 한 단계 올리면 능력치 +10%. 태생 R·SR만 가능하고 SSR은 그대로다. */
-export const PROMOTE_BONUS = 0.1;
 export const PROMOTE_COST = { SR: 800, SSR: 2000 } as const;
 
-/** 승급 후 보여줄 등급. promote가 0이면 태생 등급. */
+export function maxLevel(rarity: Rarity): number {
+  return LEVEL_CAP[rarity];
+}
+
+/** 태생 기준 품계 최대 횟수. R는 두 번(SR→SSR), SR는 한 번, SSR는 0. */
+export function maxPromote(base: Rarity): number {
+  if (base === 'R') return 2;
+  if (base === 'SR') return 1;
+  return 0;
+}
+
+/** 승급 후 보여줄 등급. promote 단계만큼 올라간다. */
 export function shownRarity(base: Rarity, promote = 0): Rarity {
-  if ((promote ?? 0) < 1) return base;
-  if (base === 'R') return 'SR';
-  if (base === 'SR') return 'SSR';
+  const steps = Math.max(0, promote ?? 0);
+  if (base === 'R') return steps >= 2 ? 'SSR' : steps >= 1 ? 'SR' : 'R';
+  if (base === 'SR') return steps >= 1 ? 'SSR' : 'SR';
   return 'SSR';
 }
 
-/** 한 단계 위 등급. SSR은 더 오르지 않는다. */
-export function promoteTarget(base: Rarity): 'SR' | 'SSR' | null {
-  if (base === 'R') return 'SR';
-  if (base === 'SR') return 'SSR';
+/** 지금 표시 등급에서 한 단계 위. SSR이면 null. */
+export function promoteTarget(base: Rarity, promote = 0): 'SR' | 'SSR' | null {
+  const shown = shownRarity(base, promote);
+  if (shown === 'R') return 'SR';
+  if (shown === 'SR') return 'SSR';
   return null;
 }
 
-/** 레벨당 +4%, 돌파(★)당 +4%, 품계 승급 시 +10% */
-export function effectiveStats(def: GeneralDef, level: number, stars: number, promote = 0): Stats {
-  const m = (1 + (level - 1) * 0.04) * (1 + stars * 0.04) * (1 + ((promote ?? 0) > 0 ? PROMOTE_BONUS : 0));
+/** 레벨당 +4%, 돌파(★)당 +4%. 품계는 배율 없이 상한만 연다. */
+export function effectiveStats(def: GeneralDef, level: number, stars: number, _promote = 0): Stats {
+  const m = (1 + (level - 1) * 0.04) * (1 + stars * 0.04);
   return {
     war: Math.round(def.stats.war * m),
     int: Math.round(def.stats.int * m),
@@ -65,6 +78,20 @@ export interface UnitProfile {
   skillRate: number;
   synergy: SynergyResult;
   power: number;
+}
+
+/** 토벌 각인 등 전투력 배율을 능력·병력·전투력에 곱한다. */
+export function applyImprint(p: UnitProfile, bonus: number): UnitProfile {
+  if (bonus <= 0) return p;
+  const m = 1 + bonus;
+  return {
+    ...p,
+    atk: p.atk * m,
+    intel: p.intel * m,
+    def: p.def * m,
+    hp: Math.round(p.hp * m),
+    power: Math.round(p.power * m),
+  };
 }
 
 // 슬롯별 능력 반영 비율: 주장은 무력·통솔, 참모는 지력 위주

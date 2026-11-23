@@ -4,15 +4,17 @@ import { GENERAL_MAP } from '../data/generals';
 import { GEAR_COPY_MAX, GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL } from '../engine/gear';
 import { LEGACY_POINT_GOLD, PRESET_LIMIT } from '../engine/formationBook';
 import { emptyUnit } from '../engine/profiles';
-import { MAX_LEVEL, MAX_STARS } from '../engine/unit';
+import { maxLevel, maxPromote, MAX_STARS, shownRarity } from '../engine/unit';
 import { MAX_MARCHES, pruneWounds, type March, type Wounds } from '../engine/siege';
 import { STAGE_MAP } from '../data/stages';
 import { TACTIC_LIST } from '../engine/tactics';
 import { CASTLE_MAX_LEVEL, type Castle } from '../engine/domain';
+import type { LordThreat } from '../engine/lords';
+import { LORDS } from '../engine/lords';
 import type { GearSlot, OwnedGear, OwnedGeneral, Unit } from '../types';
 import { SLOTS } from '../types';
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 export interface FormationPreset {
   id: string;
@@ -50,6 +52,12 @@ export interface SaveData {
   marches: March[];
   /** 점령한 성의 내정 (레벨 · 수비 부대 · 마지막 징수 시각) */
   castles: Record<string, Castle>;
+  /** AI 군주가 쳐들어오는 위협 (8-3 이후) */
+  threats: LordThreat[];
+  /** 마지막 위협을 만든 시각 */
+  lastThreatAt: number;
+  /** 주의 군령 보상을 받은 주 키 (YYYY-Www) */
+  decreeClaimWeek: string;
 }
 
 const STARTERS = ['liubei', 'zhangfei', 'lusu', 'xuchu', 'mizhu', 'jianyong', 'huaxiong', 'huanggai'];
@@ -81,6 +89,9 @@ export function freshSave(): SaveData {
     wounds: {},
     marches: [],
     castles: {},
+    threats: [],
+    lastThreatAt: 0,
+    decreeClaimWeek: '',
   };
 }
 
@@ -131,11 +142,13 @@ function sanitizeRoster(raw: unknown, gear: Record<string, OwnedGear>): Record<s
         slots[slot] = gid;
       }
     }
+    const promote = clampInt(g.promote, 0, maxPromote(GENERAL_MAP[id].rarity), 0);
+    const cap = maxLevel(shownRarity(GENERAL_MAP[id].rarity, promote));
     roster[id] = {
-      level: clampInt(g.level, 1, MAX_LEVEL, 1),
+      level: clampInt(g.level, 1, cap, 1),
       exp: clampInt(g.exp, 0, 1_000_000, 0),
       stars: clampInt(g.stars, 0, MAX_STARS, 0),
-      promote: g.promote ? 1 : 0,
+      promote,
       ...(Object.keys(slots).length ? { gear: slots } : {}),
     };
   }
@@ -212,7 +225,35 @@ export function sanitizeSave(raw: unknown): SaveData {
     wounds: sanitizeWounds(src.wounds),
     marches: sanitizeMarches(src.marches, roster),
     castles: sanitizeCastles(src.castles, roster),
+    threats: sanitizeThreats(src.threats, cleared),
+    lastThreatAt: clampInt(src.lastThreatAt, 0, Number.MAX_SAFE_INTEGER, 0),
+    decreeClaimWeek: typeof src.decreeClaimWeek === 'string' && /^[\d]{4}-W[\d]{2}$/.test(src.decreeClaimWeek)
+      ? src.decreeClaimWeek
+      : '',
   };
+}
+
+function sanitizeThreats(raw: unknown, cleared: Record<string, number>): LordThreat[] {
+  if (!Array.isArray(raw) || (cleared['8-3'] ?? 0) <= 0) return [];
+  const lordIds = new Set(LORDS.map((l) => l.id));
+  const out: LordThreat[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const t = item as Partial<LordThreat>;
+    if (typeof t.id !== 'string' || !/^[\w-]{1,24}$/.test(t.id)) continue;
+    if (typeof t.stageId !== 'string' || !STAGE_MAP[t.stageId] || (cleared[t.stageId] ?? 0) <= 0) continue;
+    if (typeof t.lordId !== 'string' || !lordIds.has(t.lordId)) continue;
+    if (typeof t.eta !== 'number' || !Number.isFinite(t.eta)) continue;
+    out.push({
+      id: t.id,
+      stageId: t.stageId,
+      lordId: t.lordId,
+      eta: Math.floor(t.eta),
+      level: clampInt(t.level, 1, 160, 80),
+    });
+    if (out.length >= 3) break;
+  }
+  return out;
 }
 
 function sanitizeCastles(raw: unknown, roster: Record<string, OwnedGeneral>): Record<string, Castle> {
@@ -328,6 +369,11 @@ export function migrateSave(persisted: unknown, version: number): SaveData {
     for (const id of Object.keys(gear)) gear[id] = { ...gear[id], count: gear[id]?.count ?? 1 };
     src.gear = gear;
   }
+  if (version < 15) {
+    if (!Array.isArray(src.threats)) src.threats = [];
+    if (typeof src.lastThreatAt !== 'number') src.lastThreatAt = 0;
+    if (typeof src.decreeClaimWeek !== 'string') src.decreeClaimWeek = '';
+  }
   return sanitizeSave(src);
 }
 
@@ -351,6 +397,9 @@ export function pickSave(s: SaveData): SaveData {
     wounds: s.wounds,
     marches: s.marches,
     castles: s.castles,
+    threats: s.threats,
+    lastThreatAt: s.lastThreatAt,
+    decreeClaimWeek: s.decreeClaimWeek,
   };
 }
 

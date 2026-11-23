@@ -10,7 +10,9 @@ import { PowerCompare } from '../components/UnitPreview';
 import { Btn, cn, Panel, useLandscape } from '../components/ui';
 import { ARMY_THEMES, practiceOpponent, themeLabel } from '../engine/aiArmy';
 import { simulateBattle } from '../engine/battle';
-import { conquestFloor } from '../engine/conquest';
+import { conquestFloor, imprintBonus, UNIFY_FLOOR } from '../engine/conquest';
+import { decreeFormationOk, decreeOfWeek, decreeTroopOk } from '../engine/decree';
+import { GENERAL_MAP } from '../data/generals';
 import { deployedAvgLevel, enemyUnitsToProfiles } from '../engine/profiles';
 import { randomSeed } from '../engine/rng';
 import type { UnitProfile } from '../engine/unit';
@@ -26,11 +28,12 @@ const DIFFS: { value: PracticeDifficulty; label: string }[] = [
 const MEASURE_SEEDS = Array.from({ length: 100 }, (_, i) => 31 + i * 7919);
 
 export default function Challenge() {
-  const [tab, setTab] = useState<'practice' | 'conquest'>('conquest');
+  const [tab, setTab] = useState<'practice' | 'conquest' | 'decree'>('conquest');
   const conquestOpen = useGame((s) => (s.cleared['4-3'] ?? 0) > 0);
   const land = useLandscape();
   const slips: Slip[] = [
     { id: 'conquest', han: '討', label: '토벌', on: tab === 'conquest', onClick: () => setTab('conquest') },
+    { id: 'decree', han: '令', label: '군령', on: tab === 'decree', onClick: () => setTab('decree') },
     { id: 'practice', han: '模', label: '모의', on: tab === 'practice', onClick: () => setTab('practice') },
   ];
 
@@ -39,18 +42,19 @@ export default function Challenge() {
       <div className="flex h-full min-h-0 flex-col gap-1.5 overflow-hidden">
         <div className="flex shrink-0 gap-1 self-start rounded-xl bg-stone-950/80 p-1">
           <TabBtn active={tab === 'conquest'} onClick={() => setTab('conquest')}>
-            {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 토벌전
+            {conquestOpen ? <Mountain size={14} /> : <Lock size={13} />} 토벌
           </TabBtn>
-          <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의전</TabBtn>
+          <TabBtn active={tab === 'decree'} onClick={() => setTab('decree')}>군령</TabBtn>
+          <TabBtn active={tab === 'practice'} onClick={() => setTab('practice')}><Target size={14} /> 모의</TabBtn>
         </div>
         <div className="min-h-0 flex-1">
-          {tab === 'practice' ? <Practice /> : <Conquest />}
+          {tab === 'practice' ? <Practice /> : tab === 'decree' ? <Decree /> : <Conquest />}
         </div>
       </div>
     );
   }
 
-  return tab === 'practice' ? <Practice slips={slips} /> : <Conquest slips={slips} />;
+  return tab === 'practice' ? <Practice slips={slips} /> : tab === 'decree' ? <Decree slips={slips} /> : <Conquest slips={slips} />;
 }
 
 // ---------------- 모의전 ----------------
@@ -218,13 +222,14 @@ function Conquest({ slips }: { slips?: Slip[] }) {
   const startConquest = useGame((s) => s.startConquest);
   const land = useLandscape();
 
+  const imprint = imprintBonus(best);
   const floor = useMemo(() => conquestFloor(best + 1), [best]);
   const enemyProf = useMemo(() => enemyUnitsToProfiles(floor.enemies), [floor]);
-  const mine = useMemo(() => playerProfiles(formation, roster, gear), [formation, roster, gear]);
+  const mine = useMemo(() => playerProfiles(formation, roster, gear, imprint), [formation, roster, gear, imprint]);
   const upcoming = useMemo(() => [2, 3, 4, 5, 6].map((d) => {
     const f = best + d;
-    const boss = f % 5 === 0;
-    return { f, boss, theme: boss ? 'mixed' as const : (['wei', 'shu', 'wu', 'qun'] as const)[(f - 1) % 4] };
+    const info = conquestFloor(f);
+    return { f, boss: info.boss, theme: info.theme, unified: info.unified };
   }), [best]);
 
   if (!open) {
@@ -247,12 +252,13 @@ function Conquest({ slips }: { slips?: Slip[] }) {
       <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
         <Crown size={36} className="shrink-0 text-amber-300" />
         <div className="min-w-0 flex-1">
-          <div className="text-xs text-stone-400">최고 기록</div>
+          <div className="text-xs text-stone-400">최고 기록{best >= UNIFY_FLOOR ? ' · 천하통일' : ` · ${UNIFY_FLOOR}층 통일`}</div>
           <div className="font-serif text-2xl font-black text-amber-200">{best}층</div>
+          {imprint > 0 && <div className="text-[11px] text-amber-300/90">각인 +{(imprint * 100).toFixed(1)}%</div>}
         </div>
         <div className="flex flex-wrap gap-1.5">
           {upcoming.map((u) => (
-            <span key={u.f} className={cn('rounded-lg px-2 py-1 text-[11px]', u.boss ? 'bg-red-500/15 font-bold text-red-300' : 'bg-stone-800 text-stone-300')}>
+            <span key={u.f} className={cn('rounded-lg px-2 py-1 text-[11px]', u.boss || u.unified ? 'bg-red-500/15 font-bold text-red-300' : 'bg-stone-800 text-stone-300')}>
               {u.f}층 {themeLabel(u.theme)}{u.boss && ' 👑'}
             </span>
           ))}
@@ -344,6 +350,52 @@ function EditorSection({ enemy }: { enemy: UnitProfile[] }) {
       </div>
       <FormationEditor enemy={enemy} />
     </section>
+  );
+}
+
+function Decree({ slips }: { slips?: Slip[] }) {
+  const formation = useGame((s) => s.formation);
+  const roster = useGame((s) => s.roster);
+  const gear = useGame((s) => s.gear);
+  const best = useGame((s) => s.conquestBest);
+  const claimed = useGame((s) => s.decreeClaimWeek);
+  const startDecree = useGame((s) => s.startDecree);
+  const land = useLandscape();
+  const d = useMemo(() => decreeOfWeek(), []);
+  const imprint = imprintBonus(best);
+  const mine = useMemo(() => playerProfiles(formation, roster, gear, imprint), [formation, roster, gear, imprint]);
+  const enemyProf = useMemo(() => enemyUnitsToProfiles(d.enemies), [d]);
+  const okUnits = decreeFormationOk(formation, d.constraint);
+  const okTroop = decreeTroopOk(formation, d.constraint, (id) => GENERAL_MAP[id]?.troop ?? null);
+  const ok = okUnits && okTroop && mine.length > 0;
+  const done = claimed === d.week;
+
+  const body = (
+    <div className={land ? 'grid h-full min-h-0 grid-cols-[13.5rem_minmax(0,1fr)] gap-1.5 overflow-hidden' : 'space-y-4'}>
+      <Panel title={`이번 주 ${d.week}`} icon={<Target size={15} />}>
+        <div className="space-y-2 text-xs">
+          <p className="font-bold text-amber-200">제약 · {d.constraint.label}</p>
+          <p className="text-stone-400">적 {themeLabel(d.theme)} Lv.{d.level} · 승리 금 {d.rewardGold}</p>
+          {!okUnits && <p className="text-red-300">부대 수를 줄이세요</p>}
+          {!okTroop && <p className="text-red-300">병과 제약을 맞추세요</p>}
+          {done && <p className="text-emerald-300">이번 주 보상 수령 완료</p>}
+          <Btn size={land ? 'sm' : 'lg'} className="w-full" disabled={!ok || done} onClick={() => startDecree()}>
+            <Swords size={16} /> {done ? '완료' : '출진'}
+          </Btn>
+          <PowerCompare mine={sumPower(mine)} enemy={sumPower(enemyProf)} />
+        </div>
+      </Panel>
+      {!land && <EnemyLineup units={enemyProf} />}
+      <div className={land ? 'min-h-0 overflow-hidden' : undefined}>
+        <EditorSection enemy={enemyProf} />
+      </div>
+    </div>
+  );
+  if (land) return body;
+  return (
+    <Desk title="도전" hanja="挑戰" slips={slips} seal="軍令">
+      {body}
+    </Desk>
   );
 }
 

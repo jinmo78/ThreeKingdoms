@@ -15,7 +15,7 @@ import { DUPLICATE_REFUND, rollGenerals } from '../engine/gacha';
 import { randomSeed } from '../engine/rng';
 import { generateArmy, type ArmyTheme } from '../engine/aiArmy';
 import { TACTICS, reinforceChance, tacticEffect, terrainOf, unitRoll, weatherAt, type Tactic } from '../engine/tactics';
-import { conquestFloor } from '../engine/conquest';
+import { conquestFloor, imprintBonus } from '../engine/conquest';
 import {
   GEAR_MAX_ENHANCE, GEAR_MAX_LEVEL, GEAR_PROMOTE_SHARDS,
   equipOn, gearCount, gearEnhanceCost, gearLevelCost, gearPromoteCost, gearPromoteLeft, gearRarity, grantGear, unequipOne,
@@ -25,7 +25,11 @@ import { CASTLE_MAX_LEVEL, accrued, newCastle, upgradeCost } from '../engine/dom
 import {
   GARRISON_RECOVER_MS, MAX_MARCHES, MIN_SORTIE, type March, SQUAD_RECOVER_MS, clearGarrison, garrisonKey, marchMs, pruneWounds, ratioOf, squadKey, withRatio,
 } from '../engine/siege';
-import { expToNext, MAX_LEVEL, MAX_STARS, PROMOTE_COST, promoteTarget } from '../engine/unit';
+import { expToNext, maxLevel, MAX_STARS, PROMOTE_COST, promoteTarget, shownRarity } from '../engine/unit';
+import {
+  applyThreatResult, ensureThreats, lordArmy, lordById, type LordThreat,
+} from '../engine/lords';
+import { decreeFormationOk, decreeOfWeek, decreeTroopOk } from '../engine/decree';
 
 export { emptyUnit, enemyProfiles, playerProfiles, unitProfile } from '../engine/profiles';
 import type { EnemyUnit, GeneralDef, OwnedGeneral, Slot, Unit } from '../types';
@@ -145,11 +149,18 @@ interface GameState extends SaveData {
   setGarrison: (stageId: string, unitIdx: number | null) => boolean;
   /** 도착한 부대가 있으면 전투를 계산해 전투 화면을 연다 */
   resolveMarches: () => boolean;
+  /** 8-3 이후 군주 위협을 갱신·도착 처리. 전투가 열리면 true */
+  tickThreats: () => boolean;
   /** 모의전 관전 (보상 없음) */
   startPractice: (enemies: EnemyUnit[], title: string) => boolean;
   /** 천하 토벌전 다음 층 도전 */
   startConquest: () => boolean;
+  /** 주의 군령 (제약 편성). 이미 받으면 null */
+  startDecree: () => boolean;
   closeBattle: () => void;
+  threats: LordThreat[];
+  lastThreatAt: number;
+  decreeClaimWeek: string;
   /** 모의전 설정과 100전 측정 기록 (저장 안 함) */
   practice: PracticeSettings;
   setPractice: (p: Partial<PracticeSettings>) => void;
@@ -164,14 +175,17 @@ function grantExp(roster: Record<string, OwnedGeneral>, formation: Unit[], amoun
   const deployed = new Set(formation.filter((u) => u.commander).flatMap((u) => SLOTS.map((s) => u[s])));
   for (const id of deployed) {
     if (!id || !next[id]) continue;
+    const def = GENERAL_MAP[id];
+    if (!def) continue;
     let { level, exp } = next[id];
+    const cap = maxLevel(shownRarity(def.rarity, next[id].promote));
     const from = level;
     exp += amount;
-    while (level < MAX_LEVEL && exp >= expToNext(level)) {
+    while (level < cap && exp >= expToNext(level)) {
       exp -= expToNext(level);
       level++;
     }
-    if (level >= MAX_LEVEL) exp = 0;
+    if (level >= cap) exp = 0;
     next[id] = { ...next[id], level, exp };
     if (level > from) levelUps.push({ id, from, to: level });
   }
@@ -197,8 +211,9 @@ function siegeBattle(s: GameState, march: March, now: number): Partial<GameState
   const stage = STAGE_MAP[stageId];
   if (!stage) return null;
 
+  const imprint = imprintBonus(s.conquestBest);
   const squads = units
-    .map((u) => ({ u, p: unitProfile(u, roster, gear), r: ratioOf(wounds, squadKey(u.commander!), now, SQUAD_RECOVER_MS) }))
+    .map((u) => ({ u, p: unitProfile(u, roster, gear, imprint), r: ratioOf(wounds, squadKey(u.commander!), now, SQUAD_RECOVER_MS) }))
     .filter((q): q is typeof q & { p: NonNullable<typeof q.p> } => !!q.p && q.r >= MIN_SORTIE);
   if (squads.length === 0) return null;
 
@@ -293,6 +308,9 @@ export const useGame = create<GameState>()(
       wounds: {},
       marches: [],
       castles: {},
+      threats: [],
+      lastThreatAt: 0,
+      decreeClaimWeek: '',
       view: 'campaign',
       battle: null,
       entered: false,
@@ -387,13 +405,16 @@ export const useGame = create<GameState>()(
         const { gold, roster } = get();
         const owned = roster[id];
         const def = GENERAL_MAP[id];
-        if (!owned || !def || (owned.promote ?? 0) > 0) return false;
-        if (owned.level < MAX_LEVEL || owned.stars < MAX_STARS) return false;
-        const target = promoteTarget(def.rarity);
+        if (!owned || !def) return false;
+        const steps = owned.promote ?? 0;
+        const target = promoteTarget(def.rarity, steps);
         if (!target) return false;
+        const cap = maxLevel(shownRarity(def.rarity, steps));
+        if (owned.level < cap || owned.stars < MAX_STARS) return false;
         const cost = PROMOTE_COST[target];
         if (gold < cost) return false;
-        set({ gold: gold - cost, roster: { ...roster, [id]: { ...owned, promote: 1 } } });
+        // 품계: 레벨·경험 리셋, ★ 유지. 새 등급 상한까지 다시 키운다.
+        set({ gold: gold - cost, roster: { ...roster, [id]: { ...owned, promote: steps + 1, level: 1, exp: 0 } } });
         return true;
       },
       equipGear: (generalId, gearId) => {
@@ -576,9 +597,63 @@ export const useGame = create<GameState>()(
         return !!patch;
       },
 
+      tickThreats: () => {
+        const s = get();
+        if (s.battle) return false;
+        const now = Date.now();
+        const planned = ensureThreats(s.cleared, s.castles, s.threats, now, s.lastThreatAt);
+        let threats = planned.threats;
+        const lastThreatAt = planned.lastThreatAt;
+        const due = threats.filter((t) => t.eta <= now).sort((a, b) => a.eta - b.eta)[0];
+        if (!due) {
+          if (threats !== s.threats || lastThreatAt !== s.lastThreatAt) set({ threats, lastThreatAt });
+          return false;
+        }
+        const castle = s.castles[due.stageId];
+        const lord = lordById(due.lordId);
+        const imprint = imprintBonus(s.conquestBest);
+        const enemies = lordArmy(due);
+        const enemyProf = enemyUnitsToProfiles(enemies);
+        let win = false;
+        let result: ReturnType<typeof simulateBattle>;
+        if (castle?.garrison) {
+          const mine = unitProfile(castle.garrison, s.roster, s.gear, imprint);
+          if (mine) {
+            result = simulateBattle([mine], enemyProf, randomSeed());
+            win = result.win;
+          } else {
+            result = simulateBattle(enemyProf.slice(0, 1), enemyProf, randomSeed());
+            result = { ...result, win: false };
+          }
+        } else {
+          result = simulateBattle(enemyProf.slice(0, 1), enemyProf, randomSeed());
+          result = { ...result, win: false };
+        }
+        const castles = castle
+          ? { ...s.castles, [due.stageId]: applyThreatResult(castle, win) }
+          : s.castles;
+        threats = threats.filter((t) => t.id !== due.id);
+        set({
+          threats,
+          lastThreatAt,
+          castles,
+          battle: {
+            mode: 'practice',
+            title: `${lord?.name ?? '군주'}의 공성`,
+            subtitle: win ? `${due.stageId} 수비 성공` : `${due.stageId} 성 Lv−1`,
+            enemies,
+            result,
+            reward: null,
+          },
+          view: 'battle',
+          focusStage: due.stageId,
+        });
+        return true;
+      },
+
       startPractice: (enemies, title) => {
-        const { formation, roster, gear } = get();
-        const mine = playerProfiles(formation, roster, gear);
+        const { formation, roster, gear, conquestBest } = get();
+        const mine = playerProfiles(formation, roster, gear, imprintBonus(conquestBest));
         if (mine.length === 0) return false;
         const result = simulateBattle(mine, enemyUnitsToProfiles(enemies), randomSeed());
         set({ battle: { mode: 'practice', title, subtitle: '모의전 · 보상 없음', enemies, result, reward: null }, view: 'battle', focusStage: 'practice' });
@@ -588,7 +663,8 @@ export const useGame = create<GameState>()(
       startConquest: () => {
         const { formation, roster, gold, conquestBest, cleared, gear } = get();
         if (!cleared['4-3']) return false;
-        const mine = playerProfiles(formation, roster, gear);
+        const imprint = imprintBonus(conquestBest);
+        const mine = playerProfiles(formation, roster, gear, imprint);
         if (mine.length === 0) return false;
         const f = conquestFloor(conquestBest + 1);
         const result = simulateBattle(mine, enemyUnitsToProfiles(f.enemies), randomSeed());
@@ -596,6 +672,7 @@ export const useGame = create<GameState>()(
         const rewardExp = result.win ? f.reward.exp : Math.round(f.reward.exp * 0.3);
         const { roster: nextRoster, levelUps } = grantExp(roster, formation, rewardExp);
         const grantedGear = result.win ? grantGear(gear, conquestGearId(f.floor)) : null;
+        const unifyNote = f.floor === 100 ? ' · 천하통일' : f.unified ? ' · 통일 이후' : '';
         set({
           gold: gold + rewardGold,
           roster: nextRoster,
@@ -604,11 +681,41 @@ export const useGame = create<GameState>()(
           conquestFailFloor: result.win ? get().conquestFailFloor : f.floor,
           focusStage: 'conquest',
           battle: {
-            mode: 'conquest', title: `천하 토벌전 ${f.floor}층`, subtitle: f.boss ? '정예 혼성군' : '', floor: f.floor,
+            mode: 'conquest',
+            title: `천하 토벌전 ${f.floor}층`,
+            subtitle: (f.boss ? '정예 혼성군' : '') + unifyNote,
+            floor: f.floor,
             enemies: f.enemies, result,
             reward: { gold: rewardGold, exp: rewardExp, firstClear: result.win, levelUps, gear: grantedGear?.drop ?? undefined },
           },
           view: 'battle',
+        });
+        return true;
+      },
+
+      startDecree: () => {
+        const { formation, roster, gold, gear, conquestBest, decreeClaimWeek } = get();
+        const d = decreeOfWeek();
+        if (decreeClaimWeek === d.week) return false;
+        if (!decreeFormationOk(formation, d.constraint)) return false;
+        if (!decreeTroopOk(formation, d.constraint, (id) => GENERAL_MAP[id]?.troop ?? null)) return false;
+        const mine = playerProfiles(formation, roster, gear, imprintBonus(conquestBest));
+        if (mine.length === 0) return false;
+        const result = simulateBattle(mine, enemyUnitsToProfiles(d.enemies), randomSeed());
+        const rewardGold = result.win ? d.rewardGold : Math.round(d.rewardGold * 0.2);
+        set({
+          gold: gold + rewardGold,
+          decreeClaimWeek: result.win ? d.week : decreeClaimWeek,
+          battle: {
+            mode: 'practice',
+            title: `주의 군령 ${d.week}`,
+            subtitle: `${d.constraint.label} · ${result.win ? `금 ${rewardGold}` : '패배'}`,
+            enemies: d.enemies,
+            result,
+            reward: { gold: rewardGold, exp: 0, firstClear: result.win, levelUps: [] },
+          },
+          view: 'battle',
+          focusStage: 'practice',
         });
         return true;
       },
