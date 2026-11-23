@@ -78,7 +78,9 @@ export function ensureThreats(
 ): { threats: LordThreat[]; lastThreatAt: number } {
   const list = threats ?? [];
   if ((cleared['8-3'] ?? 0) <= 0) return { threats: list, lastThreatAt };
-  const active = list.filter((t) => castles[t.stageId]);
+  const kept = list.filter((t) => castles[t.stageId]);
+  // filter는 매번 새 배열이라, 내용이 같으면 원래 참조를 돌려 무한 set을 막는다
+  const active = kept.length === list.length ? list : kept;
   if (active.length >= MAX_THREATS) return { threats: active, lastThreatAt };
   if (now - lastThreatAt < THREAT_COOLDOWN_MS && active.length > 0) {
     return { threats: active, lastThreatAt };

@@ -838,8 +838,8 @@ export default function Campaign() {
   /** 출정 부대(편성 번호 · 병력 비율)와 지금 고른 부대. picked가 null이면 출정 가능한 부대 전부 */
   const squads = useMemo(() => {
     const away = new Map<string | null, string>();
-    for (const c of Object.values(castles)) if (c.garrison) away.set(c.garrison.commander, '수비 중');
-    for (const m of marches) for (const u of m.units) away.set(u.commander, '행군 중');
+    for (const c of Object.values(castles ?? {})) if (c.garrison) away.set(c.garrison.commander, '수비 중');
+    for (const m of marches ?? []) for (const u of m.units) away.set(u.commander, '행군 중');
     return formation.flatMap((u, idx) => {
       const p = u.commander ? unitProfile(u, roster, gear) : null;
       return p ? [{ idx, p, r: ratioOf(wounds, squadKey(u.commander!), now, SQUAD_RECOVER_MS), busy: (away.get(u.commander) ?? false) as string | false }] : [];

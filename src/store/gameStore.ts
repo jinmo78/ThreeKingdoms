@@ -607,7 +607,10 @@ export const useGame = create<GameState>()(
         const lastThreatAt = planned.lastThreatAt;
         const due = threats.filter((t) => t.eta <= now).sort((a, b) => a.eta - b.eta)[0];
         if (!due) {
-          if (threats !== s.threats || lastThreatAt !== s.lastThreatAt) set({ threats, lastThreatAt });
+          // 참조만 바뀐 동일 목록은 set하지 않음 (Campaign useEffect 무한 루프 방지)
+          if (threats !== s.threats || lastThreatAt !== s.lastThreatAt) {
+            set({ threats, lastThreatAt });
+          }
           return false;
         }
         const castle = s.castles[due.stageId];
