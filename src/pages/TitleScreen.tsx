@@ -42,15 +42,17 @@ export default function TitleScreen() {
       />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/45" />
 
-      <div className="relative flex min-h-dvh flex-col items-center px-6 pb-8 pt-8 text-center sm:pt-12 land:min-h-0 land:justify-center land:px-4 land:py-2">
+      <div className="relative flex min-h-dvh flex-col items-center px-6 pb-8 pt-8 text-center sm:pt-12 land:h-full land:min-h-0 land:justify-between land:px-4 land:py-3">
+        <div className="flex flex-col items-center">
         <BannerEmblem animated className="h-16 w-16 drop-shadow-[0_8px_18px_rgba(0,0,0,0.65)] land:h-10 land:w-10" />
         <h1 className="mt-3 font-serif text-5xl font-black tracking-wide text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] sm:text-6xl land:mt-1 land:text-4xl">{GAME_TITLE}</h1>
         <div className="mt-2 font-serif text-lg tracking-[0.5em] text-red-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] land:mt-0.5 land:text-sm land:tracking-[0.35em]">{GAME_SUBTITLE}</div>
         <div className="mt-1 text-xs uppercase tracking-[0.3em] text-white/85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] land:hidden">{GAME_TAGLINE}</div>
+        </div>
 
         <div className="flex-1 land:hidden" />
 
-        <div className="mt-4 flex justify-center gap-2 land:mt-2">
+        <div className="mt-4 flex justify-center gap-2 land:mt-0">
           {SHOWCASE.map((id, i) => (
             <div key={id} className="animate-pop-in" style={{ animationDelay: `${0.2 + i * 0.12}s` }}>
               <GeneralToken def={getGeneral(id)} size={land ? 'sm' : 'md'} />
@@ -58,7 +60,7 @@ export default function TitleScreen() {
           ))}
         </div>
 
-        <div className="mt-8 flex flex-col items-center gap-3 land:mt-2 land:gap-2">
+        <div className="mt-8 flex flex-col items-center gap-3 land:mt-0 land:gap-2">
           {conflict ? <CloudPanel /> : (
             <>
               {waitingCloud ? null : started ? (
