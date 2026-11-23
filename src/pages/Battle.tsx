@@ -84,7 +84,7 @@ export default function BattlePage() {
 
   return (
     <div
-      className="relative flex h-full min-h-[100dvh] flex-col overflow-hidden land:min-h-0"
+      className="relative flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#101826]"
       style={{ '--battle-speed': speed } as CSSProperties}
     >
       {/* 상단 전투 HUD (글로벌 헤더 대신) */}
@@ -125,22 +125,22 @@ export default function BattlePage() {
         showSideLog && land && 'grid grid-cols-[minmax(0,1fr)_11rem]',
       )}>
         {/* 전장 */}
-        <div className="battle-stage relative min-h-0 overflow-hidden bg-[#101826]">
+        <div className="battle-stage relative min-h-0 flex-1 overflow-hidden bg-[#101826]">
           <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-75" />
           <div className="pointer-events-none absolute inset-0 bg-[#101826]/45" />
 
-          <div ref={fieldRef} className="relative flex h-full min-h-0 flex-col justify-between gap-2 p-2 sm:p-3 land:gap-1 land:p-1.5">
+          <div ref={fieldRef} className="relative flex h-full min-h-0 flex-col items-stretch justify-center gap-6 p-2 sm:gap-10 sm:p-3 lg:gap-24 land:gap-2 land:p-1.5">
             {showCutin && (
-              <SkillCutin key={ev.id} ev={ev} events={events} idx={idx} units={result.units} />
+              <SkillCutin key={ev.id} ev={ev} units={result.units} />
             )}
 
             <SideRow side={1} units={result.units[1]} ev={ev} events={events} idx={idx} cinematic={speed === 1} speed={speed} label="적군" />
 
-            <div className="relative z-[2] flex min-h-10 flex-none items-center justify-center land:min-h-6">
+            <div className="relative z-[2] flex min-h-8 flex-none items-center justify-center land:min-h-4">
               {!showCutin && (ev.kind === 'start'
                 ? <div key={ev.id} className="animate-banner font-serif text-2xl font-black text-[#F3ECE0]">전투 개시</div>
                 : <Swords size={22} className="text-[#C6A15B]" />)}
-              {showCutin && <div className="h-px w-2/3 max-w-sm bg-gradient-to-r from-transparent via-[#C6A15B]/80 to-transparent" />}
+              {showCutin && <div className="h-px w-2/3 max-w-md bg-gradient-to-r from-transparent via-[#C6A15B]/80 to-transparent" />}
             </div>
 
             <SideRow side={0} units={result.units[0]} ev={ev} events={events} idx={idx} cinematic={speed === 1} speed={speed} label="아군" />
@@ -236,19 +236,6 @@ function LogLine({ e, raw }: { e: BattleEvent; raw: boolean }) {
   return <div className={cn('animate-slide-in leading-snug', calm)}>{text}</div>;
 }
 
-function chainNames(events: BattleEvent[], idx: number): string[] {
-  const ev = events[idx];
-  if (!ev || (ev.kind !== 'skill' && ev.kind !== 'chain') || !ev.actor) return [];
-  const names: string[] = [];
-  for (let i = idx; i >= 0; i--) {
-    const e = events[i];
-    if ((e.kind !== 'skill' && e.kind !== 'chain') || e.actor?.side !== ev.actor.side || e.actor.idx !== ev.actor.idx) break;
-    if (e.caster) names.unshift(e.caster);
-    if (e.kind === 'skill') break;
-  }
-  return names;
-}
-
 function findCaster(units: UnitProfile[][], ev: BattleEvent): { def: GeneralDef; promote: number } | null {
   if (!ev.actor || !ev.caster) return null;
   const unit = units[ev.actor.side]?.[ev.actor.idx];
@@ -256,67 +243,63 @@ function findCaster(units: UnitProfile[][], ev: BattleEvent): { def: GeneralDef;
   return m ? { def: m.def, promote: m.promote } : null;
 }
 
-/** 전법 컷인 — 화면 암전 + 초상 대각 슬라이드 */
+/** 전법 컷인 — 세로 중앙 전체 너비 배너 + 초상 25%/75% */
 function SkillCutin({
-  ev, events, idx, units,
+  ev, units,
 }: {
-  ev: BattleEvent; events: BattleEvent[]; idx: number; units: UnitProfile[][];
+  ev: BattleEvent; units: UnitProfile[][];
 }) {
   const ally = ev.actor?.side === 0;
   const caster = findCaster(units, ev);
-  const names = ev.kind === 'chain' ? chainNames(events, idx) : [];
-  const n = (ev.chainStep ?? 0) + 1;
+  const chain = ev.kind === 'chain' && !!ev.chainStep;
   return (
     <div className="pointer-events-none absolute inset-0 z-30 overflow-hidden">
       <div key={`dim-${ev.id}`} className="ink-dim absolute inset-0 bg-[#060a12]/78" />
       <div
         key={`cut-${ev.id}`}
         className={cn(
-          'skill-cutin absolute inset-x-0 top-[18%] flex items-center gap-3 px-4 sm:top-[22%] sm:gap-5 sm:px-8 land:top-[12%] land:gap-2 land:px-3',
-          ally ? 'flex-row' : 'flex-row-reverse',
+          'skill-cutin absolute w-full',
+          ally ? 'skill-banner-ally' : 'skill-banner-enemy',
         )}
       >
-        <div
-          className={cn(
-            'skill-cutin-portrait relative shrink-0 rounded-xl p-[3px]',
-            ally ? 'skill-aura-ally' : 'skill-aura-enemy',
-          )}
-        >
-          {caster ? (
-            <GeneralToken def={caster.def} rarity={shownRarity(caster.def.rarity, caster.promote)} size="lg" className="!h-20 !w-20 sm:!h-24 sm:!w-24 land:!h-14 land:!w-14" />
-          ) : (
-            <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-stone-900 font-serif text-2xl text-amber-200 sm:h-24 sm:w-24 land:h-14 land:w-14">⚔</div>
-          )}
-        </div>
-        <div
-          className={cn(
-            'min-w-0 flex-1 px-3 py-2 text-[#F8E7D2] sm:px-5 sm:py-3',
-            ally ? 'skill-banner-ally text-left' : 'skill-banner-enemy text-right',
-          )}
-        >
-          <div className="truncate font-serif text-xs tracking-[0.2em] text-[#F3ECE0]/90 sm:text-sm">{ev.caster}</div>
-          <div className="truncate font-serif text-2xl font-black drop-shadow sm:text-4xl land:text-xl">【{ev.skill}】</div>
-          {names.length > 1 && (
-            <div className={cn('mt-1 flex flex-wrap items-center gap-1', ally ? 'justify-start' : 'justify-end', comboClass(n))}>
-              {names.map((name, i) => (
-                <span key={`${name}-${i}`} className="flex items-center gap-1">
-                  {i > 0 && <span className="text-[10px] text-[#C6A15B]">—</span>}
-                  <span className="max-w-16 truncate rounded-sm border border-[#C6A15B]/70 bg-[#101826]/70 px-1 py-px font-serif text-[10px]">{name}</span>
+        <div className="relative flex h-24 w-full items-center sm:h-28 land:h-16">
+          {/* 시전 장수 초상: 아군 좌측 25% · 적군 우측 25% */}
+          <div
+            className={cn(
+              'absolute top-1/2 z-[1] -translate-y-1/2 rounded-xl p-[3px]',
+              ally ? 'left-[25%] -translate-x-1/2 skill-aura-ally' : 'left-[75%] -translate-x-1/2 skill-aura-enemy',
+            )}
+          >
+            {caster ? (
+              <GeneralToken
+                def={caster.def}
+                rarity={shownRarity(caster.def.rarity, caster.promote)}
+                size="lg"
+                className="!h-16 !w-16 sm:!h-20 sm:!w-20 land:!h-12 land:!w-12"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-stone-900 font-serif text-xl text-amber-200 sm:h-20 sm:w-20 land:h-12 land:w-12">⚔</div>
+            )}
+          </div>
+
+          {/* 전법명 정중앙 */}
+          <div className="absolute left-1/2 top-1/2 z-[2] flex max-w-[70%] -translate-x-1/2 -translate-y-1/2 flex-col items-center px-2 text-center text-[#F8E7D2]">
+            <div className="truncate font-serif text-[10px] tracking-[0.25em] text-[#F3ECE0]/90 sm:text-xs">{ev.caster}</div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="truncate font-serif text-2xl font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)] sm:text-4xl land:text-xl">
+                【{ev.skill}】
+              </span>
+              {chain && (
+                <span key={`seal-${ev.id}`} className="chain-seal animate-chain-stamp">
+                  {ev.chainStep}단 연쇄!
                 </span>
-              ))}
-              <span className="font-serif font-black">{n}연쇄</span>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
   );
-}
-
-function comboClass(n: number) {
-  if (n >= 4) return 'text-base text-[#F8E7D2] drop-shadow-[0_0_8px_rgba(184,56,46,0.9)] sm:text-xl';
-  if (n >= 3) return 'text-sm text-[#B8382E] drop-shadow-[0_0_6px_rgba(198,161,91,0.8)] sm:text-lg';
-  return 'text-xs text-[#C6A15B] sm:text-sm';
 }
 
 function TroopBar({ value, max, speed }: { value: number; max: number; speed: number }) {
@@ -329,24 +312,31 @@ function TroopBar({ value, max, speed }: { value: number; max: number; speed: nu
   );
 }
 
-/** 피격 중앙 상단 대미지 팝업 */
+/** 부대 카드 위쪽 바깥에서 떠오르는 대미지 팝업 */
 function FloatingDamage({
   amount, kind, matchup, emphasis,
 }: {
-  amount: number; kind: 'dmg' | 'heal'; matchup?: string; emphasis: 'chain' | 'skill' | 'normal';
+  amount: number; kind: 'dmg' | 'heal'; matchup?: 'adv' | 'dis' | 'even'; emphasis: 'chain' | 'skill' | 'normal';
 }) {
   const heal = kind === 'heal';
+  const adv = !heal && matchup === 'adv';
   return (
     <span
       className={cn(
-        'animate-float-dmg pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 whitespace-nowrap text-center font-black tabular-nums',
-        heal ? 'float-dmg-heal text-2xl sm:text-3xl' : emphasis === 'chain' ? 'float-dmg-gold text-3xl sm:text-4xl' : emphasis === 'skill' ? 'float-dmg-crimson text-3xl sm:text-4xl' : 'float-dmg-crimson text-2xl sm:text-3xl',
+        'animate-float-dmg pointer-events-none absolute left-1/2 -top-8 z-20 flex -translate-x-1/2 flex-col items-center whitespace-nowrap text-center font-black tabular-nums',
+        heal && 'float-dmg-heal text-2xl sm:text-3xl',
+        !heal && adv && 'float-dmg-gold text-3xl sm:text-5xl',
+        !heal && !adv && emphasis === 'chain' && 'float-dmg-gold text-3xl sm:text-4xl',
+        !heal && !adv && emphasis === 'skill' && 'float-dmg-crimson text-3xl sm:text-4xl',
+        !heal && !adv && emphasis === 'normal' && 'float-dmg-crimson text-2xl sm:text-3xl',
       )}
     >
-      {heal ? '+' : '-'}{amount.toLocaleString()}
-      {matchup === 'adv' && !heal && (
-        <span className="mt-0.5 block text-[10px] font-bold tracking-wide text-orange-300 drop-shadow">상성 유리!</span>
+      {adv && (
+        <span className="mb-0.5 rounded bg-[#C6A15B]/25 px-1.5 py-px text-[10px] font-black tracking-wide text-[#F8E7D2] ring-1 ring-[#C6A15B]/80 sm:text-xs">
+          상성 유리
+        </span>
       )}
+      <span>{heal ? '+' : '-'}{amount.toLocaleString()}</span>
     </span>
   );
 }
@@ -380,7 +370,7 @@ function SideRow({
             <div
               key={i}
               className={cn(
-                'relative w-[30%] min-w-[5.75rem] max-w-[10rem] rounded-xl border p-1.5 transition-all sm:p-2 land:min-w-[4.75rem] land:max-w-[8rem]',
+                'relative w-[30%] min-w-[5.75rem] max-w-[10rem] overflow-visible rounded-xl border p-1.5 transition-all sm:p-2 land:min-w-[4.75rem] land:max-w-[8rem]',
                 side === 0 ? UNIT_TINT[i]?.card ?? 'border-sky-900/70 bg-sky-950/40' : 'border-red-900/70 bg-red-950/35',
                 acting && 'animate-pulse-ring border-amber-400/80',
                 casting && 'synergy-glow',

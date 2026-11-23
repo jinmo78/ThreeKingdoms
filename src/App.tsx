@@ -48,7 +48,7 @@ export default function App() {
   if (land) return <LandShell />;
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
+    <div className={cn('mx-auto flex max-w-6xl flex-col', inBattle ? 'h-dvh max-h-dvh overflow-hidden' : 'min-h-screen')}>
       {!inBattle && (
         <header className="sticky top-0 z-30 border-b border-[#C6A15B]/45 bg-[#171513]/95 text-[#F3ECE0] backdrop-blur">
           <div className="flex items-center gap-3 px-4 py-2.5">
@@ -78,7 +78,7 @@ export default function App() {
 
       <main className={cn(
         inBattle
-          ? 'flex min-h-0 flex-1 flex-col overflow-hidden p-0'
+          ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-[#101826] p-0'
           : 'scroll-sheet mx-3 mt-3 mb-20 flex-1 rounded-2xl px-4 py-5 lg:mb-4',
       )}>
         {view === 'campaign' && <Campaign />}
@@ -119,10 +119,10 @@ function LandShell() {
   const inBattle = view === 'battle';
   const modalTab = TABS.find((t) => t.id === view && t.id !== 'campaign');
   return (
-    <div className="fixed inset-0 bg-[#140e0c]">
-      {/* 바탕: 원정 지도 전체 화면. 전투 때만 종이 판 위에 전투 화면 */}
+    <div className={cn('fixed inset-0', inBattle ? 'bg-[#101826]' : 'bg-[#140e0c]')}>
+      {/* 바탕: 원정 지도 전체 화면. 전투 때만 전장 전체 */}
       {inBattle ? (
-        <main className="absolute inset-0 overflow-hidden"><BattlePage /></main>
+        <main className="absolute inset-0 overflow-hidden bg-[#101826]"><BattlePage /></main>
       ) : (
         <div className="absolute inset-0"><Campaign /></div>
       )}
