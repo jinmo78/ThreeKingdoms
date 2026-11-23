@@ -60,7 +60,7 @@ export function MarchList({ marches, now }: { marches: March[]; now: number }) {
 }
 
 const FIT_MARK = { good: '◎', ok: '○', bad: '△' } as const;
-const FIT_COLOR = { good: 'text-[#276347]', ok: 'text-[#8a6230]', bad: 'text-[#B8382E]' } as const;
+const FIT_COLOR = { good: 'text-[#276347]', ok: 'text-[#8a6230]', bad: 'text-[#B8332A]' } as const;
 
 /** 계략 고르기: 이 성의 지형과 지금 날씨에 맞는 전술을 고른다 */
 export function TacticPicker({ stageId, stageIdx, now, gold, tactic, onPick }: {
@@ -143,7 +143,7 @@ export function SiegePanel({ squads, garrison, picks, onToggle }: {
                 </div>
                 <div className="mt-1 flex items-center gap-1.5">
                   <div className="flex-1"><Bar r={r} tone="mine" /></div>
-                  <span className={cn('tabular w-8 text-right text-[10px]', r < 0.999 && 'font-bold text-[#B8382E]')}>{pct(r)}</span>
+                  <span className={cn('tabular w-8 text-right text-[10px]', r < 0.999 && 'font-bold text-[#B8332A]')}>{pct(r)}</span>
                 </div>
               </button>
             );
@@ -154,7 +154,7 @@ export function SiegePanel({ squads, garrison, picks, onToggle }: {
       <div>
         <div className="mb-1 flex items-baseline justify-between">
           <b className="font-serif text-[13px]">守備 성 수비대</b>
-          {wounded && <span className="text-[10px] font-bold text-[#B8382E]">약화</span>}
+          {wounded && <span className="text-[10px] font-bold text-[#B8332A]">약화</span>}
         </div>
         <div className="grid grid-cols-3 gap-1">
           {garrison.map(({ p, r }, i) => (

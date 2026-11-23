@@ -58,8 +58,8 @@ function cloudUser(user: User): CloudUser {
 
 function noticeFor(code: string): string {
   if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return '';
-  if (code === 'auth/popup-blocked') return '로그인 창이 막혔습니다. 브라우저에서 팝업을 허용해 주세요.';
-  if (code === 'auth/unauthorized-domain') return '이 주소는 Firebase 로그인 허용 목록에 없습니다.';
+  if (code === 'auth/popup-blocked') return '팝업 차단 · 허용 필요';
+  if (code === 'auth/unauthorized-domain') return '허용되지 않은 도메인';
   if (code === 'auth/network-request-failed' || code === 'unavailable') return '클라우드에 닿지 못했습니다. 이 브라우저의 기록은 남아 있습니다.';
   return '클라우드 저장에 실패했습니다. 이 브라우저의 기록은 남아 있습니다.';
 }

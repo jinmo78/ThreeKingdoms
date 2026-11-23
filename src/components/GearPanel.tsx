@@ -243,22 +243,22 @@ export function EquippedGear({ generalId }: { generalId: string }) {
               onClick={() => setOpen((cur) => cur === slot ? null : slot)}
               className={cn(
                 'relative flex min-h-28 flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border px-1 py-2 text-center',
-                worn && rank ? cn('border-2 bg-stone-950/50', RARITY[rank].border) : 'border-dashed border-[#C6A15B]/55 bg-stone-950/30',
-                open === slot && 'ring-2 ring-[#B8382E]',
+                worn && rank ? cn('border-2 bg-stone-950/50', RARITY[rank].border) : 'border-dashed border-[#D99B26]/55 bg-stone-950/30',
+                open === slot && 'ring-2 ring-[#B8332A]',
               )}
             >
               {!worn && (
-                <span aria-hidden className="pointer-events-none absolute text-4xl font-serif text-[#C6A15B]/25">{SLOT_MARK[slot]}</span>
+                <span aria-hidden className="pointer-events-none absolute text-4xl font-serif text-[#D99B26]/25">{SLOT_MARK[slot]}</span>
               )}
               <span className="relative text-[10px] font-bold text-stone-500">
                 {GEAR_SLOT_LABEL[slot]}
-                {best.includes(slot) && <span className="ml-1 text-[#C6A15B]">추천</span>}
+                {best.includes(slot) && <span className="ml-1 text-[#D99B26]">추천</span>}
               </span>
               {worn && wornItem ? (
                 <>
                   <GearArt id={worn.id} size="sm" />
                   <span className="relative text-[11px] font-bold leading-tight">{worn.name}</span>
-                  <span className="relative text-[10px] leading-tight text-[#C6A15B]">{effectLabel(worn.stat, gearBonus(worn, wornItem), gearSkill(worn, wornItem))}</span>
+                  <span className="relative text-[10px] leading-tight text-[#D99B26]">{effectLabel(worn.stat, gearBonus(worn, wornItem), gearSkill(worn, wornItem))}</span>
                 </>
               ) : (
                 <span className="relative flex items-center gap-0.5 text-xs text-stone-500"><Plus size={14} /> 장착</span>
@@ -268,7 +268,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
         })}
       </div>
       {openSlot && (
-        <div className="mt-2 space-y-1 rounded-xl border border-[#C6A15B]/40 p-2">
+        <div className="mt-2 space-y-1 rounded-xl border border-[#D99B26]/40 p-2">
           <div className="text-[11px] font-bold">{GEAR_SLOT_LABEL[openSlot]} 고르기</div>
           {currentOpen && (
             <button type="button" onClick={() => { unequipGear(generalId, currentOpen); setOpen(null); }}
@@ -276,7 +276,7 @@ export function EquippedGear({ generalId }: { generalId: string }) {
               해제
             </button>
           )}
-          {choices.length === 0 && <p className="py-2 text-center text-[11px] text-stone-500">가진 장비가 없습니다.</p>}
+          {choices.length === 0 && <p className="py-2 text-center text-[11px] text-stone-500">장비 없음</p>}
           {choices.map((id) => {
             const piece = GEAR_MAP[id];
             const item = bag[id];
@@ -284,13 +284,13 @@ export function EquippedGear({ generalId }: { generalId: string }) {
             return (
               <button key={id} type="button" onClick={() => { equipGear(generalId, id); setOpen(null); }}
                 className={cn('flex min-h-11 w-full items-center gap-2 rounded-lg border px-2 py-1 text-left text-xs',
-                  id === currentOpen ? 'border-[#C6A15B] bg-[#C6A15B]/15' : 'border-stone-700')}>
+                  id === currentOpen ? 'border-[#D99B26] bg-[#D99B26]/15' : 'border-stone-700')}>
                 <GearArt id={id} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="font-bold">{piece.name}</span>
                   {others > 0 && <span className="ml-1 text-[10px] text-stone-500">{others}명 장착</span>}
-                  {id === currentOpen && <span className="ml-1 text-[10px] text-[#B8382E]">장착 중</span>}
-                  <span className="mt-0.5 block text-[10px] text-[#C6A15B]">{effectLabel(piece.stat, gearBonus(piece, item), gearSkill(piece, item))}</span>
+                  {id === currentOpen && <span className="ml-1 text-[10px] text-[#B8332A]">장착 중</span>}
+                  <span className="mt-0.5 block text-[10px] text-[#D99B26]">{effectLabel(piece.stat, gearBonus(piece, item), gearSkill(piece, item))}</span>
                 </span>
               </button>
             );

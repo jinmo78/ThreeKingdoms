@@ -1,4 +1,4 @@
-﻿// 부대 편성 편집기 — 편성 화면 · 천하 토벌전 · 모의전에서 공용
+// 부대 편성 편집기 — 편성 화면 · 천하 토벌전 · 모의전에서 공용
 // 넓은 화면: 칸을 고른 뒤 아래 목록에서 배치. 모바일: 빈 칸 + → 팝업에서 배치
 // 목록에는 새로 켜지는 시너지와 주장 상성을 미리 표시
 import { Coins, Plus, Save, Trash2, Wand2, X } from 'lucide-react';
@@ -228,9 +228,9 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                   const badCommander = !!enemy && slot === 'commander' && def && matchupGrade(matchupVs(def.troop, enemyTroops)) === 'bad';
                   return (
                     <div key={slot} className={cn('relative flex flex-col items-center rounded-xl border-2', land ? 'gap-0.5 p-1' : 'min-h-24 gap-1 p-2',
-                      slot === 'commander' ? 'border-solid border-[#C6A15B]' : 'border-dashed border-stone-700',
+                      slot === 'commander' ? 'border-solid border-[#D99B26]' : 'border-dashed border-stone-700',
                       linked && 'synergy-glow',
-                      active ? 'border-[#B8382E] bg-red-950/40' : badCommander ? 'border-solid border-[#B8382E] bg-stone-950/60' : 'bg-stone-950/60')}>
+                      active ? 'border-[#B8332A] bg-red-950/40' : badCommander ? 'border-solid border-[#B8332A] bg-stone-950/60' : 'bg-stone-950/60')}>
                       <span className="flex items-center gap-0.5">
                         <button type="button" onClick={() => (def ? setTarget({ unit: ui, slot }) : openSlot(ui, slot))}
                           className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>
@@ -330,7 +330,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
       {land && presetOpen && (
         <Modal wide onClose={() => setPresetOpen(false)}>
           <div className="mb-2 flex shrink-0 items-center justify-between">
-            <h3 className="font-serif text-base font-black text-[#C6A15B]">편성 저장 · 불러오기</h3>
+            <h3 className="font-serif text-base font-black text-[#D99B26]">편성 저장 · 불러오기</h3>
             <button type="button" onClick={() => setPresetOpen(false)} aria-label="닫기" className="rounded-lg p-1 text-stone-400 hover:bg-stone-800"><X size={18} /></button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -392,7 +392,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                 </button>
               );
             })}
-            {matched.length === 0 && <p className="py-6 text-center text-xs text-stone-500">{needle ? '찾는 장수가 없습니다.' : '해당 세력의 장수가 없습니다.'}</p>}
+            {matched.length === 0 && <p className="py-6 text-center text-xs text-stone-500">{needle ? '검색 없음' : '장수 없음'}</p>}
           </div>
           </div>
         </Modal>
@@ -467,7 +467,7 @@ function CompareBoard({
             <span className={UNIT_TINT[target.unit].title}>{target.unit + 1}부대 · {SLOT_FACE[target.slot].name}</span>
             <span className="ml-2 text-sm font-normal text-stone-400">보유 장수와 비교</span>
           </h3>
-          <p className="mt-0.5 text-[11px] text-stone-500">목록에서 장수를 눌러 능력치를 비교한 뒤 이 칸에 배치합니다.</p>
+          <p className="mt-0.5 text-[11px] text-stone-500">장수 선택 → 배치</p>
         </div>
         <button type="button" onClick={onClose} className="rounded-lg p-1 text-stone-400 hover:bg-stone-800 hover:text-stone-100" aria-label="닫기"><X size={18} /></button>
       </div>
@@ -514,7 +514,7 @@ function CompareBoard({
                 </button>
               );
             })}
-            {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">{query.trim() ? '찾는 장수가 없습니다.' : '해당 세력의 장수가 없습니다.'}</p>}
+            {owned.length === 0 && <p className="py-6 text-center text-xs text-stone-500">{query.trim() ? '검색 없음' : '장수 없음'}</p>}
           </div>
         </div>
 
@@ -532,8 +532,8 @@ function CompareBoard({
           {here && <p className="mb-3 rounded-xl bg-stone-950/50 px-3 py-2 text-xs text-stone-400">이 장수가 이미 이 칸에 있습니다.</p>}
           {!sitting && enemyTroops.length > 0 && target.slot === 'commander' && (
             <p className="mb-3 text-[11px] text-stone-500">
-              {matchupGrade(matchupVs(detail.def.troop, enemyTroops)) === 'good' && '주장으로 두면 병과 상성이 유리합니다.'}
-              {matchupGrade(matchupVs(detail.def.troop, enemyTroops)) === 'bad' && '주장으로 두면 병과 상성이 불리합니다.'}
+              {matchupGrade(matchupVs(detail.def.troop, enemyTroops)) === 'good' && '상성 유리'}
+              {matchupGrade(matchupVs(detail.def.troop, enemyTroops)) === 'bad' && '상성 불리'}
             </p>
           )}
           <GeneralDetail def={detail.def} owned={viewedOwned} />
@@ -602,10 +602,10 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
       setNote(`「${label}」을 저장했습니다. 금화 -${cost}`);
       return;
     }
-    setNote(result === 'full' ? `저장은 ${PRESET_LIMIT}개까지입니다.`
-      : result === 'empty' ? '배치된 장수가 없습니다.'
-        : result === 'gold' ? '금화가 부족합니다.'
-          : '이름을 확인해 주세요.');
+    setNote(result === 'full' ? `저장 한도 ${PRESET_LIMIT}`
+      : result === 'empty' ? '배치 없음'
+        : result === 'gold' ? '금화 부족'
+          : '이름 확인');
   };
 
   return (
@@ -653,7 +653,7 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
                     setNote(`「${preset.name}」을 불러왔습니다.`);
                     return;
                   }
-                  setNote('불러올 장수가 없습니다.');
+                  setNote('불러올 장수 없음');
                 }}>
                 불러오기
               </Btn>

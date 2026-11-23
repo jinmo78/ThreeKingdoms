@@ -25,9 +25,9 @@ export function Panel({
   title?: ReactNode; icon?: ReactNode; action?: ReactNode; children: ReactNode; className?: string;
 }) {
   return (
-    <section className={cn('rounded-2xl border border-[#C6A15B]/55 bg-stone-900/80 shadow-[inset_0_1px_0_rgba(255,248,235,0.35)]', className)}>
+    <section className={cn('rounded-2xl border border-[#D99B26]/55 bg-stone-900/80 shadow-[inset_0_1px_0_rgba(255,248,235,0.35)]', className)}>
       {(title || action) && (
-        <header className="flex items-center justify-between gap-2 border-b border-[#C6A15B]/35 px-4 py-3">
+        <header className="flex items-center justify-between gap-2 border-b border-[#D99B26]/35 px-4 py-3">
           <h3 className="flex items-center gap-2 font-serif text-sm font-bold tracking-wide text-stone-200">
             {icon && <span className="text-red-300">{icon}</span>}
             {title}
@@ -48,10 +48,10 @@ export function Btn({
   disabled?: boolean; className?: string; title?: string;
 }) {
   const v: Record<BtnVariant, string> = {
-    primary: 'bg-[#B8382E] text-[#F8E7D2] hover:bg-[#9C2E26] shadow-[0_6px_20px_-8px_rgba(184,56,46,0.75)]',
-    gold: 'bg-[#C6A15B] text-[#171513] hover:bg-[#D4B36E] shadow-[0_6px_20px_-8px_rgba(198,161,91,0.7)]',
-    ghost: 'bg-stone-800 text-stone-200 hover:bg-stone-700',
-    outline: 'border border-[#C6A15B]/70 text-stone-200 hover:border-[#B8382E] hover:text-red-300',
+    primary: 'bg-[#B8332A] text-[#FAF6EE] hover:bg-[#9C2E26] shadow-sm',
+    gold: 'bg-[#D99B26] text-[#3D261C] hover:bg-[#E3AB3A] shadow-sm',
+    ghost: 'bg-[#EAE0D0] text-[#2C221E] hover:bg-[#C8B69E]/60',
+    outline: 'border border-[#8C6D46] text-[#2C221E] hover:border-[#B8332A] hover:text-[#B8332A]',
   };
   const s = { sm: 'min-h-9 px-3 py-1.5 text-xs', md: 'min-h-11 px-4 py-2.5 text-sm', lg: 'min-h-12 px-6 py-3 text-base' }[size];
   return (
@@ -88,7 +88,7 @@ export function ReloadButton({ className }: { className?: string }) {
       aria-label="새로고침"
       title="새로고침"
       onClick={() => window.location.reload()}
-      className={cn('min-h-11 min-w-11 rounded-lg p-2 text-[#F3ECE0] hover:bg-[#C6A15B]/15 hover:text-[#C6A15B]', className)}
+      className={cn('min-h-11 min-w-11 rounded-lg p-2 text-[#F3D078] hover:bg-[#D99B26]/20 hover:text-[#F3D078]', className)}
     >
       <RefreshCw size={16} />
     </button>
@@ -131,7 +131,7 @@ export function NameSearch({ value, onChange, placeholder }: { value: string; on
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="min-h-11 w-full min-w-[8rem] flex-1 rounded-lg border border-[#C6A15B]/45 bg-stone-950 px-3 py-2 text-sm text-stone-100 placeholder:text-stone-500"
+      className="min-h-11 w-full min-w-[8rem] flex-1 rounded-lg border border-[#C8B69E] bg-[#FAF6EE] px-3 py-2 text-sm text-[#2C221E] placeholder:text-[#6E5D4F]"
     />
   );
 }
@@ -142,11 +142,11 @@ export function Hint({ text }: { text: ReactNode }) {
   return (
     <span className="relative inline-flex align-middle">
       <button type="button" aria-expanded={open} aria-label="설명" onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[#C6A15B]/70 px-1 text-[10px] font-black text-[#8A6230]">
+        className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[#8C6D46]/70 px-1 text-[10px] font-black text-[#8C6D46]">
         ?
       </button>
       {open && (
-        <span role="note" className="absolute left-0 top-6 z-30 w-52 rounded-lg border border-[#C6A15B]/70 bg-[#18243a] p-2 text-left text-[11px] font-normal leading-snug text-[#F3ECE0] shadow-lg">
+        <span role="note" className="absolute left-0 top-6 z-30 w-52 rounded-lg border border-[#C8B69E] bg-[#FAF6EE] p-2 text-left text-[11px] font-normal leading-snug text-[#2C221E] shadow-sm">
           {text}
         </span>
       )}
@@ -161,11 +161,11 @@ export function Modal({ children, onClose, wide, ink }: { children: ReactNode; o
   }, []);
   // sticky·overflow 조상 안에서는 fixed가 뷰포트에 안 붙고 레이아웃이 깨지므로 body로 포털한다
   return createPortal(
-    <div className={cn('fixed inset-0 z-50 flex items-end justify-center overscroll-none p-0 sm:items-center sm:p-4 land:p-1.5!', ink ? 'bg-[#171513]/80' : 'bg-black/75')} onClick={onClose}>
+    <div className={cn('fixed inset-0 z-50 flex items-end justify-center overscroll-none p-0 sm:items-center sm:p-4 land:p-1.5!', ink ? 'bg-[#3D261C]/55' : 'bg-[#3D261C]/45')} onClick={onClose}>
       <div
         className={cn(
-          'animate-slide-in flex max-h-[92dvh] w-full flex-col overscroll-contain rounded-t-2xl border border-[#C6A15B]/70 bg-stone-950 p-5 leading-relaxed land:max-h-[calc(100dvh-0.75rem)]! land:p-3 sm:rounded-2xl',
-          ink && 'border-2 border-[#C6A15B] bg-[#18243a] text-[#F3ECE0]',
+          'animate-slide-in flex max-h-[92dvh] w-full flex-col overscroll-contain rounded-t-2xl border border-[#C8B69E] bg-[#FAF6EE] p-5 text-[#2C221E] shadow-sm land:max-h-[calc(100dvh-0.75rem)]! land:p-3 sm:rounded-2xl',
+          ink && 'border-2 border-[#8C6D46] bg-[#FAF6EE] text-[#2C221E]',
           wide ? 'h-[92dvh] max-w-4xl overflow-hidden land:h-[calc(100dvh-0.75rem)]! land:max-w-none!' : 'max-w-lg overflow-y-auto',
         )}
         onClick={(e) => e.stopPropagation()}

@@ -63,7 +63,7 @@ export function InstallPrompt() {
         <Download size={16} />
       </TitleIcon>
       <button type="button" aria-label="닫기" onClick={dismiss}
-        className="absolute -right-1 -top-1 rounded-full bg-black/80 p-0.5 text-white/80">
+        className="absolute -right-1 -top-1 rounded-full bg-[#3D261C]/80 p-0.5 text-[#FAF6EE]">
         <X size={12} />
       </button>
     </span>

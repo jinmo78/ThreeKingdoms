@@ -502,9 +502,9 @@ const TerrainSection = memo(function TerrainSection({ sec }: { sec: Sec }) {
           <g key={i} transform={`translate(${f1(m.x)} ${f1(m.y)}) rotate(${f1(m.rot)})`} style={{ fontFamily: 'var(--font-serif)' }}>
             {m.seal ? (
               <>
-                <rect x="-17" y="-38" width="34" height="76" rx="3" fill="none" stroke="#B8382E" strokeWidth="2.2" opacity=".3" />
-                <text y="-8" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8382E" opacity=".3">{m.t[0]}</text>
-                <text y="26" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8382E" opacity=".3">{m.t[1]}</text>
+                <rect x="-17" y="-38" width="34" height="76" rx="3" fill="none" stroke="#B8332A" strokeWidth="2.2" opacity=".3" />
+                <text y="-8" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8332A" opacity=".3">{m.t[0]}</text>
+                <text y="26" textAnchor="middle" fontSize="26" fontWeight="900" fill="#B8332A" opacity=".3">{m.t[1]}</text>
               </>
             ) : (
               <text textAnchor="middle" fontSize="40" fontWeight="900" letterSpacing="8" fill="currentColor" opacity=".13">{m.t}</text>
@@ -535,7 +535,7 @@ const TerrainSection = memo(function TerrainSection({ sec }: { sec: Sec }) {
             <circle r="25" fill="none" stroke="#8a6230" strokeWidth=".6" strokeDasharray="2 2.4" />
             <path d="M0 -20L3.5 -3.5L20 0L3.5 3.5L0 20L-3.5 3.5L-20 0L-3.5 -3.5Z" transform="rotate(45)" fill="#8a6230" opacity=".35" />
             <path d="M0 -29L4.5 -4.5L29 0L4.5 4.5L0 29L-4.5 4.5L-29 0L-4.5 -4.5Z" fill="#8a6230" opacity=".55" />
-            <path d="M0 -29L4.5 -4.5L-4.5 -4.5Z" fill="#b8382e" />
+            <path d="M0 -29L4.5 -4.5L-4.5 -4.5Z" fill="#b8332a" />
             <circle r="2.4" fill="#c5a059" />
             {([['北', 0, -34], ['南', 0, 43], ['東', 37, 4], ['西', -37, 4]] as const).map(([t, x, y]) => (
               <text key={t} x={x} y={y} textAnchor="middle" fontSize="9" fontWeight="900" fill="#8a6230" style={{ fontFamily: 'var(--font-serif)' }}>{t}</text>
@@ -762,7 +762,7 @@ function Corners({ size = 26 }: { size?: number }) {
           <path d="M2 22V8Q2 2 8 2H22" fill="none" stroke="#1b1713" strokeWidth="3.2" opacity=".45" />
           <path d="M2 22V8Q2 2 8 2H22" fill="none" stroke="#C5A059" strokeWidth="1.5" />
           <path d="M6.5 17V11Q6.5 6.5 11 6.5H17" fill="none" stroke="#C5A059" strokeWidth=".9" opacity=".8" />
-          <path d="M4.5 1.2L7.8 4.5L4.5 7.8L1.2 4.5Z" fill="#B8382E" stroke="#C5A059" strokeWidth=".8" />
+          <path d="M4.5 1.2L7.8 4.5L4.5 7.8L1.2 4.5Z" fill="#B8332A" stroke="#C5A059" strokeWidth=".8" />
           <circle cx="22" cy="2" r="1.1" fill="#C5A059" />
           <circle cx="2" cy="22" r="1.1" fill="#C5A059" />
         </svg>
@@ -777,9 +777,9 @@ function Compass() {
       <circle cx="24" cy="26" r="15" fill="none" stroke="#8a6230" strokeWidth=".9" />
       <circle cx="24" cy="26" r="11" fill="none" stroke="#8a6230" strokeWidth=".5" strokeDasharray="1.5 2" />
       <path d="M24 12L27 26L24 40L21 26Z" fill="#8a6230" opacity=".55" />
-      <path d="M24 12L27 26H21Z" fill="#b8382e" />
+      <path d="M24 12L27 26H21Z" fill="#b8332a" />
       <path d="M10 26L24 23L38 26L24 29Z" fill="#8a6230" opacity=".4" />
-      <text x="24" y="9" textAnchor="middle" fontSize="8" fontWeight="900" fill="#b8382e" fontFamily="serif">北</text>
+      <text x="24" y="9" textAnchor="middle" fontSize="8" fontWeight="900" fill="#b8332a" fontFamily="serif">北</text>
     </svg>
   );
 }
@@ -888,7 +888,7 @@ export default function Campaign() {
           <DomainBar castles={castles} now={now} />
           <div className="flex items-end justify-between gap-2">
             <h2 className="font-serif text-xl font-black tracking-wide">
-              천하 원정 <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8382E]">天下遠征</span>
+              천하 원정 <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8332A]">天下遠征</span>
             </h2>
             <span className="text-xs font-bold text-stone-500">점령 {clearedCount}/{STAGES.length}</span>
           </div>
@@ -939,14 +939,14 @@ export default function Campaign() {
             {FILTERS.map(([id, han, label]) => (
               <button key={id} type="button" onClick={() => setFilter(id)} aria-pressed={filter === id}
                 className={cn('rounded-md border px-2 py-1 text-[11px] font-bold shadow-lg',
-                  filter === id ? 'border-[#F0D58A] bg-[#8e2a22] text-[#fff4d6]' : 'border-[#C6A15B]/50 bg-[#1b1713]/85 text-[#C6A15B]')}>
+                  filter === id ? 'border-[#F0D58A] bg-[#B8332A] text-[#FAF6EE]' : 'border-[#8C6D46]/50 bg-[#FAF6EE]/90 text-[#8C6D46]')}>
                 {han} {label}
               </button>
             ))}
           </div>
           {/* 행군 중인 부대 (군령 패널이 닫혀 있을 때만, 열리면 패널 안에 같은 목록이 있다) */}
           {marches.length > 0 && !sheet && (
-            <div className="absolute bottom-2 right-[calc(3.75rem+env(safe-area-inset-right))] z-10 w-64 rounded-lg border border-[#C6A15B]/60 bg-[#F3ECE0]/95 px-2 pb-2 text-[#1C1612] shadow-lg [&>div]:mt-1.5">
+            <div className="absolute bottom-2 right-[calc(3.75rem+env(safe-area-inset-right))] z-10 w-64 rounded-lg border border-[#C8B69E] bg-[#FAF6EE]/95 px-2 pb-2 text-[#2C221E] shadow-sm [&>div]:mt-1.5">
               <MarchList marches={marches} now={now} />
             </div>
           )}
@@ -1068,7 +1068,7 @@ function Briefing({
             <span className="opacity-70">{troop ? TROOP[troop].label : ''} {enemies.length}부대</span>
             <span className={cn('rounded px-1.5 py-0.5 font-bold ring-1',
               grade === '상성 유리' ? 'bg-[#276347]/15 text-[#276347] ring-[#276347]/40'
-                : grade === '주의' ? 'bg-[#B8382E]/15 text-[#B8382E] ring-[#B8382E]/40'
+                : grade === '주의' ? 'bg-[#B8332A]/15 text-[#B8332A] ring-[#B8332A]/40'
                   : 'bg-[#8a6230]/15 text-[#8A6230] ring-[#8a6230]/40')}>
               {grade}
             </span>

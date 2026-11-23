@@ -26,11 +26,11 @@ export default function TitleScreen() {
   const waitingCloud = configured && !started && (phase === 'booting' || phase === 'syncing');
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-[#140e0c] land:h-dvh land:max-h-dvh">
+    <div className="relative min-h-dvh overflow-hidden bg-[#EAE0D0] land:h-dvh land:max-h-dvh">
       {/* 원본이 세로 720px라 넓은 PC에서 통째로 늘리면 흐려진다. 옆은 흐린 배경, 가운데만 원본 폭. */}
       <img src={TITLE_ART} alt="" aria-hidden className="pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-40 blur-3xl sm:block" />
       <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-10 flex items-center gap-1">
-        <ReloadButton className="text-white/80 hover:bg-white/10 hover:text-white" />
+        <ReloadButton className="text-[#3D261C]/80 hover:bg-[#3D261C]/10 hover:text-[#3D261C]" />
       </div>
 
       <div className="relative mx-auto min-h-dvh w-full max-w-[720px] overflow-hidden land:h-full land:min-h-0">
@@ -39,7 +39,7 @@ export default function TitleScreen() {
         alt=""
         className="absolute inset-0 h-full w-full object-cover object-[center_32%]"
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/45" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/20" />
 
       <div className="relative flex min-h-dvh flex-col items-center px-6 pb-8 pt-8 text-center sm:pt-12 land:h-full land:min-h-0 land:justify-between land:px-4 land:py-3">
         <div className="flex flex-col items-center">

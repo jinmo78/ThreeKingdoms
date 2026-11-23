@@ -7,11 +7,11 @@ import { Btn, cn, Hint, Modal } from './ui';
 
 const TITLE_BTN = 'inline-flex w-56 items-center justify-center gap-1.5 rounded-xl px-6 py-3 text-base font-bold transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none';
 const TITLE_COLOR = {
-  red: 'bg-red-700 text-white hover:bg-red-600 shadow-[0_6px_20px_-8px_rgba(220,38,38,0.7)]',
-  white: 'bg-white text-[#1c1612] hover:bg-stone-100 shadow-[0_6px_20px_-8px_rgba(255,255,255,0.45)]',
-  sky: 'bg-sky-700 text-white hover:bg-sky-600 shadow-[0_6px_20px_-8px_rgba(3,105,161,0.8)]',
-  stone: 'bg-stone-600 text-white hover:bg-stone-500 shadow-[0_6px_20px_-8px_rgba(0,0,0,0.45)]',
-  ink: 'bg-[#2c2622] text-stone-100 hover:bg-[#3d342e] shadow-[0_6px_20px_-8px_rgba(0,0,0,0.45)]',
+  red: 'bg-[#B8332A] text-[#FAF6EE] hover:bg-[#9C2E26] shadow-sm',
+  white: 'bg-[#FAF6EE] text-[#2C221E] hover:bg-[#F4EFE6] shadow-sm',
+  sky: 'bg-[#3D261C] text-[#F3D078] hover:bg-[#4A3226] shadow-sm',
+  stone: 'bg-[#EAE0D0] text-[#2C221E] hover:bg-[#C8B69E]/60 shadow-sm',
+  ink: 'bg-[#3D261C] text-[#F3D078] hover:bg-[#4A3226] shadow-sm',
 } as const;
 
 export function TitleButton({
@@ -44,7 +44,7 @@ export function TitleIcon({
 }) {
   return (
     <button type="button" title={title ?? label} aria-label={title ?? label} disabled={disabled} onClick={onClick}
-      className="inline-flex h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-white/25 bg-black/50 px-2 text-[11px] font-bold text-white shadow-[0_6px_16px_-10px_rgba(0,0,0,0.8)] backdrop-blur-sm hover:bg-black/70 disabled:opacity-40">
+      className="inline-flex h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#8C6D46]/50 bg-[#FAF6EE]/90 px-2 text-[11px] font-bold text-[#2C221E] shadow-sm backdrop-blur-sm hover:bg-[#FAF6EE] disabled:opacity-40">
       {children}
       <span className="whitespace-nowrap">{label}</span>
     </button>
@@ -74,18 +74,17 @@ export function ConflictBody() {
   const remoteWhen = when(conflict.remoteAt);
   return (
     <div className="mx-auto w-full max-w-md text-left">
-      <p className="text-sm font-bold text-stone-100">이 기기와 클라우드의 진행이 다릅니다</p>
-      <p className="mt-1 text-xs leading-relaxed text-stone-400">남길 쪽을 고르면 다른 쪽은 그 기록으로 바뀝니다.</p>
+      <p className="font-serif text-base font-bold text-[#2C221E]">저장 데이터 선택</p>
       <div className="mt-3 grid gap-2">
         <button type="button" disabled={busy} onClick={() => { void keepLocalSave(); }}
-          className="rounded-xl border border-stone-700 bg-stone-950/80 px-3 py-3 text-left hover:border-red-500/60 disabled:opacity-40">
-          <div className="text-xs font-bold text-red-200">이 기기</div>
-          <div className="mt-1 text-sm text-stone-200">{saveSummary(conflict.local)}</div>
+          className="rounded-xl border border-[#C8B69E] bg-[#FAF6EE]/90 px-3 py-3 text-left shadow-sm hover:border-[#8C6D46] disabled:opacity-40">
+          <div className="text-xs font-bold text-[#B8332A]">로컬 저장</div>
+          <div className="mt-1 text-sm text-[#2C221E]">{saveSummary(conflict.local)}</div>
         </button>
         <button type="button" disabled={busy} onClick={() => { void keepCloudSave(); }}
-          className="rounded-xl border border-stone-700 bg-stone-950/80 px-3 py-3 text-left hover:border-red-500/60 disabled:opacity-40">
-          <div className="text-xs font-bold text-red-200">클라우드{remoteWhen ? ` · ${remoteWhen}` : ''}</div>
-          <div className="mt-1 text-sm text-stone-200">{saveSummary(conflict.remote)}</div>
+          className="rounded-xl border border-[#C8B69E] bg-[#FAF6EE]/90 px-3 py-3 text-left shadow-sm hover:border-[#8C6D46] disabled:opacity-40">
+          <div className="text-xs font-bold text-[#B8332A]">클라우드 저장{remoteWhen ? ` · ${remoteWhen}` : ''}</div>
+          <div className="mt-1 text-sm text-[#2C221E]">{saveSummary(conflict.remote)}</div>
         </button>
       </div>
     </div>
@@ -131,16 +130,16 @@ export function AccountButton() {
   return (
     <>
       <button type="button" aria-label={label} title={label} onClick={() => setOpen(true)}
-        className="min-h-11 min-w-11 rounded-full p-2 text-[#F3ECE0] hover:bg-[#C6A15B]/15">
+        className="min-h-11 min-w-11 rounded-full p-2 text-[#F3D078] hover:bg-[#D99B26]/20">
         <UserRound size={16} />
       </button>
       {open && (
         <Modal onClose={() => setOpen(false)}>
-          <h3 className="flex items-center gap-1 font-serif text-lg font-black text-stone-100">
+          <h3 className="flex items-center gap-1 font-serif text-lg font-black text-[#2C221E]">
             계정
             <Hint text={user
-              ? (user.anonymous ? '이 브라우저 기록. 구글을 연결하면 다른 기기와 이어집니다.' : `${user.email ?? user.name ?? '구글'} 기록으로 기기를 맞춥니다.`)
-              : '구글은 기기 간 진행. 익명은 이 브라우저만.'} />
+              ? (user.anonymous ? '익명 · 이 기기' : (user.email ?? user.name ?? '구글'))
+              : '구글 · 익명'} />
           </h3>
           {notice && <p className="mt-2 text-xs text-stone-400">{notice}</p>}
           <div className="mt-4 flex flex-wrap gap-2">

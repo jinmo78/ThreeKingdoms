@@ -19,7 +19,7 @@ function Corners() {
           <path d="M2 22V8Q2 2 8 2H22" fill="none" stroke="#1b1713" strokeWidth="3.2" opacity=".45" />
           <path d="M2 22V8Q2 2 8 2H22" fill="none" stroke="#C5A059" strokeWidth="1.5" />
           <path d="M6.5 17V11Q6.5 6.5 11 6.5H17" fill="none" stroke="#C5A059" strokeWidth=".9" opacity=".8" />
-          <path d="M4.5 1.2L7.8 4.5L4.5 7.8L1.2 4.5Z" fill="#B8382E" stroke="#C5A059" strokeWidth=".8" />
+          <path d="M4.5 1.2L7.8 4.5L4.5 7.8L1.2 4.5Z" fill="#B8332A" stroke="#C5A059" strokeWidth=".8" />
           <circle cx="22" cy="2" r="1.1" fill="#C5A059" />
           <circle cx="2" cy="22" r="1.1" fill="#C5A059" />
         </svg>
@@ -65,7 +65,7 @@ export function Desk({
       <div className="min-w-0 lg:col-start-1 lg:row-start-1">
         <div className="mb-3 flex items-end justify-between gap-2">
           <h2 className="font-serif text-xl font-black tracking-wide">
-            {title} <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8382E]">{hanja}</span>
+            {title} <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8332A]">{hanja}</span>
           </h2>
           {meta && <span className="text-xs font-bold text-stone-500">{meta}</span>}
         </div>

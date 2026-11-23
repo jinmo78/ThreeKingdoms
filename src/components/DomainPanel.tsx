@@ -29,7 +29,7 @@ export function DomainBar({ castles, now, compact }: { castles: Record<string, C
     // 가로 화면 위 바용 한 줄
     return (
       <>
-        <div className="flex h-8 items-center gap-2 rounded-full border border-[#C6A15B]/50 bg-[#1b1713] py-0.5 pl-3 pr-0.5 text-[11px] text-[#E7DCC8]">
+        <div className="flex h-8 items-center gap-2 rounded-full border border-[#D99B26]/50 bg-[#1b1713] py-0.5 pl-3 pr-0.5 text-[11px] text-[#E7DCC8]">
           <span>🏯 {list.length}성 · <b className="tabular text-amber-300">{fmt(income)}</b>/시{threatN > 0 && <b className="ml-1 text-red-300">⚔{threatN}{dueN > 0 ? `·대기${dueN}` : ''}</b>}</span>
           {reports.length > 0 && (
             <button type="button" onClick={() => setLogOpen(true)} className="rounded-full px-1.5 text-amber-200/90" aria-label="공성 전보">
@@ -59,7 +59,7 @@ export function DomainBar({ castles, now, compact }: { castles: Record<string, C
         </span>
         <div className="flex shrink-0 items-center gap-1">
           {reports.length > 0 && (
-            <button type="button" onClick={() => setLogOpen(true)} className="rounded-md border border-[#C6A15B]/40 px-2 py-1 font-bold text-amber-200/90">
+            <button type="button" onClick={() => setLogOpen(true)} className="rounded-md border border-[#D99B26]/40 px-2 py-1 font-bold text-amber-200/90">
               전보 {reports.length}
             </button>
           )}
@@ -89,18 +89,17 @@ export function ThreatBanner({ now }: { now: number }) {
   const title = STAGE_MAP[due.stageId]?.title ?? due.stageId;
   const rest = arrivedThreats(threats, now).length - 1;
   return (
-    <div className="mb-2 rounded-xl border border-red-500/50 bg-[#2a1210]/95 px-3 py-2 text-xs text-[#F3ECE0] shadow-lg">
-      <div className="font-bold text-red-200">
-        {lord?.name ?? '군주'}가 {title}을(를) 공격 중
-        {rest > 0 && <span className="ml-1 font-normal text-stone-400">외 {rest}건</span>}
+    <div className="mb-2 rounded-xl border border-[#B8332A]/50 bg-[#FAF6EE] px-3 py-2 text-xs text-[#2C221E] shadow-sm">
+      <div className="font-bold text-[#B8332A]">
+        {lord?.name ?? '군주'} · {title} 공격
+        {rest > 0 && <span className="ml-1 font-normal text-[#6E5D4F]">외 {rest}건</span>}
       </div>
-      <p className="mt-0.5 text-[11px] text-stone-400">수락하면 전투를 보고, 자동 처리하면 결과만 전보에 남습니다.</p>
       <div className="mt-2 flex gap-2">
         <Btn size="sm" className="flex-1" onClick={() => acceptThreat(due.id)}>
-          <Swords size={13} /> 전투 보기
+          <Swords size={13} /> 전투
         </Btn>
         <Btn size="sm" variant="ghost" className="flex-1" onClick={() => autoResolveThreat(due.id)}>
-          자동 처리
+          자동
         </Btn>
       </div>
     </div>
@@ -116,7 +115,7 @@ function ThreatLogModal({ onClose }: { onClose: () => void }) {
         <button type="button" onClick={onClose} className="text-sm text-stone-400">닫기</button>
       </div>
       {reports.length === 0 ? (
-        <p className="text-sm text-stone-400">아직 전보가 없습니다.</p>
+        <p className="text-sm text-stone-400">전보 없음</p>
       ) : (
         <ul className="max-h-[60vh] space-y-2 overflow-y-auto text-sm">
           {reports.map((r) => {

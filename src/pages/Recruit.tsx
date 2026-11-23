@@ -1,4 +1,4 @@
-﻿// 장수 등용(가챠) 화면 — 일일 무료 · 출석 · 금화 등용
+// 장수 등용(가챠) 화면 — 일일 무료 · 출석 · 금화 등용
 import { CalendarCheck, Coins, Flag, Gift } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
@@ -188,7 +188,7 @@ export default function Recruit() {
   const overlays = (
     <>
       {phase === 'reveal' && createPortal(
-        <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[#171513]/94 land:overflow-hidden">
+        <div className="fixed inset-0 z-40 overflow-y-auto overflow-x-hidden bg-[#3D261C]/94 land:overflow-hidden">
           <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col items-center justify-center px-3 py-4 land:h-full land:min-h-0 land:justify-center land:overflow-hidden land:py-2">
             <div className="mb-3 flex w-full items-center justify-between gap-2">
               <p className="min-w-0 text-xs text-[#E7DCC8]">
@@ -200,7 +200,7 @@ export default function Recruit() {
               </p>
               {!allOpen && (
                 <button type="button" onClick={openAll}
-                  className="min-h-11 shrink-0 rounded-lg border border-[#C6A15B]/70 px-3 font-serif text-xs font-bold text-[#F3ECE0]">
+                  className="min-h-11 shrink-0 rounded-lg border border-[#D99B26]/70 px-3 font-serif text-xs font-bold text-[#2C221E]">
                   모두 펼치기
                 </button>
               )}

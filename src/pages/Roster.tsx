@@ -128,7 +128,7 @@ export default function Roster() {
             if (ownFilter === 'missing' && roster[g.id]) return false;
             if (rarity !== 'all' && g.rarity !== rarity) return false;
             return !query.trim() || g.name.includes(query.trim());
-          }) && <p className="text-center text-xs text-stone-500">조건에 맞는 장수가 없습니다.</p>}
+          }) && <p className="text-center text-xs text-stone-500">해당 없음</p>}
         </>
       )}
 
@@ -186,7 +186,7 @@ export default function Roster() {
       {detail && (
         <Modal ink onClose={() => setDetail(null)}>
           <GeneralDetail def={detail} owned={roster[detail.id]} onClose={() => setDetail(null)} />
-          {!roster[detail.id] && <p className="mt-3 text-center text-xs text-stone-500">아직 등용하지 않은 장수입니다.</p>}
+          {!roster[detail.id] && <p className="mt-3 text-center text-xs text-stone-500">미등용</p>}
         </Modal>
       )}
     </>
