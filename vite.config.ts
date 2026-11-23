@@ -33,6 +33,8 @@ export default defineConfig(({ command }) => ({
       },
       workbox: {
         // 장수 초상·타이틀 아트 포함. Firebase/폰트는 런타임 캐시.
+        // BGM wav(~1MB대)도 precache. 기본 2MiB 한도를 조금 올림.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,svg,png,webp,woff2,wav}'],
         navigateFallback: 'index.html',
         runtimeCaching: [

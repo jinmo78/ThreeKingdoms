@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'public', 'audio');
-const SR = 22050;
+const SR = 16000;
 
 function freq(semi, base = 110) {
   return base * 2 ** (semi / 12);
@@ -48,8 +48,8 @@ function softNoise(t) {
   return (x - Math.floor(x)) * 2 - 1;
 }
 
-/** 로비: 따뜻한 오각 패드, ~48초 루프 */
-function lobby(seconds = 48) {
+/** 로비: 따뜻한 오각 패드, ~32초 루프 */
+function lobby(seconds = 32) {
   const n = Math.floor(SR * seconds);
   const out = new Float64Array(n);
   const scale = [0, 2, 4, 7, 9, 12, 14, 16]; // 장조 느낌 오각+확장
@@ -91,8 +91,8 @@ function lobby(seconds = 48) {
   return out;
 }
 
-/** 전투: 낮은 펄스 + 긴장감 있는 5도, ~36초 */
-function battle(seconds = 36) {
+/** 전투: 낮은 펄스 + 긴장감 있는 5도, ~28초 */
+function battle(seconds = 28) {
   const n = Math.floor(SR * seconds);
   const out = new Float64Array(n);
   const pulseHz = 2.2;
