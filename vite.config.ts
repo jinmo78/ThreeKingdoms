@@ -13,7 +13,7 @@ export default defineConfig(({ command }) => ({
       registerType: 'autoUpdate',
       // GitHub Pages는 .webmanifest를 JSON이 아닌 타입으로 주는 경우가 있어 설치 기준이 깨진다.
       manifestFilename: 'manifest.json',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'og.png'],
       manifest: {
         name: 'Oath & Banner - 맹세와 깃발',
         short_name: '맹세와 깃발',
