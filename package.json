@@ -10,7 +10,8 @@
     "test": "vitest run",
     "preview": "vite preview",
     "icons:pwa": "node scripts/generate-pwa-icons.mjs",
-    "icons:og": "node scripts/generate-og.mjs"
+    "icons:og": "node scripts/generate-og.mjs",
+    "audio:bgm": "node scripts/generate-bgm.mjs"
   },
   "dependencies": {
     "firebase": "^13.3.0",
