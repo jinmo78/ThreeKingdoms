@@ -3,8 +3,7 @@ import { useAudioSettings } from '../store/useAudioSettings';
 
 export const BGM_FILES = {
   lobby: 'bgm_lobby.mp3',
-  // 전투곡 따로 받기 전엔 로비곡 유지
-  battle: 'bgm_lobby.mp3',
+  battle: 'bgm_battle.mp3',
 } as const;
 
 export type BgmKey = keyof typeof BGM_FILES;
