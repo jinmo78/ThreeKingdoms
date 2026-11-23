@@ -15,6 +15,16 @@ function bgmSrc(file: string) {
   return `${import.meta.env.BASE_URL}audio/${file}?${BGM_CACHE}`;
 }
 
+function clearMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  try {
+    navigator.mediaSession.playbackState = 'none';
+    navigator.mediaSession.metadata = null;
+  } catch {
+    /* ignore */
+  }
+}
+
 class AudioManager {
   private howls = new Map<BgmKey, Howl>();
   private current: BgmKey | null = null;
@@ -50,7 +60,7 @@ class AudioManager {
     }
   }
 
-  /** Howler 전역 + 캐시된 트랙 전부 정지 (이중 재생·옛 캐시 방지) */
+  /** Howler 전역 + 캐시된 트랙 전부 정지 */
   private stopEverything() {
     try {
       Howler.stop();
@@ -64,6 +74,32 @@ class AudioManager {
         /* ignore */
       }
     }
+    clearMediaSession();
+  }
+
+  /**
+   * 앱·탭을 떠날 때: 정지 + unload + 미디어 세션 해제.
+   * Android가 HTML5/미디어 알림을 남기지 않게 한다.
+   */
+  release() {
+    this.stopEverything();
+    for (const howl of this.howls.values()) {
+      try {
+        howl.unload();
+      } catch {
+        /* ignore */
+      }
+    }
+    this.howls.clear();
+    this.current = null;
+    clearMediaSession();
+  }
+
+  /** 다시 화면으로 돌아오면 듣던 곡 재개 */
+  resumeAfterBackground() {
+    if (!this.unlocked || !this.settings().bgmOn) return;
+    const key = this.desired ?? 'lobby';
+    this.playBgm(key);
   }
 
   private stopOthers(except: BgmKey) {
@@ -85,7 +121,8 @@ class AudioManager {
       src: [src],
       format: ['mp3'],
       loop: true,
-      html5: true,
+      // Web Audio: Android 미디어 알림(재생 위젯)이 덜 뜸
+      html5: false,
       preload: true,
       volume: this.settings().bgmVolume,
       onloaderror: (_id, err) => {
@@ -131,12 +168,9 @@ class AudioManager {
     const vol = Math.max(0.05, this.volume());
     howl.volume(vol);
     try {
-      if (howl.playing()) {
-        // 이미 같은 곡이면 볼륨만
-      } else {
-        howl.play();
-      }
+      if (!howl.playing()) howl.play();
       this.current = key;
+      clearMediaSession();
     } catch (err) {
       console.warn(`[audio] BGM start failed: ${key}`, err);
     }
@@ -167,7 +201,6 @@ class AudioManager {
       return;
     }
 
-    // 겹침 없이 전환 (옛 wav·이전 곡이 같이 재생되는 문제 방지)
     this.stopEverything();
     this.current = null;
     const howl = this.ensure(key);

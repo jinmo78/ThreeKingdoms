@@ -10,10 +10,24 @@ export function AudioGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onVis = () => {
-      audioManager.muteAll(document.visibilityState === 'hidden');
+      if (document.visibilityState === 'hidden') {
+        // 백그라운드·앱 전환 시 재생 세션을 끊어 Android 미디어 알림이 안 남게 함
+        audioManager.release();
+      } else {
+        audioManager.resumeAfterBackground();
+      }
+    };
+    const onLeave = () => {
+      audioManager.release();
     };
     document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onLeave);
+    window.addEventListener('beforeunload', onLeave);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', onLeave);
+      window.removeEventListener('beforeunload', onLeave);
+    };
   }, []);
 
   if (!unlocked) {
