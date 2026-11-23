@@ -7,11 +7,11 @@ import { Btn, cn, Hint, Modal } from './ui';
 
 const TITLE_BTN = 'inline-flex w-56 items-center justify-center gap-1.5 rounded-xl px-6 py-3 text-base font-bold transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none';
 const TITLE_COLOR = {
-  red: 'bg-[#B8332A] text-[#FAF6EE] hover:bg-[#9C2E26] shadow-sm',
-  white: 'bg-[#FAF6EE] text-[#2C221E] hover:bg-[#F4EFE6] shadow-sm',
-  sky: 'bg-[#3D261C] text-[#F3D078] hover:bg-[#4A3226] shadow-sm',
-  stone: 'bg-[#EAE0D0] text-[#2C221E] hover:bg-[#C8B69E]/60 shadow-sm',
-  ink: 'bg-[#3D261C] text-[#F3D078] hover:bg-[#4A3226] shadow-sm',
+  red: 'bg-[#B8332A] text-[#F5E6C8] hover:bg-[#9C2E26] shadow-sm',
+  white: 'bg-[#1C1613]/80 text-[#F5E6C8] hover:bg-[#1C1613] shadow-sm border border-[#C89D54]/50 backdrop-blur-sm',
+  sky: 'bg-[#241B15]/85 text-[#E2B866] hover:bg-[#241B15] shadow-sm border border-[#C89D54]/40 backdrop-blur-sm',
+  stone: 'bg-[#1C1613]/80 text-[#F5E6C8] hover:bg-[#1C1613] shadow-sm border border-[#C89D54]/40 backdrop-blur-sm',
+  ink: 'bg-[#241B15]/90 text-[#E2B866] hover:bg-[#241B15] shadow-sm',
 } as const;
 
 export function TitleButton({
@@ -44,7 +44,7 @@ export function TitleIcon({
 }) {
   return (
     <button type="button" title={title ?? label} aria-label={title ?? label} disabled={disabled} onClick={onClick}
-      className="inline-flex h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#8C6D46]/50 bg-[#FAF6EE]/90 px-2 text-[11px] font-bold text-[#2C221E] shadow-sm backdrop-blur-sm hover:bg-[#FAF6EE] disabled:opacity-40">
+      className="inline-flex h-14 min-w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#C89D54]/50 bg-[#1C1613]/80 px-2 text-[11px] font-bold text-[#F5E6C8] shadow-sm backdrop-blur-sm hover:bg-[#1C1613]/90 disabled:opacity-40">
       {children}
       <span className="whitespace-nowrap">{label}</span>
     </button>
@@ -73,18 +73,18 @@ export function ConflictBody() {
   if (!conflict) return null;
   const remoteWhen = when(conflict.remoteAt);
   return (
-    <div className="mx-auto w-full max-w-md text-left">
-      <p className="font-serif text-base font-bold text-[#2C221E]">저장 데이터 선택</p>
+    <div className="mx-auto w-full max-w-md rounded-2xl bg-[#181310]/55 p-3 text-left backdrop-blur-sm">
+      <p className="font-serif text-base font-bold text-[#F5E6C8] drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]">저장 데이터 선택</p>
       <div className="mt-3 grid gap-2">
         <button type="button" disabled={busy} onClick={() => { void keepLocalSave(); }}
-          className="rounded-xl border border-[#C8B69E] bg-[#FAF6EE]/90 px-3 py-3 text-left shadow-sm hover:border-[#8C6D46] disabled:opacity-40">
-          <div className="text-xs font-bold text-[#B8332A]">로컬 저장</div>
-          <div className="mt-1 text-sm text-[#2C221E]">{saveSummary(conflict.local)}</div>
+          className="rounded-xl border border-[#C89D54]/50 bg-[#1C1613]/80 px-3 py-3 text-left shadow-sm backdrop-blur-sm hover:border-[#E2B866] disabled:opacity-40">
+          <div className="text-xs font-bold text-[#E2B866]">로컬 저장</div>
+          <div className="mt-1 text-sm text-[#F5E6C8]">{saveSummary(conflict.local)}</div>
         </button>
         <button type="button" disabled={busy} onClick={() => { void keepCloudSave(); }}
-          className="rounded-xl border border-[#C8B69E] bg-[#FAF6EE]/90 px-3 py-3 text-left shadow-sm hover:border-[#8C6D46] disabled:opacity-40">
-          <div className="text-xs font-bold text-[#B8332A]">클라우드 저장{remoteWhen ? ` · ${remoteWhen}` : ''}</div>
-          <div className="mt-1 text-sm text-[#2C221E]">{saveSummary(conflict.remote)}</div>
+          className="rounded-xl border border-[#C89D54]/50 bg-[#1C1613]/80 px-3 py-3 text-left shadow-sm backdrop-blur-sm hover:border-[#E2B866] disabled:opacity-40">
+          <div className="text-xs font-bold text-[#E2B866]">클라우드 저장{remoteWhen ? ` · ${remoteWhen}` : ''}</div>
+          <div className="mt-1 text-sm text-[#F5E6C8]">{saveSummary(conflict.remote)}</div>
         </button>
       </div>
     </div>
@@ -130,7 +130,7 @@ export function AccountButton() {
   return (
     <>
       <button type="button" aria-label={label} title={label} onClick={() => setOpen(true)}
-        className="min-h-11 min-w-11 rounded-full p-2 text-[#F3D078] hover:bg-[#D99B26]/20">
+        className="min-h-11 min-w-11 rounded-full p-2 text-[#E2B866] hover:bg-[#E2B866]/20">
         <UserRound size={16} />
       </button>
       {open && (
@@ -145,7 +145,7 @@ export function AccountButton() {
           <div className="mt-4 flex flex-wrap gap-2">
             {!user && (
               <button type="button" disabled={busy} onClick={() => { void signInGoogle(); }}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-bold text-[#1c1612] hover:bg-stone-100 disabled:opacity-40">
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#8C6D46] bg-[#EFE6D5] px-4 py-2 text-sm font-bold text-[#2C221E] hover:bg-[#E6DBC6] disabled:opacity-40">
                 <LogIn size={16} /> 구글
               </button>
             )}

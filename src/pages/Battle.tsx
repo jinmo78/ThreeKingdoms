@@ -88,11 +88,11 @@ export default function BattlePage() {
 
   return (
     <div
-      className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#EAE0D0]"
+      className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#DCD0B8]"
       style={{ '--battle-speed': speed } as CSSProperties}
     >
       {/* 상단 전투 HUD (글로벌 헤더 대신) */}
-      <div className="relative z-30 flex shrink-0 items-center gap-2 bg-[#EAE0D0]/90 px-3 py-2 text-[#2C221E] backdrop-blur land:py-1">
+      <div className="relative z-30 flex shrink-0 items-center gap-2 bg-[#DCD0B8]/90 px-3 py-2 text-[#2C221E] backdrop-blur land:py-1">
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs text-stone-400">{battle.subtitle}</div>
           <h2 className="truncate font-serif text-lg font-black land:text-base">{battle.title}</h2>
@@ -114,8 +114,8 @@ export default function BattlePage() {
             aria-label={logOpen ? '기록 닫기' : '기록 열기'}
             onClick={() => setLogOpen((v) => !v)}
             className={cn(
-              'inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#D99B26]/50',
-              logOpen ? 'bg-[#B8332A] text-[#FAF6EE]' : 'bg-transparent text-[#2C221E]',
+              'inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#E2B866]/50',
+              logOpen ? 'bg-[#B8332A] text-[#EFE6D5]' : 'bg-transparent text-[#2C221E]',
             )}
           >
             {logOpen ? <X size={14} /> : <ScrollText size={14} />}
@@ -129,9 +129,9 @@ export default function BattlePage() {
         showSideLog && land && 'land:grid land:grid-cols-[minmax(0,1fr)_12rem] land:flex-none',
       )}>
         {/* 전장 — 항상 남은 높이를 채움 */}
-        <div className="battle-stage relative min-h-0 flex-1 overflow-hidden bg-[#EAE0D0]">
+        <div className="battle-stage relative min-h-0 flex-1 overflow-hidden bg-[#DCD0B8]">
           <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-75" />
-          <div className="pointer-events-none absolute inset-0 bg-[#EAE0D0]/45" />
+          <div className="pointer-events-none absolute inset-0 bg-[#DCD0B8]/45" />
 
           <div ref={fieldRef} className="relative flex h-full min-h-0 flex-col items-stretch justify-center gap-3 p-3 sm:gap-5 sm:p-4 lg:gap-8 land:gap-2 land:p-2">
             {showCutin && (
@@ -143,15 +143,15 @@ export default function BattlePage() {
             <div className="relative z-[2] flex min-h-6 flex-none items-center justify-center land:min-h-3">
               {!showCutin && (ev.kind === 'start'
                 ? <div key={ev.id} className="animate-banner font-serif text-2xl font-black text-[#2C221E]">전투 개시</div>
-                : <Swords size={26} className="text-[#D99B26]" />)}
-              {showCutin && <div className="h-px w-2/3 max-w-md bg-gradient-to-r from-transparent via-[#D99B26]/80 to-transparent" />}
+                : <Swords size={26} className="text-[#E2B866]" />)}
+              {showCutin && <div className="h-px w-2/3 max-w-md bg-gradient-to-r from-transparent via-[#E2B866]/80 to-transparent" />}
             </div>
 
             <SideRow side={0} units={result.units[0]} ev={ev} events={events} idx={idx} cinematic={speed === 1} speed={speed} label="아군" />
 
             {/* 좌하단 미니 로그 티커 */}
             {!done && (
-              <div className="pointer-events-none absolute bottom-2 left-2 z-20 w-[min(18rem,58%)] space-y-0.5 rounded-lg bg-[#FAF6EE]/90 px-2.5 py-1.5 text-xs leading-snug text-[#2C221E] backdrop-blur-sm land:bottom-1.5 land:left-1.5 land:text-[11px]">
+              <div className="pointer-events-none absolute bottom-2 left-2 z-20 w-[min(18rem,58%)] space-y-0.5 rounded-lg bg-[#EFE6D5]/90 px-2.5 py-1.5 text-xs leading-snug text-[#2C221E] backdrop-blur-sm land:bottom-1.5 land:left-1.5 land:text-[11px]">
                 {ticker.map((e) => (
                   <div key={e.id} className="animate-slide-in truncate opacity-90">{briefLog(e)}</div>
                 ))}
@@ -182,7 +182,7 @@ export default function BattlePage() {
           <div
             ref={logRef}
             className={cn(
-              'z-20 hidden min-h-0 space-y-1 overflow-y-auto border-[#D99B26]/35 bg-[#FAF6EE]/95 p-2.5 text-sm text-[#2C221E] lg:block lg:border-l',
+              'z-20 hidden min-h-0 space-y-1 overflow-y-auto border-[#E2B866]/35 bg-[#EFE6D5]/95 p-2.5 text-sm text-[#2C221E] lg:block lg:border-l',
               land && '!absolute inset-y-0 right-0 !block w-48 border-l shadow-xl',
             )}
           >
@@ -192,7 +192,7 @@ export default function BattlePage() {
                 type="button"
                 aria-pressed={rawLog}
                 onClick={() => setRawLog((v) => !v)}
-                className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold', rawLog ? 'bg-[#8e2a22] text-[#FAF6EE]' : 'bg-[#EAE0D0]/40')}
+                className={cn('rounded px-1.5 py-0.5 text-[10px] font-bold', rawLog ? 'bg-[#8e2a22] text-[#EFE6D5]' : 'bg-[#DCD0B8]/40')}
               >
                 {rawLog ? '전문' : '요약'}
               </button>
@@ -225,7 +225,7 @@ function LogLine({ e, raw }: { e: BattleEvent; raw: boolean }) {
     return (
       <div className="animate-slide-in flex items-start gap-1.5 leading-snug">
         <span className={cn('mt-px shrink-0 rounded-sm px-1 font-serif text-[10px] font-black',
-          chain ? 'bg-[#B8332A] text-[#FAF6EE]' : 'bg-[#D99B26] text-[#3D261C]')}>
+          chain ? 'bg-[#B8332A] text-[#EFE6D5]' : 'bg-[#E2B866] text-[#241B15]')}>
           {chain ? `${n}연쇄` : '전법'}
         </span>
         <span className={chain ? 'font-bold text-red-300' : 'font-semibold text-amber-200'}>{text}</span>
@@ -285,8 +285,8 @@ function SkillCutin({
           </div>
 
           {/* 전법명 정중앙 */}
-          <div className="absolute left-1/2 top-1/2 z-[2] flex max-w-[70%] -translate-x-1/2 -translate-y-1/2 flex-col items-center px-2 text-center text-[#FAF6EE]">
-            <div className="truncate font-serif text-[10px] tracking-[0.25em] text-[#FAF6EE]/90 sm:text-xs">{ev.caster}</div>
+          <div className="absolute left-1/2 top-1/2 z-[2] flex max-w-[70%] -translate-x-1/2 -translate-y-1/2 flex-col items-center px-2 text-center text-[#EFE6D5]">
+            <div className="truncate font-serif text-[10px] tracking-[0.25em] text-[#EFE6D5]/90 sm:text-xs">{ev.caster}</div>
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span className="truncate font-serif text-2xl font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)] sm:text-4xl land:text-xl">
                 【{ev.skill}】
@@ -307,7 +307,7 @@ function SkillCutin({
 function TroopBar({ value, max, speed }: { value: number; max: number; speed: number }) {
   const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
   return (
-    <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-[#3D261C]/55 land:h-2">
+    <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-[#241B15]/55 land:h-2">
       <div className="absolute inset-y-0 left-0 bg-white/85" style={{ width: `${pct}%`, transition: `width ${0.28 / speed}s ease ${0.3 / speed}s` }} />
       <div className="absolute inset-y-0 left-0 bg-[#C45A32]" style={{ width: `${pct}%`, transition: `width ${0.08 / speed}s linear` }} />
     </div>
@@ -334,7 +334,7 @@ function FloatingDamage({
       )}
     >
       {adv && (
-        <span className="mb-0.5 rounded bg-[#D99B26]/25 px-1.5 py-px text-[10px] font-black tracking-wide text-[#FAF6EE] ring-1 ring-[#D99B26]/80 sm:text-xs">
+        <span className="mb-0.5 rounded bg-[#E2B866]/25 px-1.5 py-px text-[10px] font-black tracking-wide text-[#EFE6D5] ring-1 ring-[#E2B866]/80 sm:text-xs">
           상성 유리
         </span>
       )}

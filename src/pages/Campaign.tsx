@@ -939,14 +939,14 @@ export default function Campaign() {
             {FILTERS.map(([id, han, label]) => (
               <button key={id} type="button" onClick={() => setFilter(id)} aria-pressed={filter === id}
                 className={cn('rounded-md border px-2 py-1 text-[11px] font-bold shadow-lg',
-                  filter === id ? 'border-[#F0D58A] bg-[#B8332A] text-[#FAF6EE]' : 'border-[#8C6D46]/50 bg-[#FAF6EE]/90 text-[#8C6D46]')}>
+                  filter === id ? 'border-[#F0D58A] bg-[#B8332A] text-[#EFE6D5]' : 'border-[#8C6D46]/50 bg-[#EFE6D5]/90 text-[#8C6D46]')}>
                 {han} {label}
               </button>
             ))}
           </div>
           {/* 행군 중인 부대 (군령 패널이 닫혀 있을 때만, 열리면 패널 안에 같은 목록이 있다) */}
           {marches.length > 0 && !sheet && (
-            <div className="absolute bottom-2 right-[calc(3.75rem+env(safe-area-inset-right))] z-10 w-64 rounded-lg border border-[#C8B69E] bg-[#FAF6EE]/95 px-2 pb-2 text-[#2C221E] shadow-sm [&>div]:mt-1.5">
+            <div className="absolute bottom-2 right-[calc(3.75rem+env(safe-area-inset-right))] z-10 w-64 rounded-lg border border-[#8C6D46] bg-[#EFE6D5]/95 px-2 pb-2 text-[#2C221E] shadow-sm [&>div]:mt-1.5">
               <MarchList marches={marches} now={now} />
             </div>
           )}

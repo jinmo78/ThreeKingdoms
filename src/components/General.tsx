@@ -34,9 +34,9 @@ export function GeneralToken({ def, size = 'md', className, rarity }: {
   const troop = TROOP[def.troop];
   return (
     <div className={cn('relative shrink-0', className)}>
-      <div className={cn('relative overflow-hidden bg-[#3D261C]', s.box, RARITY[rank].border, FACTION[def.faction].frame, RARITY[rank].ring)}>
+      <div className={cn('relative overflow-hidden bg-[#241B15]', s.box, RARITY[rank].border, FACTION[def.faction].frame, RARITY[rank].ring)}>
         {!img && (
-          <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center font-serif text-[1.7em] text-[#D99B26]/30">{def.name}</span>
+          <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center font-serif text-[1.7em] text-[#E2B866]/30">{def.name}</span>
         )}
         {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className="relative block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]" />
           : <Portrait def={def} className="relative block h-full w-full" />}
@@ -222,7 +222,7 @@ function StatRadar({ stats, bonus, power, powerAdd, rate, rateAdd }: {
         const [x, y] = point(i, 1);
         return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="currentColor" strokeOpacity={0.2} />;
       })}
-      <polygon points={shape} fill="rgba(198,161,91,0.35)" stroke="#D99B26" strokeWidth="1.5" />
+      <polygon points={shape} fill="rgba(198,161,91,0.35)" stroke="#E2B866" strokeWidth="1.5" />
       {axes.map((axis, i) => {
         const [x, y] = point(i, 1.28);
         const [vx, vy] = point(i, Math.max(0.08, Math.min(1, axis.value / axis.max)));
@@ -273,7 +273,7 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
   return (
     <div className="space-y-3">
       <header className={cn('z-10', onClose && 'sticky top-0 -mx-5 -mt-5')}>
-        <div className={cn('flex items-center gap-2 px-3 py-2.5 text-[#FAF6EE]', faction.bg)}>
+        <div className={cn('flex items-center gap-2 px-3 py-2.5 text-[#EFE6D5]', faction.bg)}>
           {fullImg ? (
             <button type="button" onClick={() => setShowFull(true)} className="shrink-0" aria-label={`${def.name} 전신 보기`}>
               <GeneralToken def={def} size="md" rarity={rank} />
@@ -289,7 +289,7 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
           <RarityBadge rarity={rank} />
           <span className="seal" aria-label={troop.label}>{troop.seal}</span>
           {onClose && (
-            <button type="button" onClick={onClose} aria-label="닫기" className="ml-1 flex h-11 w-11 items-center justify-center text-lg text-[#FAF6EE]">✕</button>
+            <button type="button" onClick={onClose} aria-label="닫기" className="ml-1 flex h-11 w-11 items-center justify-center text-lg text-[#EFE6D5]">✕</button>
           )}
         </div>
       </header>
@@ -320,12 +320,12 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
       )}
 
       {owned && (
-        <div className="rounded-xl border border-[#D99B26]/35 bg-stone-950/50 px-3 py-2 text-xs">
+        <div className="rounded-xl border border-[#E2B866]/35 bg-stone-950/50 px-3 py-2 text-xs">
           <div className="mb-1 flex justify-between text-stone-300">
             <span>Lv.{owned.level}/{cap} <Stars n={owned.stars} className="ml-1" /></span>
             <span className="tabular">EXP {owned.exp} / {expToNext(owned.level)}</span>
           </div>
-          <Bar value={owned.exp} max={expToNext(owned.level)} color="bg-[#D99B26]" />
+          <Bar value={owned.exp} max={expToNext(owned.level)} color="bg-[#E2B866]" />
           <div className="mt-1 flex items-center gap-1 text-[10px] text-stone-400">★{owned.stars}/{MAX_STARS} · 중복 +4%{steps > 0 ? ` · ${def.rarity}→${rank}` : ''} <Hint text="중복 ★ · +4% · 최대 ★5. 품계 시 Lv1." /></div>
         </div>
       )}
@@ -389,7 +389,7 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
         <p className="text-center text-[11px] text-stone-500">최고 품계 · 상한 Lv.{cap}</p>
       )}
 
-      <section className="rounded-xl border border-[#D99B26]/45 bg-stone-950/40 p-3">
+      <section className="rounded-xl border border-[#E2B866]/45 bg-stone-950/40 p-3">
         <div className="flex flex-wrap items-baseline justify-between gap-1">
           <span className="font-serif text-base font-bold text-[#B8332A]">【{def.skill.name}】</span>
           <span className="text-[10px] text-stone-500">{EFFECT_LABEL[def.skill.effect]} · {STAT_LABEL[def.skill.scaling]} 기반</span>
@@ -408,7 +408,7 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
           const bond = BOND_MAP[id];
           const members = bondMembers(id);
           return (
-            <div key={id} className="rounded-xl border border-[#D99B26]/30 p-2">
+            <div key={id} className="rounded-xl border border-[#E2B866]/30 p-2">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-serif text-sm font-bold">{id}</span>
                 <span className="text-right text-[10px] text-stone-500">{bond?.desc}</span>
@@ -419,7 +419,7 @@ export function GeneralDetail({ def, owned, onClose }: { def: GeneralDef; owned?
                   return (
                     <span key={g.id} className={cn(
                       'rounded border px-1.5 py-0.5 text-[11px]',
-                      has ? 'border-[#D99B26] bg-[#D99B26]/15 font-bold text-[#2C221E]' : 'border-stone-500 text-stone-400 opacity-50 grayscale',
+                      has ? 'border-[#E2B866] bg-[#E2B866]/15 font-bold text-[#2C221E]' : 'border-stone-500 text-stone-400 opacity-50 grayscale',
                       g.id === def.id && 'ring-1 ring-[#B8332A]',
                     )}>
                       {g.name}

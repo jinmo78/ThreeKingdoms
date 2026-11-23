@@ -15,13 +15,13 @@ const H = 630;
 const bgSvg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#FAF6EE"/>
-      <stop offset="45%" stop-color="#F4EFE6"/>
-      <stop offset="100%" stop-color="#EAE0D0"/>
+      <stop offset="0%" stop-color="#EFE6D5"/>
+      <stop offset="45%" stop-color="#E6DBC6"/>
+      <stop offset="100%" stop-color="#DCD0B8"/>
     </linearGradient>
   </defs>
   <rect width="100%" height="100%" fill="url(#g)"/>
-  <rect width="100%" height="100%" fill="#D99B26" opacity="0.06"/>
+  <rect width="100%" height="100%" fill="#E2B866" opacity="0.05"/>
 </svg>`);
 
 const bg = await sharp(bgSvg).png().toBuffer();

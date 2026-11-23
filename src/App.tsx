@@ -1,4 +1,4 @@
-﻿import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'lucide-react';
+import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { BannerEmblem } from './components/BannerEmblem';
 import { AccountButton, GameConflict } from './components/CloudAccount';
@@ -50,12 +50,12 @@ export default function App() {
   return (
     <div className={cn('mx-auto flex max-w-6xl flex-col', inBattle ? 'h-dvh max-h-dvh overflow-hidden' : 'min-h-screen')}>
       {!inBattle && (
-        <header className="sticky top-0 z-30 border-b border-[#8C6D46]/50 bg-[#3D261C]/95 text-[#F3D078] backdrop-blur">
+        <header className="sticky top-0 z-30 border-b border-[#8C6D46]/50 bg-[#241B15]/95 text-[#E2B866] backdrop-blur">
           <div className="flex items-center gap-3 px-4 py-2.5">
             <button type="button" onClick={goTitle} title="첫 화면" aria-label="첫 화면으로" className="flex min-h-11 items-center gap-2">
               <BannerEmblem className="h-8 w-8" />
               <div className="text-left leading-tight">
-                <div className="font-serif text-base font-bold tracking-wide text-[#F3D078]">{GAME_TITLE}</div>
+                <div className="font-serif text-base font-bold tracking-wide text-[#E2B866]">{GAME_TITLE}</div>
                 <div className="hidden text-[10px] tracking-[0.3em] text-[#E8D4A8] sm:block">{GAME_SUBTITLE}</div>
               </div>
             </button>
@@ -67,7 +67,7 @@ export default function App() {
             <div className="ml-auto flex items-center gap-2">
               <AccountButton />
               <ReloadButton />
-              <div className="flex min-h-9 items-center gap-1.5 rounded-full border border-[#D99B26]/60 bg-[#D99B26]/15 px-3 py-1 text-sm font-bold text-[#F3D078]">
+              <div className="flex min-h-9 items-center gap-1.5 rounded-full border border-[#E2B866]/60 bg-[#E2B866]/15 px-3 py-1 text-sm font-bold text-[#E2B866]">
                 <Coins size={15} />
                 <span className="tabular">{gold.toLocaleString()}</span>
               </div>
@@ -78,7 +78,7 @@ export default function App() {
 
       <main className={cn(
         inBattle
-          ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-[#EAE0D0] p-0'
+          ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-[#DCD0B8] p-0'
           : 'scroll-sheet mx-3 mt-3 mb-20 flex-1 rounded-2xl px-4 py-5 lg:mb-4',
       )}>
         {view === 'campaign' && <Campaign />}
@@ -92,13 +92,13 @@ export default function App() {
       <GameConflict />
 
       {!inBattle && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-[#8C6D46]/45 bg-[#3D261C]/95 pb-[env(safe-area-inset-bottom)] text-[#F3D078] backdrop-blur lg:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-[#8C6D46]/45 bg-[#241B15]/95 pb-[env(safe-area-inset-bottom)] text-[#E2B866] backdrop-blur lg:hidden">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = view === t.id;
             return (
               <button key={t.id} type="button" onClick={() => setView(t.id)}
-                className={cn('flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[11px] font-bold', active ? 'text-[#F3D078]' : 'text-[#C8B69E]')}>
+                className={cn('flex min-h-14 flex-col items-center justify-center gap-1 py-2 text-[11px] font-bold', active ? 'text-[#E2B866]' : 'text-[#8C6D46]')}>
                 <Icon size={20} />
                 {t.label}
               </button>
@@ -119,25 +119,25 @@ function LandShell() {
   const inBattle = view === 'battle';
   const modalTab = TABS.find((t) => t.id === view && t.id !== 'campaign');
   return (
-    <div className={cn('fixed inset-0', inBattle ? 'bg-[#EAE0D0]' : 'bg-[#EAE0D0]')}>
+    <div className={cn('fixed inset-0', inBattle ? 'bg-[#DCD0B8]' : 'bg-[#DCD0B8]')}>
       {/* 바탕: 원정 지도 전체 화면. 전투 때만 전장 전체 */}
       {inBattle ? (
-        <main className="absolute inset-0 overflow-hidden bg-[#EAE0D0]"><BattlePage /></main>
+        <main className="absolute inset-0 overflow-hidden bg-[#DCD0B8]"><BattlePage /></main>
       ) : (
         <div className="absolute inset-0"><Campaign /></div>
       )}
 
       {/* HUD 위: 전투 중에는 숨겨 전장을 극대화 */}
       {!inBattle && (
-        <header className="absolute inset-x-0 top-0 z-20 flex h-10 items-center gap-2 border-b border-[#8C6D46]/45 bg-[#3D261C]/90 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-[#F3D078] backdrop-blur">
+        <header className="absolute inset-x-0 top-0 z-20 flex h-10 items-center gap-2 border-b border-[#8C6D46]/45 bg-[#241B15]/90 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-[#E2B866] backdrop-blur">
           <button type="button" onClick={goTitle} aria-label="첫 화면으로" className="flex items-center gap-1.5">
             <BannerEmblem className="h-6 w-6" />
-            <span className="font-serif text-sm font-bold text-[#F3D078]">{GAME_TITLE}</span>
+            <span className="font-serif text-sm font-bold text-[#E2B866]">{GAME_TITLE}</span>
           </button>
           <div className="ml-auto flex items-center gap-1.5">
             <AccountButton />
             <ReloadButton />
-            <div className="flex min-h-8 items-center gap-1 rounded-full border border-[#D99B26]/60 bg-[#D99B26]/15 px-2.5 text-sm font-bold text-[#F3D078]">
+            <div className="flex min-h-8 items-center gap-1 rounded-full border border-[#E2B866]/60 bg-[#E2B866]/15 px-2.5 text-sm font-bold text-[#E2B866]">
               <Coins size={14} />
               <span className="tabular">{gold.toLocaleString()}</span>
             </div>
@@ -153,7 +153,7 @@ function LandShell() {
             return (
               <button key={t.id} type="button" onClick={() => setView(t.id)}
                 className={cn('flex h-12 w-12 flex-col items-center justify-center gap-0.5 rounded-xl border text-[10px] font-bold shadow-sm backdrop-blur active:bg-[#B8332A]/40',
-                  t.id === view ? 'border-[#F3D078]/80 bg-[#B8332A] text-[#FAF6EE]' : 'border-[#8C6D46]/60 bg-[#3D261C]/90 text-[#F3D078]')}>
+                  t.id === view ? 'border-[#E2B866]/80 bg-[#B8332A] text-[#EFE6D5]' : 'border-[#8C6D46]/60 bg-[#241B15]/90 text-[#E2B866]')}>
                 <Icon size={18} />
                 {t.label}
               </button>
@@ -182,7 +182,7 @@ function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; on
   return (
     <button type="button" onClick={onClick}
       className={cn('flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-serif text-sm font-bold transition-colors',
-        active ? 'bg-[#B8332A] text-[#FAF6EE]' : 'text-[#F3D078] hover:bg-[#D99B26]/20')}>
+        active ? 'bg-[#B8332A] text-[#EFE6D5]' : 'text-[#E2B866] hover:bg-[#E2B866]/20')}>
       <Icon size={15} />
       {label}
     </button>

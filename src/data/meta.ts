@@ -11,21 +11,21 @@ export const FACTIONS: Faction[] = ['wei', 'shu', 'wu', 'qun'];
 
 export const RARITY: Record<Rarity, { border: string; text: string; badge: string; glow: string; ring: string }> = {
   SSR: {
-    border: 'border-[#D99B26]',
+    border: 'border-[#E2B866]',
     text: 'text-amber-300',
     badge: 'bg-gradient-to-b from-amber-200 to-amber-500 text-[#3a2300] shadow-[0_0_8px_rgba(251,191,36,0.55)]',
     glow: 'shadow-[0_0_24px_-4px_rgba(198,161,91,0.65)]',
     ring: 'ring-2 ring-amber-300/90',
   },
   SR: {
-    border: 'border-[#D99B26]/70',
+    border: 'border-[#E2B866]/70',
     text: 'text-violet-300',
     badge: 'bg-violet-600 text-violet-50',
     glow: 'shadow-[0_0_18px_-6px_rgba(198,161,91,0.45)]',
     ring: 'ring-2 ring-violet-400/80',
   },
   R: {
-    border: 'border-[#D99B26]/45',
+    border: 'border-[#E2B866]/45',
     text: 'text-stone-300',
     badge: 'bg-slate-500 text-slate-50',
     glow: '',

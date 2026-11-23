@@ -9,30 +9,30 @@
 }
 
 /*
-  밝은 양피지·오크 목재 톤. 밝/어두 전환 없음.
-  stone-100 = 먹색 본문, stone-950 = 한지 바탕 (기존 클래스 호환을 위해 역할 유지).
+  앤티크 양피지 + 암갈색 오크. 타이틀 일러스트(#181310)와 톤을 맞춤.
+  stone-100 = 먹색 본문, stone-950 = 양피지 바탕 (기존 클래스 호환).
 */
 :root {
   color-scheme: light;
   --ink: #2c221e;
   --ink-muted: #6e5d4f;
-  --parchment: #f4efe6;
-  --parchment-card: #faf6ee;
-  --oak: #3d261c;
-  --oak-border: #c8b69e;
-  --gold: #d99b26;
+  --parchment: #e6dbc6;
+  --parchment-card: #efe6d5;
+  --oak: #241b15;
+  --oak-border: #8c6d46;
+  --gold: #e2b866;
   --crimson: #b8332a;
-  --color-stone-50: #fffdf8;
+  --color-stone-50: #f5ead8;
   --color-stone-100: #2c221e;
   --color-stone-200: #3d2e24;
   --color-stone-300: #5a4a3c;
   --color-stone-400: #6e5d4f;
   --color-stone-500: #8c6d46;
   --color-stone-600: #a89070;
-  --color-stone-700: #c8b69e;
-  --color-stone-800: #eae0d0;
-  --color-stone-900: #faf6ee;
-  --color-stone-950: #f4efe6;
+  --color-stone-700: #b8a888;
+  --color-stone-800: #dcd0b8;
+  --color-stone-900: #efe6d5;
+  --color-stone-950: #e6dbc6;
   --color-red-200: #c45a4a;
   --color-red-300: #b8332a;
   --color-red-500: #b8332a;
@@ -79,9 +79,9 @@ body,
 
 body {
   background:
-    radial-gradient(900px 520px at 50% -8%, rgba(217, 155, 38, 0.12), transparent 55%),
-    radial-gradient(700px 400px at 100% 100%, rgba(184, 51, 42, 0.08), transparent 50%),
-    linear-gradient(180deg, #faf6ee 0%, #f4efe6 40%, #eae0d0 100%);
+    radial-gradient(900px 520px at 50% -8%, rgba(226, 184, 102, 0.1), transparent 55%),
+    radial-gradient(700px 400px at 100% 100%, rgba(184, 51, 42, 0.06), transparent 50%),
+    linear-gradient(180deg, #efe6d5 0%, #e6dbc6 45%, #dcd0b8 100%);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
@@ -91,11 +91,11 @@ body {
 .scroll-sheet {
   background-color: var(--parchment-card);
   background-image:
-    radial-gradient(ellipse at 12% 0%, rgba(200, 182, 158, 0.35), transparent 48%),
-    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(140, 109, 70, 0.04) 4px);
+    radial-gradient(ellipse at 12% 0%, rgba(140, 109, 70, 0.22), transparent 48%),
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(140, 109, 70, 0.05) 4px);
   color: var(--ink);
   border: 1px solid var(--oak-border);
-  box-shadow: 0 8px 24px rgba(61, 38, 28, 0.12);
+  box-shadow: 0 8px 24px rgba(36, 27, 21, 0.14);
 }
 
 .seal {
@@ -271,7 +271,7 @@ body {
   overflow: hidden;
   background:
     radial-gradient(circle at 18% 24%, rgba(140, 109, 70, 0.12), transparent 46%),
-    #faf6ee;
+    #efe6d5;
   color: #2c221e;
 }
 .missive .sheet {
@@ -285,8 +285,8 @@ body {
 .missive-ssr.is-open .paper {
   background:
     linear-gradient(118deg, transparent 18%, rgba(184, 51, 42, 0.12) 48%, transparent 70%),
-    radial-gradient(circle at 80% 20%, rgba(217, 155, 38, 0.18), transparent 40%),
-    #faf6ee;
+    radial-gradient(circle at 80% 20%, rgba(226, 184, 102, 0.18), transparent 40%),
+    #efe6d5;
   box-shadow: inset 0 0 0 1px #d99b26, 0 0 18px rgba(217, 155, 38, 0.35);
 }
 .missive .wax {
@@ -480,8 +480,8 @@ body {
   --mt-r: #152033;
   --mt-line: #e3c070;
   --tree: #1d3c34;
-  --map-a: #faf6ee;
-  --map-b: #eae0d0;
+  --map-a: #efe6d5;
+  --map-b: #dcd0b8;
   --silk-a: #1c2c4a;
   --silk-b: #121a2e;
   --silk-hi: rgba(198, 161, 91, 0.16);

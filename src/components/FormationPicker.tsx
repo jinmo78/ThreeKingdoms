@@ -33,7 +33,7 @@ export function FormationPicker({
           onClick={() => setOpen(true)}
           title={`${cur.hanja} ${cur.name}`}
           className={cn(
-            'shrink-0 rounded-md border border-[#D99B26]/45 bg-[#1b1713]/80 font-bold text-[#2C221E] hover:border-[#D99B26]',
+            'shrink-0 rounded-md border border-[#E2B866]/45 bg-[#1b1713]/80 font-bold text-[#2C221E] hover:border-[#E2B866]',
             compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]',
           )}
         >
@@ -73,12 +73,12 @@ export function FormationPicker({
                     onClick={() => { onChange(f.id); setOpen(false); }}
                     className={cn(
                       'w-full rounded-xl border px-3 py-2.5 text-left transition-colors',
-                      on ? 'border-[#D99B26] bg-[#D99B26]/15' : 'border-stone-700 bg-stone-950/50 hover:border-stone-500',
+                      on ? 'border-[#E2B866] bg-[#E2B866]/15' : 'border-stone-700 bg-stone-950/50 hover:border-stone-500',
                     )}
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-serif text-base font-black text-[#2C221E]">
-                        {f.name} <span className="text-xs font-bold text-[#D99B26]">{f.hanja}</span>
+                        {f.name} <span className="text-xs font-bold text-[#E2B866]">{f.hanja}</span>
                       </span>
                       {on && <span className="text-[10px] font-bold text-amber-300">선택</span>}
                     </div>
@@ -105,7 +105,7 @@ export function FormationPicker({
                           className={cn(
                             'rounded px-1.5 py-0.5',
                             cond.active
-                              ? 'bg-[#D99B26]/20 text-[#F0D58A] ring-1 ring-[#D99B26]/60'
+                              ? 'bg-[#E2B866]/20 text-[#F0D58A] ring-1 ring-[#E2B866]/60'
                               : 'bg-stone-800 text-stone-500',
                           )}
                         >
