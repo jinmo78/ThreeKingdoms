@@ -8,7 +8,13 @@ import { lockTheme } from './theme';
 import './index.css';
 
 lockTheme();
-registerSW({ immediate: true });
+registerSW({
+  immediate: true,
+  // 새 배포(옛 wav 캐시 제거) 시 바로 새 SW 적용
+  onRegisteredSW(_url, reg) {
+    void reg?.update();
+  },
+});
 startCloudSync();
 
 class ScreenGuard extends Component<{ children: ReactNode }, { failed: boolean; detail: string }> {

@@ -8,17 +8,17 @@ export const BGM_FILES = {
 
 export type BgmKey = keyof typeof BGM_FILES;
 
-const FADE_MS = 600;
+/** 예전 wav 캐시를 피하기 위한 쿼리 */
+const BGM_CACHE = 'v=suno2';
 
 function bgmSrc(file: string) {
-  return `${import.meta.env.BASE_URL}audio/${file}`;
+  return `${import.meta.env.BASE_URL}audio/${file}?${BGM_CACHE}`;
 }
 
 class AudioManager {
   private howls = new Map<BgmKey, Howl>();
   private current: BgmKey | null = null;
   private desired: BgmKey | null = null;
-  private fading = false;
   private unlocked = false;
 
   constructor() {
@@ -35,6 +35,7 @@ class AudioManager {
   /** 사용자 제스처 안에서 호출 — Howl을 만들어 ctx를 연 뒤 재생 허용 */
   unlock() {
     this.unlocked = true;
+    this.stopEverything();
     this.ensure('lobby');
     this.resumeCtx();
   }
@@ -49,17 +50,46 @@ class AudioManager {
     }
   }
 
+  /** Howler 전역 + 캐시된 트랙 전부 정지 (이중 재생·옛 캐시 방지) */
+  private stopEverything() {
+    try {
+      Howler.stop();
+    } catch {
+      /* ignore */
+    }
+    for (const howl of this.howls.values()) {
+      try {
+        howl.stop();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  private stopOthers(except: BgmKey) {
+    for (const [key, howl] of this.howls) {
+      if (key === except) continue;
+      try {
+        howl.stop();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   private ensure(key: BgmKey): Howl {
     const cached = this.howls.get(key);
     if (cached) return cached;
+    const src = bgmSrc(BGM_FILES[key]);
     const howl = new Howl({
-      src: [bgmSrc(BGM_FILES[key])],
+      src: [src],
+      format: ['mp3'],
       loop: true,
-      html5: false,
+      html5: true,
       preload: true,
       volume: this.settings().bgmVolume,
       onloaderror: (_id, err) => {
-        console.warn(`[audio] BGM load failed: ${key} (${bgmSrc(BGM_FILES[key])})`, err);
+        console.warn(`[audio] BGM load failed: ${key} (${src})`, err);
       },
       onplayerror: (_id, err) => {
         console.warn(`[audio] BGM play failed: ${key}`, err);
@@ -73,7 +103,6 @@ class AudioManager {
       },
     });
     this.howls.set(key, howl);
-    // Howl 생성 후에야 Howler.ctx가 생김 → 바로 resume
     this.resumeCtx();
     return howl;
   }
@@ -96,12 +125,17 @@ class AudioManager {
   }
 
   private startNow(key: BgmKey) {
+    this.stopOthers(key);
     const howl = this.ensure(key);
     this.resumeCtx();
     const vol = Math.max(0.05, this.volume());
     howl.volume(vol);
     try {
-      if (!howl.playing()) howl.play();
+      if (howl.playing()) {
+        // 이미 같은 곡이면 볼륨만
+      } else {
+        howl.play();
+      }
       this.current = key;
     } catch (err) {
       console.warn(`[audio] BGM start failed: ${key}`, err);
@@ -111,10 +145,7 @@ class AudioManager {
   private applySettings() {
     const { bgmOn, bgmVolume } = this.settings();
     if (!bgmOn) {
-      if (this.current) {
-        const h = this.howls.get(this.current);
-        if (h?.playing()) h.pause();
-      }
+      this.stopEverything();
       return;
     }
     const key = this.desired ?? this.current;
@@ -129,76 +160,31 @@ class AudioManager {
     if (!this.settings().bgmOn || !this.unlocked) return;
 
     if (this.current === key) {
+      this.stopOthers(key);
       const howl = this.ensure(key);
       howl.volume(this.volume());
       if (!howl.playing()) this.startNow(key);
       return;
     }
 
-    if (this.fading) return;
-
-    // 첫 곡은 페이드 없이 바로 (볼륨 0에서 시작하면 안 들릴 수 있음)
-    if (!this.current) {
-      const howl = this.ensure(key);
-      if (howl.state() === 'loaded') {
-        this.startNow(key);
-        return;
-      }
-      void this.whenLoaded(howl).then(() => {
-        if (this.desired === key && this.settings().bgmOn && this.unlocked && !this.current) {
-          this.startNow(key);
-        }
-      });
+    // 겹침 없이 전환 (옛 wav·이전 곡이 같이 재생되는 문제 방지)
+    this.stopEverything();
+    this.current = null;
+    const howl = this.ensure(key);
+    if (howl.state() === 'loaded') {
+      this.startNow(key);
       return;
     }
-
-    void this.crossfadeTo(key);
-  }
-
-  private async crossfadeTo(next: BgmKey) {
-    this.fading = true;
-    const prevKey = this.current;
-    const prev = prevKey ? this.howls.get(prevKey) : undefined;
-
-    try {
-      const finalKey = this.desired ?? next;
-      const nextHowl = await this.whenLoaded(this.ensure(finalKey));
-      if (!this.settings().bgmOn || !this.unlocked) return;
-
-      if (prev?.playing()) {
-        prev.fade(prev.volume(), 0, FADE_MS);
-        await sleep(FADE_MS);
-        prev.stop();
+    void this.whenLoaded(howl).then(() => {
+      if (this.desired === key && this.settings().bgmOn && this.unlocked) {
+        this.startNow(key);
       }
-
-      if (this.desired !== finalKey) return;
-
-      nextHowl.volume(0);
-      nextHowl.play();
-      nextHowl.fade(0, this.volume(), FADE_MS);
-      this.current = finalKey;
-      await sleep(FADE_MS);
-      if (this.current === finalKey) nextHowl.volume(this.volume());
-    } catch (err) {
-      console.warn('[audio] crossfade failed', err);
-      if (this.desired) this.startNow(this.desired);
-    } finally {
-      this.fading = false;
-      if (this.desired && this.desired !== this.current && this.settings().bgmOn && this.unlocked) {
-        void this.crossfadeTo(this.desired);
-      }
-    }
+    });
   }
 
   muteAll(mute: boolean) {
     Howler.mute(mute);
   }
-}
-
-function sleep(ms: number) {
-  return new Promise<void>((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
 }
 
 export const audioManager = new AudioManager();
