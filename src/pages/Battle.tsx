@@ -84,14 +84,14 @@ export default function BattlePage() {
 
   return (
     <div
-      className="relative flex h-dvh max-h-dvh flex-col overflow-hidden bg-[#101826]"
+      className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#101826]"
       style={{ '--battle-speed': speed } as CSSProperties}
     >
       {/* 상단 전투 HUD (글로벌 헤더 대신) */}
-      <div className="relative z-30 flex shrink-0 items-center gap-2 bg-[#101826]/90 px-3 py-1.5 text-[#F3ECE0] backdrop-blur land:py-1">
+      <div className="relative z-30 flex shrink-0 items-center gap-2 bg-[#101826]/90 px-3 py-2 text-[#F3ECE0] backdrop-blur land:py-1">
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[10px] text-stone-400">{battle.subtitle}</div>
-          <h2 className="truncate font-serif text-base font-black land:text-sm">{battle.title}</h2>
+          <div className="truncate text-xs text-stone-400">{battle.subtitle}</div>
+          <h2 className="truncate font-serif text-lg font-black land:text-base">{battle.title}</h2>
         </div>
         {!done && (
           <div className="flex shrink-0 gap-1">
@@ -120,26 +120,26 @@ export default function BattlePage() {
       </div>
 
       <div className={cn(
-        'relative min-h-0 flex-1',
-        showSideLog && !land && 'grid grid-cols-1 gap-0 lg:grid-cols-[minmax(0,1fr)_17rem]',
-        showSideLog && land && 'grid grid-cols-[minmax(0,1fr)_11rem]',
+        'relative flex min-h-0 flex-1 flex-col',
+        showSideLog && 'lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:flex-none',
+        showSideLog && land && 'land:grid land:grid-cols-[minmax(0,1fr)_12rem] land:flex-none',
       )}>
-        {/* 전장 */}
+        {/* 전장 — 항상 남은 높이를 채움 */}
         <div className="battle-stage relative min-h-0 flex-1 overflow-hidden bg-[#101826]">
-          <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-75" />
+          <img src={sceneUrl('scene-campaign.webp')} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center opacity-75" />
           <div className="pointer-events-none absolute inset-0 bg-[#101826]/45" />
 
-          <div ref={fieldRef} className="relative flex h-full min-h-0 flex-col items-stretch justify-center gap-6 p-2 sm:gap-10 sm:p-3 lg:gap-24 land:gap-2 land:p-1.5">
+          <div ref={fieldRef} className="relative flex h-full min-h-0 flex-col items-stretch justify-center gap-3 p-3 sm:gap-5 sm:p-4 lg:gap-8 land:gap-2 land:p-2">
             {showCutin && (
               <SkillCutin key={ev.id} ev={ev} units={result.units} />
             )}
 
             <SideRow side={1} units={result.units[1]} ev={ev} events={events} idx={idx} cinematic={speed === 1} speed={speed} label="적군" />
 
-            <div className="relative z-[2] flex min-h-8 flex-none items-center justify-center land:min-h-4">
+            <div className="relative z-[2] flex min-h-6 flex-none items-center justify-center land:min-h-3">
               {!showCutin && (ev.kind === 'start'
                 ? <div key={ev.id} className="animate-banner font-serif text-2xl font-black text-[#F3ECE0]">전투 개시</div>
-                : <Swords size={22} className="text-[#C6A15B]" />)}
+                : <Swords size={26} className="text-[#C6A15B]" />)}
               {showCutin && <div className="h-px w-2/3 max-w-md bg-gradient-to-r from-transparent via-[#C6A15B]/80 to-transparent" />}
             </div>
 
@@ -147,7 +147,7 @@ export default function BattlePage() {
 
             {/* 좌하단 미니 로그 티커 */}
             {!done && (
-              <div className="pointer-events-none absolute bottom-2 left-2 z-20 w-[min(16rem,55%)] space-y-0.5 rounded-lg bg-[#101826]/55 px-2 py-1.5 text-[10px] leading-snug text-[#E7DCC8] backdrop-blur-sm land:bottom-1 land:left-1">
+              <div className="pointer-events-none absolute bottom-2 left-2 z-20 w-[min(18rem,58%)] space-y-0.5 rounded-lg bg-[#101826]/55 px-2.5 py-1.5 text-xs leading-snug text-[#E7DCC8] backdrop-blur-sm land:bottom-1.5 land:left-1.5 land:text-[11px]">
                 {ticker.map((e) => (
                   <div key={e.id} className="animate-slide-in truncate opacity-90">{briefLog(e)}</div>
                 ))}
@@ -178,10 +178,8 @@ export default function BattlePage() {
           <div
             ref={logRef}
             className={cn(
-              'z-20 space-y-1 overflow-y-auto border-[#C6A15B]/35 bg-[#18243a]/95 p-2 text-xs text-[#F3ECE0]',
-              land
-                ? 'absolute inset-y-0 right-0 w-44 border-l shadow-xl'
-                : 'max-h-44 border-t lg:max-h-none lg:border-l lg:border-t-0',
+              'z-20 hidden min-h-0 space-y-1 overflow-y-auto border-[#C6A15B]/35 bg-[#18243a]/95 p-2.5 text-sm text-[#F3ECE0] lg:block lg:border-l',
+              land && '!absolute inset-y-0 right-0 !block w-48 border-l shadow-xl',
             )}
           >
             <div className="mb-1 flex items-center justify-between gap-1">
@@ -305,7 +303,7 @@ function SkillCutin({
 function TroopBar({ value, max, speed }: { value: number; max: number; speed: number }) {
   const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
   return (
-    <div className="relative mt-2 h-1.5 overflow-hidden rounded-full bg-[#171513]/50">
+    <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-[#171513]/55 land:h-2">
       <div className="absolute inset-y-0 left-0 bg-white/85" style={{ width: `${pct}%`, transition: `width ${0.28 / speed}s ease ${0.3 / speed}s` }} />
       <div className="absolute inset-y-0 left-0 bg-[#C45A32]" style={{ width: `${pct}%`, transition: `width ${0.08 / speed}s linear` }} />
     </div>
@@ -346,6 +344,8 @@ function SideRow({
 }: {
   side: Side; units: UnitProfile[]; ev: BattleEvent; events: BattleEvent[]; idx: number; cinematic: boolean; speed: number; label: string;
 }) {
+  const land = useLandscape();
+  const portrait = land ? 'xs' as const : 'sm' as const;
   const announced = new Set<number>();
   if (cinematic) {
     for (let n = 0; n <= idx; n++) {
@@ -354,9 +354,9 @@ function SideRow({
     }
   }
   return (
-    <div className="relative z-[2]">
-      <div className={cn('mb-1 text-center text-[11px] font-bold', side === 0 ? 'text-sky-300' : 'text-red-300')}>{label}</div>
-      <div className="flex flex-wrap justify-center gap-2 land:gap-1.5">
+    <div className="relative z-[2] shrink-0">
+      <div className={cn('mb-1.5 text-center text-xs font-bold sm:text-sm', side === 0 ? 'text-sky-300' : 'text-red-300')}>{label}</div>
+      <div className="flex flex-wrap justify-center gap-2.5 sm:gap-3 land:gap-2">
         {units.map((u, i) => {
           const hp = ev.hp[side][i];
           const acting = ev.actor?.side === side && ev.actor.idx === i && (ev.kind === 'attack' || ev.kind === 'skill' || ev.kind === 'chain');
@@ -370,8 +370,8 @@ function SideRow({
             <div
               key={i}
               className={cn(
-                'relative w-[30%] min-w-[5.75rem] max-w-[10rem] overflow-visible rounded-xl border p-1.5 transition-all sm:p-2 land:min-w-[4.75rem] land:max-w-[8rem]',
-                side === 0 ? UNIT_TINT[i]?.card ?? 'border-sky-900/70 bg-sky-950/40' : 'border-red-900/70 bg-red-950/35',
+                'relative w-[31%] min-w-[8.5rem] max-w-[15rem] overflow-visible rounded-2xl border-2 p-2.5 transition-all sm:min-w-[10rem] sm:max-w-[17rem] sm:p-3 land:min-w-[7.25rem] land:max-w-[12rem] land:rounded-xl land:p-2',
+                side === 0 ? UNIT_TINT[i]?.card ?? 'border-sky-900/70 bg-sky-950/55' : 'border-red-900/70 bg-red-950/50',
                 acting && 'animate-pulse-ring border-amber-400/80',
                 casting && 'synergy-glow',
                 hit?.kind === 'dmg' && 'animate-hit-flash',
@@ -385,13 +385,13 @@ function SideRow({
                   hit?.kind === 'dmg' && 'animate-shake',
                 )}
               >
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-sm">{TROOP[u.troop].emoji}</span>
-                  {side === 0 && <span className={cn('text-[10px] font-black', UNIT_TINT[i]?.title)}>{i + 1}</span>}
-                  <span className="truncate text-xs font-bold text-[#F3ECE0]">{u.name.replace(/ 부대$/, '')}</span>
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className="text-base sm:text-lg">{TROOP[u.troop].emoji}</span>
+                  {side === 0 && <span className={cn('text-xs font-black sm:text-sm', UNIT_TINT[i]?.title)}>{i + 1}</span>}
+                  <span className="truncate text-sm font-bold text-[#F3ECE0] sm:text-base">{u.name.replace(/ 부대$/, '')}</span>
                 </div>
                 <div className={cn(
-                  'mt-1.5 grid grid-cols-3 justify-items-center gap-0.5 sm:grid-cols-6',
+                  'mt-2 grid grid-cols-3 justify-items-center gap-1 sm:grid-cols-6',
                   justRouted && 'animate-rout-sink',
                   (cinematic ? announced.has(i) : routed) && 'grayscale',
                   cinematic && announced.has(i) && !justRouted && 'translate-y-2.5 opacity-40',
@@ -401,18 +401,29 @@ function SideRow({
                       <GeneralToken
                         def={m.def}
                         rarity={shownRarity(m.def.rarity, m.promote)}
-                        size="xs"
+                        size={portrait}
                         className={cn(acting && ev.caster === m.def.name && 'z-10 scale-125 transition-transform')}
                       />
                       {cinematic && hit?.kind === 'dmg' && (
-                        <span className="animate-portrait-hit pointer-events-none absolute left-0 top-0 h-8 w-8 rounded-md" />
+                        <span className={cn(
+                          'animate-portrait-hit pointer-events-none absolute left-0 top-0 rounded-lg',
+                          land ? 'h-8 w-8 rounded-md' : 'h-10 w-10',
+                        )} />
                       )}
                     </div>
-                  ) : <div key={mi} className="h-8 w-8 rounded-md border border-dashed border-stone-700" />)}
+                  ) : (
+                    <div
+                      key={mi}
+                      className={cn(
+                        'rounded-lg border border-dashed border-stone-700',
+                        land ? 'h-8 w-8 rounded-md' : 'h-10 w-10',
+                      )}
+                    />
+                  ))}
                 </div>
               </div>
               <TroopBar value={hp} max={u.hp} speed={speed} />
-              <div className="tabular mt-0.5 text-center text-[10px] text-[#E7DCC8]">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
+              <div className="tabular mt-1 text-center text-xs font-semibold text-[#E7DCC8] sm:text-sm">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
               {(cinematic ? announced.has(i) || justRouted : routed) && (
                 <div className={cn('absolute inset-0 flex items-center justify-center', justRouted && 'animate-rout-pop')}>
                   <span className="seal px-1.5 py-2 font-serif text-sm tracking-widest">패퇴</span>
