@@ -347,10 +347,10 @@ function RatesBody() {
     <>
       <div className="grid grid-cols-3 gap-2 text-center text-xs">
         {(['SSR', 'SR', 'R'] as Rarity[]).map((r) => (
-          <div key={r} className="rounded-lg bg-stone-950/60 p-2">
-            <div className={cn('font-black', r === 'SSR' ? 'text-amber-300' : r === 'SR' ? 'text-violet-300' : 'text-stone-300')}>{r}</div>
-            <div className="tabular text-stone-200">{Math.round(RATES[r] * 100)}%</div>
-            <div className="text-[10px] text-stone-500">{RECRUITABLE.filter((g) => g.rarity === r).length}명</div>
+          <div key={r} className="rounded-lg bg-[#1C1613]/55 p-2 ring-1 ring-[#C89D54]/35">
+            <div className={cn('font-black', r === 'SSR' ? 'text-[#F0D48A]' : r === 'SR' ? 'text-[#C4B5FD]' : 'text-[#E8DCC8]')}>{r}</div>
+            <div className="tabular font-bold text-[#F5EAD8]">{Math.round(RATES[r] * 100)}%</div>
+            <div className="text-[10px] text-[#D4C4A8]">{RECRUITABLE.filter((g) => g.rarity === r).length}명</div>
           </div>
         ))}
       </div>

@@ -27,9 +27,10 @@
   --color-stone-200: #3d2e24;
   --color-stone-300: #5a4a3c;
   --color-stone-400: #6e5d4f;
-  --color-stone-500: #8c6d46;
-  --color-stone-600: #a89070;
-  --color-stone-700: #b8a888;
+  /* 보조 글씨: 양피지 위에서 읽히게 고동·밤색 유지 */
+  --color-stone-500: #6e5d4f;
+  --color-stone-600: #5a4a3c;
+  --color-stone-700: #c8b69e;
   --color-stone-800: #dcd0b8;
   --color-stone-900: #efe6d5;
   --color-stone-950: #e6dbc6;
@@ -40,9 +41,10 @@
   --color-red-700: #b8332a;
   --color-red-900: #f0b2a8;
   --color-red-950: #fce8e4;
-  --color-amber-200: #8c6d46;
-  --color-amber-300: #d99b26;
-  --color-amber-400: #d99b26;
+  /* 강조 금색: 어두운 비단·밝은 양피지 양쪽에서 보이게 */
+  --color-amber-200: #b8860b;
+  --color-amber-300: #a67c00;
+  --color-amber-400: #c4921a;
   --color-amber-500: #d99b26;
   --color-sky-200: #3a5a7a;
   --color-sky-300: #2a4a6a;
@@ -51,8 +53,9 @@
   --color-emerald-300: #2d6a4f;
   --color-emerald-900: #d4edda;
   --color-emerald-950: #e8f5ec;
-  --color-violet-200: #5b4b8a;
-  --color-violet-300: #4a3a7a;
+  /* 연보라: 어두운 비단 위 배지용 (밝게) */
+  --color-violet-200: #ddd6fe;
+  --color-violet-300: #c4b5fd;
   --color-rose-300: #a3281f;
   --color-orange-200: #8c6d46;
   --color-orange-300: #a88848;
@@ -829,6 +832,19 @@ body {
 .silk [class*="text-[11px]"] {
   font-size: 12px;
   line-height: 1.35;
+}
+/* 비단(어두운) 위 양피지용 톤이 안 보이게 덮어씀 */
+.silk .text-amber-200 { color: #f3d078 !important; }
+.silk .text-amber-300 { color: #f0d48a !important; }
+.silk .text-violet-200 { color: #ddd6fe !important; }
+.silk .text-violet-300 { color: #c4b5fd !important; }
+.silk .text-stone-300 { color: #e8dcc8 !important; }
+.silk .text-stone-400 { color: #d4c4a8 !important; }
+.silk .text-stone-500 { color: #c8b69e !important; }
+.silk .text-stone-200 { color: #f5ead8 !important; }
+.silk .bg-stone-950\/60,
+.silk .bg-stone-950\/50 {
+  background-color: rgba(28, 22, 19, 0.55) !important;
 }
 .silk > div { scrollbar-width: none; }
 .silk > div::-webkit-scrollbar { display: none; }

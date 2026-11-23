@@ -16,15 +16,15 @@ import { Portrait } from './Portrait';
 import { Bar, cn, Hint } from './ui';
 
 const SIZE = {
-  xs: { box: 'h-8 w-8 rounded-md border', troop: 'hidden' },
-  sm: { box: 'h-10 w-10 rounded-lg border', troop: 'text-[10px] -bottom-1 -right-1' },
-  md: { box: 'h-12 w-12 rounded-xl border-2', troop: 'text-xs -bottom-1 -right-1' },
-  lg: { box: 'h-24 w-24 rounded-2xl border-2', troop: 'text-base -bottom-1.5 -right-1.5' },
-  /** 부모 폭에 맞춘 정사각형 (편성 칸) */
-  fill: { box: 'aspect-square w-full rounded-xl border-2', troop: 'text-sm -bottom-1 -right-1' },
+  xs: { box: 'h-8 w-8 rounded-md border', troop: false },
+  sm: { box: 'h-10 w-10 rounded-lg border', troop: false },
+  md: { box: 'h-12 w-12 rounded-xl border-2', troop: true },
+  lg: { box: 'h-24 w-24 rounded-2xl border-2', troop: false },
+  /** 부모 폭에 맞춘 정사각형 (편성 칸) — 인은 칸이 좁아 생략 */
+  fill: { box: 'aspect-square w-full rounded-xl border-2', troop: false },
 };
 
-/** 장수 토큰: 상반신 초상(SVG) + 등급 테두리 + 병과 이모지 */
+/** 장수 토큰: 상반신 초상 + 등급 테두리. 병과 인은 초상 밖(아래)에 둔다. */
 export function GeneralToken({ def, size = 'md', className, rarity }: {
   def: GeneralDef; size?: keyof typeof SIZE; className?: string; rarity?: GeneralDef['rarity'];
 }) {
@@ -41,8 +41,13 @@ export function GeneralToken({ def, size = 'md', className, rarity }: {
         {img ? <img src={img} alt={`${def.name} 초상`} loading="lazy" draggable={false} className="relative block h-full w-full object-cover object-top brightness-[1.35] contrast-[1.08]" />
           : <Portrait def={def} className="relative block h-full w-full" />}
       </div>
-      {size !== 'xs' && (
-        <span className={cn('seal absolute', s.troop)} aria-label={troop.label}>{troop.seal}</span>
+      {s.troop && (
+        <span
+          className="seal absolute left-1/2 top-full z-[1] mt-0.5 -translate-x-1/2 scale-90"
+          aria-label={troop.label}
+        >
+          {troop.seal}
+        </span>
       )}
     </div>
   );

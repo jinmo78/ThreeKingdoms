@@ -4,6 +4,7 @@ import { BannerEmblem } from '../components/BannerEmblem';
 import { CloudPanel, TitleButton, TitleIcon } from '../components/CloudAccount';
 import { InstallPrompt } from '../components/InstallPrompt';
 import { GeneralToken } from '../components/General';
+import { AudioSettingsButton } from '../components/AudioGate';
 import { ReloadButton, useLandscape } from '../components/ui';
 import { useCloud } from '../cloud/account';
 import { GAME_SUBTITLE, GAME_TAGLINE, GAME_TITLE } from '../config';
@@ -29,8 +30,9 @@ export default function TitleScreen() {
     <div className="relative h-dvh min-h-dvh overflow-hidden bg-[#181310]">
       {/* 원본이 세로 720px라 넓은 PC에서 통째로 늘리면 흐려진다. 옆은 흐린 배경, 가운데만 원본 폭. */}
       <img src={TITLE_ART} alt="" aria-hidden className="pointer-events-none absolute inset-0 hidden h-full w-full scale-110 object-cover opacity-50 blur-3xl sm:block" />
-      <div className="absolute right-16 top-[max(1rem,env(safe-area-inset-top))] z-10 flex items-center gap-1">
+      <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-10 flex items-center gap-1">
         <ReloadButton className="text-[#F5E6C8]/85 hover:bg-white/10 hover:text-[#F5E6C8]" />
+        <AudioSettingsButton />
       </div>
 
       <div className="relative mx-auto h-full min-h-0 w-full max-w-[720px] overflow-hidden">

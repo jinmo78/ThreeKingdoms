@@ -1,6 +1,7 @@
 // 전투 재생 화면 — 미리 계산된 이벤트를 순서대로 보여 줌 (엔진 로직은 그대로)
 import { ChevronRight, FastForward, RotateCcw, ScrollText, SkipForward, Swords, Trophy, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { AudioSettingsButton } from '../components/AudioGate';
 import { GeneralToken } from '../components/General';
 import { sceneUrl } from '../components/PageHero';
 import { Btn, cn, useLandscape } from '../components/ui';
@@ -92,7 +93,7 @@ export default function BattlePage() {
       style={{ '--battle-speed': speed } as CSSProperties}
     >
       {/* 상단 전투 HUD (글로벌 헤더 대신) */}
-      <div className="relative z-30 flex shrink-0 items-center gap-2 bg-[#DCD0B8]/90 px-3 py-2 text-[#2C221E] backdrop-blur land:py-1">
+      <div className="relative z-30 flex shrink-0 items-center gap-1.5 bg-[#DCD0B8]/90 px-3 py-2 text-[#2C221E] backdrop-blur land:py-1">
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs text-stone-400">{battle.subtitle}</div>
           <h2 className="truncate font-serif text-lg font-black land:text-base">{battle.title}</h2>
@@ -107,6 +108,7 @@ export default function BattlePage() {
             </Btn>
           </div>
         )}
+        <AudioSettingsButton />
         {land && (
           <button
             type="button"

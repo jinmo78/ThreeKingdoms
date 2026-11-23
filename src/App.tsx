@@ -2,6 +2,7 @@ import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'l
 import { useEffect, useState } from 'react';
 import { audioManager } from './audio/audioManager';
 import { BannerEmblem } from './components/BannerEmblem';
+import { AudioSettingsButton } from './components/AudioGate';
 import { AccountButton, GameConflict } from './components/CloudAccount';
 import { cn, ReloadButton, useLandscape } from './components/ui';
 import BattlePage from './pages/Battle';
@@ -72,9 +73,10 @@ export default function App() {
                 <TabButton key={t.id} active={view === t.id} onClick={() => setView(t.id)} icon={t.icon} label={t.label} />
               ))}
             </nav>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
               <AccountButton />
               <ReloadButton />
+              <AudioSettingsButton />
               <div className="flex min-h-9 items-center gap-1.5 rounded-full border border-[#E2B866]/60 bg-[#E2B866]/15 px-3 py-1 text-sm font-bold text-[#E2B866]">
                 <Coins size={15} />
                 <span className="tabular">{gold.toLocaleString()}</span>
@@ -142,9 +144,10 @@ function LandShell() {
             <BannerEmblem className="h-6 w-6" />
             <span className="font-serif text-sm font-bold text-[#E2B866]">{GAME_TITLE}</span>
           </button>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-1">
             <AccountButton />
             <ReloadButton />
+            <AudioSettingsButton />
             <div className="flex min-h-8 items-center gap-1 rounded-full border border-[#E2B866]/60 bg-[#E2B866]/15 px-2.5 text-sm font-bold text-[#E2B866]">
               <Coins size={14} />
               <span className="tabular">{gold.toLocaleString()}</span>

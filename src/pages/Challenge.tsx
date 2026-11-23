@@ -103,7 +103,7 @@ function Practice({ slips }: { slips?: Slip[] }) {
         <Panel title="상대 설정" icon={<Target size={15} />}>
           <div className="space-y-3 text-xs">
             <div>
-              <div className="mb-1 text-stone-400">상대 군단</div>
+              <div className="mb-1 font-bold text-[#2C221E]">상대 군단</div>
               <div className="flex flex-wrap gap-1">
                 {ARMY_THEMES.map((t) => (
                   <Chip key={t} active={practice.theme === t} onClick={() => setPractice({ theme: t })}>{themeLabel(t)}</Chip>

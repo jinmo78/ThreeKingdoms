@@ -330,7 +330,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
       {land && presetOpen && (
         <Modal wide onClose={() => setPresetOpen(false)}>
           <div className="mb-2 flex shrink-0 items-center justify-between">
-            <h3 className="font-serif text-base font-black text-[#E2B866]">편성 저장 · 불러오기</h3>
+            <h3 className="font-serif text-base font-black text-[#2C221E]">편성 저장 · 불러오기</h3>
             <button type="button" onClick={() => setPresetOpen(false)} aria-label="닫기" className="rounded-lg p-1 text-stone-400 hover:bg-stone-800"><X size={18} /></button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
