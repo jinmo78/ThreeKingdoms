@@ -14,9 +14,9 @@ const fmt = (n: number) => Math.floor(n).toLocaleString('ko-KR');
 /** 지도 위 영지 요약: 전체 시간당 수입과 지금 징수할 수 있는 금화 */
 export function DomainBar({ castles, now, compact }: { castles: Record<string, Castle>; now: number; compact?: boolean }) {
   const collectGold = useGame((s) => s.collectGold);
-  const threats = useGame((s) => s.threats);
+  const threats = useGame((s) => s.threats) ?? [];
   const [msg, setMsg] = useState('');
-  const list = Object.entries(castles);
+  const list = Object.entries(castles ?? {});
   if (list.length === 0) return null;
   const income = list.reduce((n, [id, c]) => n + incomePerHour(stageIndex(id), c), 0);
   const stored = list.reduce((n, [id, c]) => n + accrued(stageIndex(id), c, now), 0);

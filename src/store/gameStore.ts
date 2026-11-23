@@ -35,7 +35,7 @@ export { emptyUnit, enemyProfiles, playerProfiles, unitProfile } from '../engine
 import type { EnemyUnit, GeneralDef, OwnedGeneral, Slot, Unit } from '../types';
 import { GENERAL_MAP } from '../data/generals';
 import { SLOTS } from '../types';
-import { freshSave, migrateSave, pickSave, sanitizeFormation, SAVE_VERSION, type SaveData } from './saveData';
+import { freshSave, migrateSave, pickSave, sanitizeFormation, sanitizeSave, SAVE_VERSION, type SaveData } from './saveData';
 
 export type { SaveData } from './saveData';
 export { SAVE_VERSION } from './saveData';
@@ -590,10 +590,11 @@ export const useGame = create<GameState>()(
         const s = get();
         if (s.battle) return false;
         const now = Date.now();
-        const due = s.marches.filter((m) => m.eta <= now).sort((a, b) => a.eta - b.eta)[0];
+        const marches = s.marches ?? [];
+        const due = marches.filter((m) => m.eta <= now).sort((a, b) => a.eta - b.eta)[0];
         if (!due) return false;
         const patch = siegeBattle(s, due, now);
-        set({ ...(patch ?? {}), marches: s.marches.filter((m) => m.id !== due.id) });
+        set({ ...(patch ?? {}), marches: marches.filter((m) => m.id !== due.id) });
         return !!patch;
       },
 
@@ -601,7 +602,7 @@ export const useGame = create<GameState>()(
         const s = get();
         if (s.battle) return false;
         const now = Date.now();
-        const planned = ensureThreats(s.cleared, s.castles, s.threats, now, s.lastThreatAt);
+        const planned = ensureThreats(s.cleared ?? {}, s.castles ?? {}, s.threats ?? [], now, s.lastThreatAt ?? 0);
         let threats = planned.threats;
         const lastThreatAt = planned.lastThreatAt;
         const due = threats.filter((t) => t.eta <= now).sort((a, b) => a.eta - b.eta)[0];
@@ -744,12 +745,12 @@ export const useGame = create<GameState>()(
       },
       storage: createJSONStorage(() => localStorage),
       merge: (persisted, current) => {
-        const state = { ...current, ...(persisted as object) } as GameState;
-        const fought = { ...(state.fought ?? {}) };
-        for (const [id, n] of Object.entries(state.cleared ?? {})) {
-          if (n > 0 && fought[id] == null) fought[id] = n;
-        }
-        return { ...state, fought };
+        // 버전 안 올린 핫픽스·구 클라우드 조각에도 새 필드가 빠지지 않게 항상 소독
+        const raw = (persisted && typeof persisted === 'object' ? persisted : {}) as Record<string, unknown>;
+        const save = sanitizeSave(raw);
+        const view = isPlayView(raw.view) ? raw.view : current.view;
+        const entered = raw.entered === true || (raw.entered == null && save.started);
+        return { ...current, ...save, entered, view, battle: null };
       },
       partialize: (s) => ({
         ...pickSave(s),

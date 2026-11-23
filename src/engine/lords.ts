@@ -76,8 +76,9 @@ export function ensureThreats(
   now: number,
   lastThreatAt: number,
 ): { threats: LordThreat[]; lastThreatAt: number } {
-  if ((cleared['8-3'] ?? 0) <= 0) return { threats, lastThreatAt };
-  const active = threats.filter((t) => castles[t.stageId]);
+  const list = threats ?? [];
+  if ((cleared['8-3'] ?? 0) <= 0) return { threats: list, lastThreatAt };
+  const active = list.filter((t) => castles[t.stageId]);
   if (active.length >= MAX_THREATS) return { threats: active, lastThreatAt };
   if (now - lastThreatAt < THREAT_COOLDOWN_MS && active.length > 0) {
     return { threats: active, lastThreatAt };

@@ -52,13 +52,17 @@ export default function BattlePage() {
     if (logOpen) logRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [idx, logOpen]);
 
-  const heavy = (ev?.kind === 'skill' || ev?.kind === 'chain') && !!ev.hits.some((h) => h.kind === 'dmg');
+  const heavy = (ev?.kind === 'skill' || ev?.kind === 'chain') && !!ev.hits?.some((h) => h.kind === 'dmg');
   useEffect(() => {
     if (!heavy || !fieldRef.current) return;
-    fieldRef.current.animate(
-      [{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }],
-      { duration: 340 / speed, easing: 'ease-in-out' },
-    );
+    try {
+      fieldRef.current.animate(
+        [{ transform: 'translateX(0)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }],
+        { duration: 340 / speed, easing: 'ease-in-out' },
+      );
+    } catch {
+      /* 구형 WebView는 Element.animate 미지원 */
+    }
   }, [idx, heavy, speed]);
 
   const log = useMemo(() => events.slice(0, idx + 1).reverse(), [events, idx]);
@@ -360,7 +364,7 @@ function SideRow({
         {units.map((u, i) => {
           const hp = ev.hp[side][i];
           const acting = ev.actor?.side === side && ev.actor.idx === i && (ev.kind === 'attack' || ev.kind === 'skill' || ev.kind === 'chain');
-          const hit = ev.hits.find((h) => h.side === side && h.idx === i);
+          const hit = ev.hits?.find((h) => h.side === side && h.idx === i);
           const routed = hp <= 0;
           const justRouted = cinematic && ev.kind === 'rout' && ev.actor?.side === side && ev.actor.idx === i;
           const legacyFade = !cinematic && routed;

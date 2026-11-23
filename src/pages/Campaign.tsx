@@ -823,14 +823,15 @@ export default function Campaign() {
   // 부상 회복은 시간으로 계산하므로 몇 초마다 다시 읽는다
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { ensureCastles(); }, [ensureCastles, cleared]);
-  const marching = marches.length > 0;
+  const marching = (marches ?? []).length > 0;
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), marching ? 1000 : 4000);
     return () => clearInterval(t);
   }, [marching]);
   // 도착한 부대·군주 위협이 있으면 전투를 푼다 (전투 화면이 열리면 이 페이지는 닫힌다)
   useEffect(() => {
-    if (marches.some((m) => m.eta <= now)) resolveMarches();
+    const list = marches ?? [];
+    if (list.some((m) => m.eta <= now)) resolveMarches();
     else tickThreats();
   }, [now, marches, threats, resolveMarches, tickThreats]);
 
