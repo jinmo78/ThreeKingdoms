@@ -1,5 +1,6 @@
 import { BookOpen, Coins, Flag, Swords, Target, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { audioManager } from './audio/audioManager';
 import { BannerEmblem } from './components/BannerEmblem';
 import { AccountButton, GameConflict } from './components/CloudAccount';
 import { cn, ReloadButton, useLandscape } from './components/ui';
@@ -42,6 +43,12 @@ export default function App() {
   const setView = useGame((s) => s.setView);
   const goTitle = useGame((s) => s.goTitle);
   const inBattle = view === 'battle';
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!started || !entered || view !== 'battle') audioManager.playBgm('lobby');
+    else audioManager.playBgm('battle');
+  }, [hydrated, started, entered, view]);
 
   if (!hydrated) return <div className="min-h-dvh" />;
   if (!started || !entered) return <TitleScreen />;

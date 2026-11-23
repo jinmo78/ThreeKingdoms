@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { startCloudSync } from './cloud/sync';
 import App from './App';
+import { AudioGate } from './components/AudioGate';
 import { lockTheme } from './theme';
 import './index.css';
 
@@ -49,7 +50,9 @@ class ScreenGuard extends Component<{ children: ReactNode }, { failed: boolean; 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ScreenGuard>
-      <App />
+      <AudioGate>
+        <App />
+      </AudioGate>
     </ScreenGuard>
   </StrictMode>,
 );
