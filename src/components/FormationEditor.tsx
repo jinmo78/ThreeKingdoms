@@ -203,7 +203,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                       onChange={(id: FormationId) => setUnitFormation(ui, id)}
                     />
                   </div>
-                  {p && !land && <div className="truncate text-xs text-stone-400">{p.name}</div>}
+                  {p && !land && <div className="truncate text-xs font-bold text-stone-200">{p.name}</div>}
                 </div>
                 {land && p && (
                   <button type="button" onClick={() => setInfo(ui)} title="전투력 · 시너지"
@@ -233,7 +233,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                       active ? 'border-[#B8332A] bg-red-950/40' : badCommander ? 'border-solid border-[#B8332A] bg-stone-950/60' : 'bg-stone-950/60')}>
                       <span className="flex items-center gap-0.5">
                         <button type="button" onClick={() => (def ? setTarget({ unit: ui, slot }) : openSlot(ui, slot))}
-                          className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-amber-300' : 'text-stone-400')}>
+                          className={cn('text-[10px] font-bold', slot === 'commander' ? 'text-[#8A6230]' : 'text-[#5A4A3C]')}>
                           {SLOT_FACE[slot].icon} {SLOT_FACE[slot].name}{active ? ' ·' : ''}
                         </button>
                         <Hint text={SLOT_LABEL[slot].hint} />
@@ -243,7 +243,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
                           className="flex w-full flex-col items-center gap-1" title="상세 보기">
                           <GeneralToken def={def} rarity={shownRarity(def.rarity, owned?.promote)} size="fill" className={cn('w-full', land ? 'max-w-[38px]' : 'max-w-[84px]')} />
                           <span className="flex flex-wrap items-center justify-center gap-1">
-                            <span className={cn('font-bold', land ? 'text-[10px]' : 'text-xs')}>{def.name}</span>
+                            <span className={cn('font-bold text-[#2C221E]', land ? 'text-[10px]' : 'text-xs')}>{def.name}</span>
                             {!land && <RarityBadge rarity={shownRarity(def.rarity, owned?.promote)} />}
                           </span>
                         </button>
@@ -292,7 +292,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
           <div className="ml-auto flex gap-1">
             {(['all', ...FACTIONS] as const).map((f) => (
               <button key={f} type="button" onClick={() => setFilter(f)}
-                className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-400')}>
+                className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-200')}>
                 {f === 'all' ? '전체' : FACTION[f].label}
               </button>
             ))}
@@ -353,7 +353,7 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
             <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
             {(['all', ...FACTIONS] as const).map((f) => (
               <button key={f} type="button" onClick={() => setFilter(f)}
-                className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-400')}>
+                className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-200')}>
                 {f === 'all' ? '전체' : FACTION[f].label}
               </button>
             ))}
@@ -478,7 +478,7 @@ function CompareBoard({
             <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
             {(['all', ...FACTIONS] as const).map((f) => (
               <button key={f} type="button" onClick={() => setFilter(f)}
-                className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-400')}>
+                className={cn('rounded-md px-2 py-1 text-xs font-bold', filter === f ? 'bg-stone-200 text-stone-900' : 'bg-stone-800 text-stone-200')}>
                 {f === 'all' ? '전체' : FACTION[f].label}
               </button>
             ))}
@@ -614,7 +614,7 @@ function PresetBar({ onLoaded }: { onLoaded: () => void }) {
         <h3 className="font-serif text-base font-black">편성 저장</h3>
         <span className="flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-bold text-amber-300"><Coins size={12} /> {gold.toLocaleString('ko-KR')}</span>
       </div>
-      <p className="mt-1 flex items-center gap-1 text-[11px] text-stone-500">
+      <p className="mt-1 flex items-center gap-1 text-[11px] font-bold text-stone-200">
         불러오기 무료
         <Hint text={`저장 비용은 배치 등급만큼. R ${FORMATION_GOLD.R} · SR ${FORMATION_GOLD.SR} · SSR ${FORMATION_GOLD.SSR}. 이름은 비우면 편성 1부터.`} />
       </p>

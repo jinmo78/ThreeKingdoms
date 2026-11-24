@@ -193,7 +193,7 @@ function TabButton({ active, onClick, icon: Icon, label }: { active: boolean; on
   return (
     <button type="button" onClick={onClick}
       className={cn('flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-serif text-sm font-bold transition-colors',
-        active ? 'bg-[#B8332A] text-[#EFE6D5]' : 'text-[#E2B866] hover:bg-[#E2B866]/20')}>
+        active ? 'bg-[#B8332A] text-[#EFE6D5]' : 'text-[#F3D078] hover:bg-[#E2B866]/20')}>
       <Icon size={15} />
       {label}
     </button>

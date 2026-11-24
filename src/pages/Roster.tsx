@@ -50,19 +50,19 @@ export default function Roster() {
             <NameSearch value={query} onChange={setQuery} placeholder="장수 이름" />
             {([['all', '전체'], ['owned', '등용'], ['missing', '미등용']] as const).map(([id, label]) => (
               <button key={id} type="button" onClick={() => setOwnFilter(id)}
-                className={cn('rounded-full px-3 py-1 text-xs font-bold', ownFilter === id ? 'bg-stone-700 text-stone-100' : 'bg-stone-900 text-stone-500')}>
+                className={cn('rounded-full px-3 py-1 text-xs font-bold', ownFilter === id ? 'bg-stone-700 text-stone-100' : 'bg-stone-800 text-stone-200')}>
                 {label}
               </button>
             ))}
             {(['all', 'SSR', 'SR', 'R'] as const).map((id) => (
               <button key={id} type="button" onClick={() => setRarity(id)}
-                className={cn('rounded-full px-3 py-1 text-xs font-bold', rarity === id ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-900 text-stone-500')}>
+                className={cn('rounded-full px-3 py-1 text-xs font-bold', rarity === id ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-800 text-stone-200')}>
                 {id === 'all' ? '모든 등급' : id}
               </button>
             ))}
             {land && (['all', ...FACTIONS] as const).map((id) => (
               <button key={id} type="button" onClick={() => setFac(id)}
-                className={cn('rounded-full px-3 py-1 text-xs font-bold', fac === id ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-900 text-stone-500')}>
+                className={cn('rounded-full px-3 py-1 text-xs font-bold', fac === id ? 'bg-amber-400 text-[#1c1612]' : 'bg-stone-800 text-stone-200')}>
                 {id === 'all' ? '모든 세력' : FACTION[id].full}
               </button>
             ))}
@@ -260,7 +260,7 @@ function RulesBody() {
 function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold', active ? 'bg-stone-700 text-stone-100' : 'text-stone-500')}>
+      className={cn('flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold', active ? 'bg-stone-700 text-stone-100' : 'text-stone-200')}>
       {children}
     </button>
   );

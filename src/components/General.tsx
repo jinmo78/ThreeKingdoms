@@ -108,9 +108,9 @@ export function GeneralCard({
       <GeneralToken def={def} rarity={rank} size="lg" className="relative mt-1" />
       <div className="relative">
         <div className={cn('font-serif text-lg font-black', owned || highlight ? 'text-stone-100' : 'text-stone-200')}>{def.name}</div>
-        <div className="text-[11px] text-stone-500">{def.title}</div>
+        <div className="text-[11px] text-stone-300">{def.title}</div>
       </div>
-      <div className="relative flex h-4 items-center gap-1 text-[11px] text-stone-400">
+      <div className="relative flex h-4 items-center gap-1 text-[11px] font-bold text-stone-200">
         {owned ? <>Lv.{owned.level} <Stars n={owned.stars} /></> : !highlight && '미등용'}
       </div>
     </button>

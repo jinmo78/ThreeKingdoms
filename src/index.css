@@ -804,7 +804,8 @@ body {
 .roller-bar::after { right: -5px; }
 .silk {
   position: relative;
-  color: var(--color-stone-100);
+  /* stone-100은 양피지용 먹색이라 비단 기본색으로 쓰면 안 보임 → 크림 */
+  color: #f5ead8;
   background-image:
     var(--tex-stain), var(--tex-fiber1), var(--tex-fiber2), var(--tex-grain),
     linear-gradient(90deg,
@@ -824,27 +825,67 @@ body {
   opacity: 1;
   color: #f6ead2;
 }
-.silk [class*="8A6230"],
-.silk [class*="8a6230"] {
-  color: #f3d7a0;
-}
 .silk [class*="text-[10px]"],
 .silk [class*="text-[11px]"] {
   font-size: 12px;
   line-height: 1.35;
 }
-/* 비단(어두운) 위 양피지용 톤이 안 보이게 덮어씀 */
+/* 어두운 비단 위: 양피지용 어두운 톤 → 밝은 글씨 */
 .silk .text-amber-200 { color: #f3d078 !important; }
 .silk .text-amber-300 { color: #f0d48a !important; }
 .silk .text-violet-200 { color: #ddd6fe !important; }
 .silk .text-violet-300 { color: #c4b5fd !important; }
+.silk .text-stone-100 { color: #f5ead8 !important; }
+.silk .text-stone-200 { color: #f5ead8 !important; }
 .silk .text-stone-300 { color: #e8dcc8 !important; }
 .silk .text-stone-400 { color: #d4c4a8 !important; }
 .silk .text-stone-500 { color: #c8b69e !important; }
-.silk .text-stone-200 { color: #f5ead8 !important; }
+.silk .text-sky-300 { color: #7dd3fc !important; }
+.silk .text-emerald-300 { color: #6ee7b7 !important; }
+.silk .text-rose-300 { color: #fda4af !important; }
+.silk .text-orange-300 { color: #fdba74 !important; }
+.silk .text-red-300 { color: #fca5a5 !important; }
+.silk [class*="8A6230"],
+.silk [class*="8a6230"] { color: #f3d7a0 !important; }
+.silk [class*="276347"] { color: #6ee7b7 !important; }
+.silk [class*="B8332A"],
+.silk [class*="b8332a"] { color: #f0a8a0 !important; }
 .silk .bg-stone-950\/60,
 .silk .bg-stone-950\/50 {
   background-color: rgba(28, 22, 19, 0.55) !important;
+}
+/* 비단 안 밝은 카드(전리품·출석 패널)는 다시 먹색 */
+.silk .frame,
+.silk .frame-sm {
+  color: #2c221e;
+}
+.silk .frame [class*="8A6230"],
+.silk .frame [class*="8a6230"],
+.silk .frame-sm [class*="8A6230"],
+.silk .frame-sm [class*="8a6230"] {
+  color: #8a6230 !important;
+}
+.silk section[class*="bg-stone-900"] {
+  color: #2c221e;
+}
+.silk section[class*="bg-stone-900"] .text-stone-100,
+.silk section[class*="bg-stone-900"] .text-stone-200,
+.silk section[class*="bg-stone-900"] .text-stone-300 {
+  color: #2c221e !important;
+}
+.silk section[class*="bg-stone-900"] .text-stone-400,
+.silk section[class*="bg-stone-900"] .text-stone-500 {
+  color: #5a4a3c !important;
+}
+.silk section[class*="bg-stone-900"] .text-amber-200,
+.silk section[class*="bg-stone-900"] .text-amber-300 {
+  color: #a67c00 !important;
+}
+.silk section[class*="bg-stone-900"] .text-emerald-300 {
+  color: #2d6a4f !important;
+}
+.silk section[class*="bg-stone-900"] .text-red-300 {
+  color: #b8332a !important;
 }
 .silk > div { scrollbar-width: none; }
 .silk > div::-webkit-scrollbar { display: none; }

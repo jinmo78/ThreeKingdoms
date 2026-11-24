@@ -250,8 +250,8 @@ export default function Recruit() {
       <div className="grid h-full min-h-0 grid-cols-2 gap-2 overflow-hidden">
         <div className="flex min-h-0 min-w-0 flex-col gap-1.5 overflow-hidden">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-serif text-base font-black">장수 등용</h2>
-            <span className="shrink-0 text-xs text-stone-400">
+            <h2 className="font-serif text-base font-black text-[#2C221E]">장수 등용</h2>
+            <span className="shrink-0 text-xs font-bold text-stone-200">
               도감 {ownedCount}/{RECRUITABLE.length}
               <button type="button" onClick={() => setRatesOpen(true)} className="ml-2 rounded-full border border-stone-700 px-2 py-0.5 font-bold text-stone-300">확률</button>
             </span>

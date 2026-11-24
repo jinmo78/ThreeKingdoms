@@ -111,7 +111,7 @@ function Practice({ slips }: { slips?: Slip[] }) {
               </div>
             </div>
             <div>
-              <div className="mb-1 text-stone-400">강도 <span className="text-stone-500">(내 출진 장수 평균 Lv.{avgLevel} 기준)</span></div>
+              <div className="mb-1 font-bold text-stone-200">강도 <span className="font-normal text-stone-300">(내 출진 장수 평균 Lv.{avgLevel} 기준)</span></div>
               <div className="flex flex-wrap gap-1">
                 {DIFFS.map((d) => (
                   <Chip key={d.value} active={practice.diff === d.value} onClick={() => setPractice({ diff: d.value })}>
@@ -282,7 +282,7 @@ function Conquest({ slips }: { slips?: Slip[] }) {
               />
               <div className="flex flex-wrap gap-1 text-[10px] font-bold">
                 {floor.boss && <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-red-300">{floor.floor}층 정예</span>}
-                <span className="rounded bg-stone-800 px-1.5 py-0.5 text-stone-300">패배 금 10% · 경험 30%</span>
+                <span className="rounded bg-stone-800 px-1.5 py-0.5 font-bold text-stone-100">패배 금 10% · 경험 30%</span>
               </div>
             </div>
           </Panel>
@@ -406,7 +406,7 @@ function sumPower(list: UnitProfile[]) {
 function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button type="button" onClick={onClick}
-      className={cn('flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold', active ? 'bg-stone-700 text-stone-100' : 'text-stone-500')}>
+      className={cn('flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold', active ? 'bg-stone-700 text-stone-100' : 'text-stone-200')}>
       {children}
     </button>
   );
@@ -416,7 +416,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   return (
     <button type="button" onClick={onClick}
       className={cn('rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors',
-        active ? 'bg-red-700 text-white' : 'bg-stone-800 text-stone-400 hover:text-stone-200')}>
+        active ? 'bg-red-700 text-white' : 'bg-stone-800 text-stone-200 hover:text-stone-100')}>
       {children}
     </button>
   );

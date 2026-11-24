@@ -64,10 +64,10 @@ export function Desk({
     <div className={cn('flex flex-col gap-4', scroll != null && 'lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start')}>
       <div className="min-w-0 lg:col-start-1 lg:row-start-1">
         <div className="mb-3 flex items-end justify-between gap-2">
-          <h2 className="font-serif text-xl font-black tracking-wide">
+          <h2 className="font-serif text-xl font-black tracking-wide text-[#2C221E]">
             {title} <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8332A]">{hanja}</span>
           </h2>
-          {meta && <span className="text-xs font-bold text-stone-500">{meta}</span>}
+          {meta && <span className="text-xs font-bold text-stone-200">{meta}</span>}
         </div>
         {slips && slips.length > 0 && <SlipTabs slips={slips} />}
         <div className="frame desk-sheet relative p-3 sm:p-4">

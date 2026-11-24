@@ -887,7 +887,7 @@ export default function Campaign() {
           <ThreatBanner now={now} />
           <DomainBar castles={castles} now={now} />
           <div className="flex items-end justify-between gap-2">
-            <h2 className="font-serif text-xl font-black tracking-wide">
+            <h2 className="font-serif text-xl font-black tracking-wide text-[#2C221E]">
               천하 원정 <span className="ml-1 text-[11px] font-bold tracking-[0.3em] text-[#B8332A]">天下遠征</span>
             </h2>
             <span className="text-xs font-bold text-stone-500">점령 {clearedCount}/{STAGES.length}</span>
@@ -939,7 +939,7 @@ export default function Campaign() {
             {FILTERS.map(([id, han, label]) => (
               <button key={id} type="button" onClick={() => setFilter(id)} aria-pressed={filter === id}
                 className={cn('rounded-md border px-2 py-1 text-[11px] font-bold shadow-lg',
-                  filter === id ? 'border-[#F0D58A] bg-[#B8332A] text-[#EFE6D5]' : 'border-[#8C6D46]/50 bg-[#EFE6D5]/90 text-[#8C6D46]')}>
+                  filter === id ? 'border-[#F0D58A] bg-[#B8332A] text-[#EFE6D5]' : 'border-[#8C6D46]/70 bg-[#EFE6D5] text-[#2C221E]')}>
                 {han} {label}
               </button>
             ))}

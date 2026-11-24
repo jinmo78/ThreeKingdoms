@@ -12,9 +12,9 @@ export function UnitPreview({ p }: { p: UnitProfile }) {
           {p.members.map((m, i) => m && <GeneralToken key={i} def={m.def} rarity={shownRarity(m.def.rarity, m.promote)} size="sm" />)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-bold">{p.name}</div>
-          <div className="truncate text-[11px] text-stone-500">
-            {p.members.map((m) => m && <span key={m.def.id} className={cn('mr-1', FACTION[m.def.faction].text)}>{m.def.name}</span>)}
+          <div className="truncate text-sm font-bold text-[#2C221E]">{p.name}</div>
+          <div className="truncate text-[11px] text-stone-200">
+            {p.members.map((m) => m && <span key={m.def.id} className={cn('mr-1 font-bold', FACTION[m.def.faction].text)}>{m.def.name}</span>)}
             · Lv.{p.members[0]!.level}
           </div>
         </div>

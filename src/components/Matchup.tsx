@@ -32,7 +32,7 @@ export function TroopAdviceBox({ enemy, mine, compact }: { enemy: UnitProfile[];
         <Compass size={14} className="text-amber-300" />
         <span>🐎&gt;🏹&gt;🛡️&gt;🐎</span>
         {advice.best.map((t) => (
-          <span key={t} className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] text-amber-200">{TROOP[t].label} 추천</span>
+          <span key={t} className="rounded bg-amber-400/25 px-1.5 py-0.5 text-[10px] font-bold text-[#8A6230]">{TROOP[t].label} 추천</span>
         ))}
       </div>
       <div className="flex flex-wrap gap-1">
