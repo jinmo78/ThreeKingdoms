@@ -46,7 +46,7 @@ export function MarchList({ marches, now }: { marches: March[]; now: number }) {
             <div key={m.id} className="rounded-md bg-[#8a6230]/10 px-2 py-1.5 ring-1 ring-[#8a6230]/30">
               <div className="flex items-center justify-between gap-2">
                 <span className="min-w-0 truncate font-bold">{m.stageId} {STAGE_MAP[m.stageId]?.title} ← {names}</span>
-                <span className="tabular shrink-0 font-bold text-[#8e2a22]">{left > 0 ? clock(left) : '도착!'}</span>
+                <span className="tabular shrink-0 font-bold text-red-300">{left > 0 ? clock(left) : '도착!'}</span>
               </div>
               <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#1b1713]/70">
                 <div className="h-full rounded-full bg-[#c4a15a] transition-[width] duration-1000 ease-linear" style={{ width: `${prog * 100}%` }} />

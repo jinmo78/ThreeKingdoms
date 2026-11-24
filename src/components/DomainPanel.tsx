@@ -157,7 +157,7 @@ export function DomainPanel({ stageId, castle, now, gold, squads }: {
     <div className="mt-3 text-xs">
       <div className="mb-1 flex items-baseline justify-between">
         <b className="font-serif text-[13px]">內政 내정</b>
-        <span className="tabular font-bold text-[#8e2a22]">Lv.{castle.level} / {CASTLE_MAX_LEVEL}</span>
+        <span className="tabular font-bold text-red-300">Lv.{castle.level} / {CASTLE_MAX_LEVEL}</span>
       </div>
       <div className="rounded-md bg-[#8a6230]/10 p-2 ring-1 ring-[#8a6230]/30">
         <div className="flex items-center justify-between gap-2">

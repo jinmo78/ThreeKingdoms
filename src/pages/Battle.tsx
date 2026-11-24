@@ -236,7 +236,7 @@ function LogLine({ e, raw }: { e: BattleEvent; raw: boolean }) {
   }
   const calm = e.kind === 'rout' ? 'text-[#8a8178] line-through decoration-[#B8332A]/50'
     : e.kind === 'end' || e.kind === 'start' ? 'font-bold'
-      : 'text-[#C9BBA6]';
+      : 'text-[#6E5D4F]';
   return <div className={cn('animate-slide-in leading-snug', calm)}>{text}</div>;
 }
 
@@ -429,7 +429,7 @@ function SideRow({
                 </div>
               </div>
               <TroopBar value={hp} max={u.hp} speed={speed} />
-              <div className="tabular mt-1 text-center text-xs font-semibold text-[#E7DCC8] sm:text-sm">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
+              <div className="tabular mt-1 text-center text-xs font-semibold text-[#3D2E24] sm:text-sm">{hp.toLocaleString()} / {u.hp.toLocaleString()}</div>
               {(cinematic ? announced.has(i) || justRouted : routed) && (
                 <div className={cn('absolute inset-0 flex items-center justify-center', justRouted && 'animate-rout-pop')}>
                   <span className="seal px-1.5 py-2 font-serif text-sm tracking-widest">패퇴</span>
