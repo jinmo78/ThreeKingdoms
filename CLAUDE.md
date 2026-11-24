@@ -2,6 +2,8 @@
 
 삼국지 장수 수집 + 6칸 부대(주장·부장×2·참모·보좌×2) 시너지 자동 전투 웹게임. 구조와 규칙 요약은 README.md 참고.
 
+공통 개발 규칙(3대 뷰포트 대응 · 검증 보고): @AGENTS.md
+
 ## 개발 · 배포
 - `npm install` → `npm run dev` (http://localhost:5173), `npm run build` = 타입 체크 + 빌드
 - `main`에 푸시하면 GitHub Actions가 GitHub Pages로 자동 배포 → https://jinmo78.github.io/ThreeKingdoms/
