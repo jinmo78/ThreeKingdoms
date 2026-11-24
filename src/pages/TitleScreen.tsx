@@ -7,7 +7,7 @@ import { GeneralToken } from '../components/General';
 import { AudioSettingsButton } from '../components/AudioGate';
 import { ReloadButton, useLandscape } from '../components/ui';
 import { useCloud } from '../cloud/account';
-import { GAME_SUBTITLE, GAME_TAGLINE, GAME_TITLE } from '../config';
+import { GAME_SUBTITLE, GAME_TITLE } from '../config';
 import { getGeneral } from '../data/generals';
 import { useGame } from '../store/gameStore';
 
@@ -48,7 +48,6 @@ export default function TitleScreen() {
         <BannerEmblem animated className="h-16 w-16 drop-shadow-[0_8px_18px_rgba(0,0,0,0.65)] land:h-10 land:w-10" />
         <h1 className="mt-3 px-2 font-serif text-3xl font-black tracking-wide text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.85)] sm:text-5xl land:mt-1 land:text-3xl">{GAME_TITLE}</h1>
         <div className="mt-2 font-serif text-lg tracking-[0.35em] text-red-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] land:mt-0.5 land:text-sm land:tracking-[0.25em]">{GAME_SUBTITLE}</div>
-        <div className="mt-1 text-xs text-white/85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)] land:hidden">{GAME_TAGLINE}</div>
         </div>
 
         <div className="flex-1 land:hidden" />

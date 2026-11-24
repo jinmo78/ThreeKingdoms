@@ -17,7 +17,7 @@ export default defineConfig(({ command }) => ({
       manifest: {
         name: '삼국지: 무장편성록',
         short_name: '무장편성록',
-        description: '삼국지 장수 수집 · 6칸 편성 · 시너지 자동 전투',
+        description: '삼국지: 무장편성록 (武將編成錄)',
         lang: 'ko',
         dir: 'ltr',
         display: 'standalone',
