@@ -4,14 +4,22 @@ import { audioManager } from '../audio/audioManager';
 import { useAudioSettings } from '../store/useAudioSettings';
 import { cn } from './ui';
 
-/** 첫 터치로 오디오 잠금 해제 + 탭 숨김 시 전체 뮤트 */
+/** 별도 시작 화면 없이 앱을 바로 보여 주고, BGM은 켜짐이 기본·첫 입력에서 재생 */
 export function AudioGate({ children }: { children: ReactNode }) {
-  const [unlocked, setUnlocked] = useState(false);
-
   useEffect(() => {
+    audioManager.unlock();
+    audioManager.playBgm('lobby');
+
+    const tryStart = () => {
+      audioManager.unlock();
+      audioManager.playBgm('lobby');
+    };
+    // 브라우저 자동재생 차단 시, 첫 터치/클릭/키로 재생
+    document.addEventListener('pointerdown', tryStart, { once: true, capture: true });
+    document.addEventListener('keydown', tryStart, { once: true, capture: true });
+
     const onVis = () => {
       if (document.visibilityState === 'hidden') {
-        // 백그라운드·앱 전환 시 재생 세션을 끊어 Android 미디어 알림이 안 남게 함
         audioManager.release();
       } else {
         audioManager.resumeAfterBackground();
@@ -24,35 +32,18 @@ export function AudioGate({ children }: { children: ReactNode }) {
     window.addEventListener('pagehide', onLeave);
     window.addEventListener('beforeunload', onLeave);
     return () => {
+      document.removeEventListener('pointerdown', tryStart, true);
+      document.removeEventListener('keydown', tryStart, true);
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('pagehide', onLeave);
       window.removeEventListener('beforeunload', onLeave);
     };
   }, []);
 
-  if (!unlocked) {
-    return (
-      <button
-        type="button"
-        className="fixed inset-0 z-[100] flex h-dvh w-full flex-col items-center justify-center gap-3 bg-[#181310] px-6 text-center"
-        onClick={() => {
-          audioManager.unlock();
-          audioManager.playBgm('lobby');
-          setUnlocked(true);
-        }}
-      >
-        <span className="font-serif text-2xl font-black tracking-wide text-[#F5E6C8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] sm:text-3xl">
-          터치하여 시작
-        </span>
-        <span className="text-sm text-[#E2B866]/90">배경음악이 재생됩니다</span>
-      </button>
-    );
-  }
-
   return children;
 }
 
-/** 헤더·타이틀에 넣는 인라인 BGM 버튼 (플로팅 오버레이 아님) */
+/** 헤더·타이틀에 넣는 인라인 BGM 버튼 */
 export function AudioSettingsButton({ className }: { className?: string }) {
   const bgmOn = useAudioSettings((s) => s.bgmOn);
   const bgmVolume = useAudioSettings((s) => s.bgmVolume);
