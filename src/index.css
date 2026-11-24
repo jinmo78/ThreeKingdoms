@@ -890,6 +890,9 @@ body {
 .silk section[class*="bg-stone-900"] .bg-stone-950\/50 {
   background-color: rgba(200, 182, 158, 0.45) !important;
 }
+/* 비단 위 설명(?) 버튼은 밝게, 비단 안 밝은 패널에서는 원래 고동색 */
+.silk [data-hint] { color: #e8dcc8; border-color: rgba(232, 220, 200, 0.6); }
+.silk section[class*="bg-stone-900"] [data-hint] { color: #8c6d46; border-color: rgba(140, 109, 70, 0.7); }
 /* 비단 위 밝은 칩(bg-stone-800)은 먹색 */
 .silk .bg-stone-800:not([class*="text-"]) { color: #2c221e; }
 .silk > div { scrollbar-width: none; }

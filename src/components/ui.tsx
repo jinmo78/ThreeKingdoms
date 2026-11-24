@@ -142,6 +142,7 @@ export function Hint({ text }: { text: ReactNode }) {
   return (
     <span className="relative inline-flex align-middle">
       <button type="button" aria-expanded={open} aria-label="설명" onClick={() => setOpen((v) => !v)}
+        data-hint
         className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[#8C6D46]/70 px-1 text-[10px] font-black text-[#8C6D46]">
         ?
       </button>

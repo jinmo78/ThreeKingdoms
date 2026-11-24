@@ -124,6 +124,11 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         .sort((a, b) => rarityRank(b.def) - rarityRank(a.def) || b.owned.level - a.owned.level),
     [roster, filter],
   );
+  // 출정 가능한 부대(주장 있음) 전투력 합
+  const totalPower = useMemo(
+    () => formation.reduce((n, u) => n + (u ? unitProfile(u, roster, gear)?.power ?? 0 : 0), 0),
+    [formation, roster, gear],
+  );
   const needle = query.trim();
   const matched = needle ? owned.filter((x) => x.def.name.includes(needle)) : owned;
   const listed = benchOnly ? matched.filter((x) => !placed[x.def.id]) : matched;
@@ -176,7 +181,12 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
         {land && (
           <Btn variant="ghost" size="sm" onClick={() => setPresetOpen(true)}><Save size={14} /> 저장·불러오기</Btn>
         )}
-        {autoNote && <span className="animate-slide-in text-[10px] font-bold text-amber-200/80">재편성</span>}
+        {autoNote && <span className="animate-slide-in text-[10px] font-bold text-amber-200">재편성</span>}
+        <span className={cn('tabular ml-auto flex items-baseline gap-1.5 rounded-lg border border-[#8C6D46]/60 bg-[#241B15] font-bold text-[#F5E6C8]',
+          land ? 'px-2 py-0.5 text-[11px]' : 'px-3 py-1 text-xs')}>
+          총 전투력
+          <b className={cn('font-black text-[#F0D48A]', land ? 'text-sm' : 'text-base')}>{Math.round(totalPower).toLocaleString()}</b>
+        </span>
       </div>
 
       {!land && <PresetBar onLoaded={() => setTarget({ unit: 0, slot: 'commander' })} />}
@@ -191,10 +201,10 @@ export function FormationEditor({ enemy, counter, unitGridClass = 'lg:grid-cols-
           return (
             <section key={ui} className={cn('rounded-2xl border-2 transition-shadow', land ? 'min-w-0 p-1.5' : 'p-3', UNIT_TINT[ui].card,
               target.unit === ui && 'ring-2 ring-stone-100')}>
-              <header className={cn('flex items-center justify-between gap-2', land ? 'mb-1' : 'mb-2')}>
+              <header className={cn('flex items-center justify-between', land ? 'mb-1 gap-1' : 'mb-2 gap-2')}>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <h3 className={cn('font-serif text-base font-black', UNIT_TINT[ui].title)}>제{ui + 1}부대</h3>
+                    <h3 className={cn('whitespace-nowrap font-serif font-black', land ? 'text-sm' : 'text-base', UNIT_TINT[ui].title)}>제{ui + 1}부대</h3>
                     <FormationPicker
                       value={u.formationId}
                       compact={land}
