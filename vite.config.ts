@@ -15,9 +15,9 @@ export default defineConfig(({ command }) => ({
       manifestFilename: 'manifest.json',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'og.png', 'audio/bgm_lobby.mp3', 'audio/bgm_battle.mp3'],
       manifest: {
-        name: 'Oath & Banner - 맹세와 깃발',
-        short_name: '맹세와 깃발',
-        description: '삼국지 장수를 등용하고 주장·부장·참모를 조합해 시너지 연쇄 전법으로 싸우는 가벼운 웹 덱빌딩 전략 게임',
+        name: '삼국지: 무장편성록',
+        short_name: '무장편성록',
+        description: '삼국지 장수 수집 · 6칸 편성 · 시너지 자동 전투',
         lang: 'ko',
         dir: 'ltr',
         display: 'standalone',

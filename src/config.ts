@@ -1,3 +1,3 @@
-export const GAME_TITLE = 'Oath & Banner';
-export const GAME_SUBTITLE = '맹세와 깃발';
-export const GAME_TAGLINE = 'Generals of the Fallen Han';
+export const GAME_TITLE = '삼국지: 무장편성록';
+export const GAME_SUBTITLE = '武將編成錄';
+export const GAME_TAGLINE = '삼국지 장수 수집 · 6칸 편성 · 시너지 자동 전투';

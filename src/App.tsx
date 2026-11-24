@@ -64,8 +64,8 @@ export default function App() {
             <button type="button" onClick={goTitle} title="첫 화면" aria-label="첫 화면으로" className="flex min-h-11 items-center gap-2">
               <BannerEmblem className="h-8 w-8" />
               <div className="text-left leading-tight">
-                <div className="font-serif text-base font-bold tracking-wide text-[#E2B866]">{GAME_TITLE}</div>
-                <div className="hidden text-[10px] tracking-[0.3em] text-[#E8D4A8] sm:block">{GAME_SUBTITLE}</div>
+                <div className="max-w-[11rem] truncate font-serif text-sm font-bold tracking-wide text-[#E2B866] sm:max-w-none sm:text-base">{GAME_TITLE}</div>
+                <div className="hidden text-[10px] tracking-[0.2em] text-[#E8D4A8] sm:block">{GAME_SUBTITLE}</div>
               </div>
             </button>
             <nav className="ml-6 hidden gap-1 lg:flex">
@@ -142,7 +142,7 @@ function LandShell() {
         <header className="absolute inset-x-0 top-0 z-20 flex h-10 items-center gap-2 border-b border-[#8C6D46]/45 bg-[#241B15]/90 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-[#E2B866] backdrop-blur">
           <button type="button" onClick={goTitle} aria-label="첫 화면으로" className="flex items-center gap-1.5">
             <BannerEmblem className="h-6 w-6" />
-            <span className="font-serif text-sm font-bold text-[#E2B866]">{GAME_TITLE}</span>
+            <span className="max-w-[9rem] truncate font-serif text-sm font-bold text-[#E2B866] sm:max-w-none">{GAME_TITLE}</span>
           </button>
           <div className="ml-auto flex items-center gap-1">
             <AccountButton />
