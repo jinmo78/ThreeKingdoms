@@ -33,7 +33,7 @@ export function FormationPicker({
           onClick={() => setOpen(true)}
           title={`${cur.hanja} ${cur.name}`}
           className={cn(
-            'shrink-0 rounded-md border border-[#E2B866]/45 bg-[#1b1713]/80 font-bold text-[#2C221E] hover:border-[#E2B866]',
+            'shrink-0 rounded-md border border-[#E2B866]/45 bg-[#1b1713]/80 font-bold text-[#F5E6C8] hover:border-[#E2B866]',
             compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]',
           )}
         >
@@ -78,7 +78,7 @@ export function FormationPicker({
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-serif text-base font-black text-[#2C221E]">
-                        {f.name} <span className="text-xs font-bold text-[#E2B866]">{f.hanja}</span>
+                        {f.name} <span className="text-xs font-bold text-[#8A6230]">{f.hanja}</span>
                       </span>
                       {on && <span className="text-[10px] font-bold text-amber-300">선택</span>}
                     </div>
@@ -105,7 +105,7 @@ export function FormationPicker({
                           className={cn(
                             'rounded px-1.5 py-0.5',
                             cond.active
-                              ? 'bg-[#E2B866]/20 text-[#F0D58A] ring-1 ring-[#E2B866]/60'
+                              ? 'bg-[#E2B866]/20 text-[#8A6230] ring-1 ring-[#E2B866]/60'
                               : 'bg-stone-800 text-stone-500',
                           )}
                         >

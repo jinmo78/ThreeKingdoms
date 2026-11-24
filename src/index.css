@@ -42,8 +42,8 @@
   --color-red-900: #f0b2a8;
   --color-red-950: #fce8e4;
   /* 강조 금색: 어두운 비단·밝은 양피지 양쪽에서 보이게 */
-  --color-amber-200: #b8860b;
-  --color-amber-300: #a67c00;
+  --color-amber-200: #7d5e08;
+  --color-amber-300: #8a6230;
   --color-amber-400: #c4921a;
   --color-amber-500: #d99b26;
   --color-sky-200: #3a5a7a;
@@ -53,12 +53,12 @@
   --color-emerald-300: #2d6a4f;
   --color-emerald-900: #d4edda;
   --color-emerald-950: #e8f5ec;
-  /* 연보라: 어두운 비단 위 배지용 (밝게) */
-  --color-violet-200: #ddd6fe;
-  --color-violet-300: #c4b5fd;
+  /* 보라: 양피지 위는 진하게. 어두운 비단 위는 .silk 덮어쓰기로 밝게 */
+  --color-violet-200: #5b3a9e;
+  --color-violet-300: #6b46c1;
   --color-rose-300: #a3281f;
   --color-orange-200: #8c6d46;
-  --color-orange-300: #a88848;
+  --color-orange-300: #7a5c32;
 }
 
 html,
@@ -478,7 +478,6 @@ body {
 /* ───────── 천하 원정: 고지도 · 군령 두루마리 (Campaign.tsx) ─────────
    한지 질감은 feTurbulence 를 담은 인라인 SVG 를 배경으로 깐 것. 밝은/어두운 테마별로 색만 다르다. */
 :root {
-  --ink: #e8d7b0;
   --mt-l: #5a739c;
   --mt-r: #152033;
   --mt-line: #e3c070;
@@ -822,8 +821,8 @@ body {
 .silk [class*="opacity-6"],
 .silk [class*="opacity-7"],
 .silk [class*="opacity-8"] {
+  /* 색은 부모를 따른다(금색 버튼·밝은 카드 안에서 크림이 되면 안 보임) */
   opacity: 1;
-  color: #f6ead2;
 }
 .silk [class*="text-[10px]"],
 .silk [class*="text-[11px]"] {
@@ -879,7 +878,7 @@ body {
 }
 .silk section[class*="bg-stone-900"] .text-amber-200,
 .silk section[class*="bg-stone-900"] .text-amber-300 {
-  color: #a67c00 !important;
+  color: #7d5e08 !important;
 }
 .silk section[class*="bg-stone-900"] .text-emerald-300 {
   color: #2d6a4f !important;
@@ -887,6 +886,12 @@ body {
 .silk section[class*="bg-stone-900"] .text-red-300 {
   color: #b8332a !important;
 }
+.silk section[class*="bg-stone-900"] .bg-stone-950\/60,
+.silk section[class*="bg-stone-900"] .bg-stone-950\/50 {
+  background-color: rgba(200, 182, 158, 0.45) !important;
+}
+/* 비단 위 밝은 칩(bg-stone-800)은 먹색 */
+.silk .bg-stone-800:not([class*="text-"]) { color: #2c221e; }
 .silk > div { scrollbar-width: none; }
 .silk > div::-webkit-scrollbar { display: none; }
 .seal-lg { min-width: 2.4rem; height: 2.4rem; font-size: 0.95rem; letter-spacing: 0; transform: rotate(-4deg); }

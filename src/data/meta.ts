@@ -13,9 +13,9 @@ export const RARITY: Record<Rarity, { border: string; text: string; badge: strin
   SSR: {
     border: 'border-[#E2B866]',
     text: 'text-amber-300',
-    badge: 'bg-gradient-to-b from-amber-200 to-amber-500 text-[#3a2300] shadow-[0_0_8px_rgba(251,191,36,0.55)]',
+    badge: 'bg-gradient-to-b from-[#F0D48A] to-amber-500 text-[#3a2300] shadow-[0_0_8px_rgba(251,191,36,0.55)]',
     glow: 'shadow-[0_0_24px_-4px_rgba(198,161,91,0.65)]',
-    ring: 'ring-2 ring-amber-300/90',
+    ring: 'ring-2 ring-[#E2B866]/90',
   },
   SR: {
     border: 'border-[#E2B866]/70',

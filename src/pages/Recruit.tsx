@@ -200,7 +200,7 @@ export default function Recruit() {
               </p>
               {!allOpen && (
                 <button type="button" onClick={openAll}
-                  className="min-h-11 shrink-0 rounded-lg border border-[#E2B866]/70 px-3 font-serif text-xs font-bold text-[#2C221E]">
+                  className="min-h-11 shrink-0 rounded-lg border border-[#E2B866]/70 px-3 font-serif text-xs font-bold text-[#F5E6C8]">
                   모두 펼치기
                 </button>
               )}
